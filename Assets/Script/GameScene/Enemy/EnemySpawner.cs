@@ -73,8 +73,9 @@ public class EnemySpawner : MonoBehaviour
     private void SpawnEnemy()
     {
         // 控制最大敌人数量
-        if (GameLevelManager.Instance.GetEnemyCount() >= maxEnemies)
+        if (GameLevelManager.Instance.GetEnemyCount() >= maxEnemies || PlayerManager.Instance.player == null)
             return;
+
 
         // 生成敌人
         Instantiate(waves[currentWaveIndex].enemyPrefab, SelectSpawnPoint(), Quaternion.identity);

@@ -5,6 +5,11 @@ public class PlayerHealthController : BaseHealthController
     private bool isUnbeatable = false;
     public float unbeatableTime = 0.5f;
 
+
+    /// <summary>
+    /// 受到伤害
+    /// </summary>
+    /// <param name="damage"></param>
     public override void TakeDamage(float damage)
     {
         if (isUnbeatable)
@@ -24,8 +29,18 @@ public class PlayerHealthController : BaseHealthController
     }
 
 
+    /// <summary>
+    /// 重置无敌状态
+    /// </summary>
     private void ResetUnbeatableState()
     {
         isUnbeatable = false;
+    }
+
+
+    protected override void Die()
+    {
+        base.Die();
+        EventCenter.Trigger(PlayerEnum.OnPlayerDead, null);
     }
 }

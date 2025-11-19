@@ -55,7 +55,6 @@ public class DamageNumManager : MonoBehaviour
             damageNumPool.RemoveAt(0);
             damageNumToSpawn.gameObject.SetActive(true);
         }
-
         return damageNumToSpawn;
     }
 

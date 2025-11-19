@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de846c236cb76694cbaf613687dc181d, type: 3}
+  m_Name: FireBallSpeed
+  m_EditorClassIdentifier: 
+  levelUpText: "\u52A0\u5FEB\u706B\u7403\u901F\u5EA6"
+  levelUpSprite: {fileID: -196789849, guid: 99f10abcf979e904b883da0c6922d74f, type: 3}

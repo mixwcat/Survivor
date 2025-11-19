@@ -15,7 +15,7 @@ public class CameraController : MonoBehaviour
     void LateUpdate()
     {
         // Lerp towards player but keep camera z at -10
-        target = Vector3.Lerp(transform.position, playerTransform.position, 0.1f);
+        target = Vector3.Lerp(transform.position, playerTransform.position, 5f * Time.deltaTime);
         target.z = -10f;
         transform.position = target;
     }

@@ -14,7 +14,6 @@ public class PlayerManager : MonoBehaviour
         {
             if (_player == null)
             {
-                Debug.Log("Manager中玩家丢失！请确保玩家对象已被正确查找或赋值。");
                 return null;
             }
             return _player;

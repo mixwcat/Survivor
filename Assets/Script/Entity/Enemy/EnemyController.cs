@@ -26,7 +26,7 @@ public class EnemyController : MonoBehaviour
     /// </summary>
     void FixedUpdate()
     {
-        if (targetTransform == null) return;
+        if (PlayerManager.Instance.player == null) return;
         MoveTowardsPlayer();
     }
 
@@ -36,7 +36,7 @@ public class EnemyController : MonoBehaviour
     /// </summary>
     /// <param name="hitForce"></param>
     /// <param name="hitDuration"></param>
-    public void GetHit(float hitForce, float hitDuration)
+    public void HitImpact(float hitForce, float hitDuration)
     {
         moveSpeed = originalMoveSpeed;
         moveSpeed = -moveSpeed * hitForce;
@@ -69,9 +69,11 @@ public class EnemyController : MonoBehaviour
 
     void OnDisable()
     {
-        if (isQuitting) return;
+        if (isQuitting || !gameObject.scene.isLoaded) return;
         GameLevelManager.Instance.UnregisterEnemy(this);
-        ExperienceLevController.Instance.SpawnExpSprite(transform);
+
+        if (ExpSpritePool.Instance != null)
+            ExpSpritePool.Instance.SpawnExpSprite(transform);
     }
 
     void OnApplicationQuit()

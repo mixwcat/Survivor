@@ -1,5 +1,6 @@
 public enum PlayerEnum
 {
     CallManager,
-    OnHealthChanged
+    OnHealthChanged,
+    OnPlayerDead
 }

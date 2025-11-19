@@ -70,6 +70,7 @@ public class UIManager
         }
     }
 
+
     public T GetPanel<T>() where T : BasePanel
     {
         string panelName = typeof(T).Name;

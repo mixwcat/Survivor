@@ -28,7 +28,6 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         ChangeAnimParameters();
-        //MoveWithMouse();
     }
 
 
@@ -59,18 +58,6 @@ public class PlayerController : MonoBehaviour
         rb.linearVelocity = moveInput * moveSpeed;
     }
 
-
-    float mouseX;
-    float mouseY;
-    Vector3 mouseMove;
-    //public float mouseSpeed = 100f;
-    // private void MoveWithMouse()
-    // {
-    //     mouseX = Input.GetAxis("Mouse X");
-    //     mouseY = Input.GetAxis("Mouse Y");
-    //     mouseMove = new Vector3(mouseX, mouseY, 0) * mouseSpeed;
-    //     transform.position += mouseMove * Time.deltaTime;
-    // }
 
     private void OnEnable()
     {

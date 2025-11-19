@@ -1,12 +1,22 @@
 using UnityEngine;
 
-public class WeaponAttack : MonoBehaviour
+public class FireBallController : MonoBehaviour
 {
-    public int damage = 10;
-    public float lifeTime = 4; // 火球存在时间，单位秒
+    private int damage = 10;
+    private float lifeTime = 4; // 火球存在时间，单位秒
     private Vector3 targetSize;
-    public float growSpeed = 3f;
-    
+    private float growSpeed;
+
+
+    /// <summary>
+    /// 初始化火球参数
+    /// </summary>
+    /// <param name="interval"></param>
+    public void Init(float interval, float size)
+    {
+        lifeTime = interval - 1;
+        transform.localScale = new Vector3(size, size, 1);
+    }
 
     /// <summary>
     /// 淡入淡出的初始化
@@ -15,6 +25,7 @@ public class WeaponAttack : MonoBehaviour
     {
         targetSize = transform.localScale;
         transform.localScale = Vector3.zero;
+        growSpeed = Vector3.Distance(transform.localScale, targetSize) / 0.2f; // 1 秒完成
     }
 
     /// <summary>
@@ -45,7 +56,7 @@ public class WeaponAttack : MonoBehaviour
         if (other.CompareTag("Enemy"))
         {
             other.GetComponent<EnemyHealthController>().TakeDamage(damage);
-            other.GetComponent<EnemyController>().GetHit(10f, 0.1f);
+            other.GetComponent<EnemyController>().HitImpact(10f, 0.1f);
         }
     }
 }

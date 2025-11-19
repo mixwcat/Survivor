@@ -33,7 +33,7 @@ public class ExpSpriteController : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             ExperienceLevController.Instance.AddExperience(1);
-            Destroy(gameObject);
+            ExpSpritePool.Instance.ReturnToPool(this);
         }
     }
 }
