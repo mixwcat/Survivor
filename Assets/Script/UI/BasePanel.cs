@@ -1,3 +1,4 @@
+using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -49,6 +50,11 @@ public abstract class BasePanel : MonoBehaviour
                 hideCallBack?.Invoke();
             }
         }
+
+        if(Input.GetKeyDown(KeyCode.Escape) && isShow)
+        {
+            EscLogic();
+        }
     }
 
 
@@ -56,6 +62,9 @@ public abstract class BasePanel : MonoBehaviour
     /// 必须实现的初始化方法
     /// </summary>
     public abstract void Init();
+    public virtual void EscLogic()
+    {
+    }
 
     /// <summary>
     /// 显示面板

@@ -24,7 +24,7 @@ public class ExperienceLevController : MonoBehaviour
         // 初始化经验表
         while (expTable.Count < maxLevel)
         {
-            expTable.Add(expTable[expTable.Count - 1] + 2);
+            expTable.Add(expTable[expTable.Count - 1] + 1);
         }
     }
 
@@ -61,13 +61,18 @@ public class ExperienceLevController : MonoBehaviour
         }
     }
 
+
     /// <summary>
     /// 减少等级点数
     /// </summary>
     /// <param name="amount"></param>
     public bool CanUseLevelPoint(int amount)
     {
-        if (levelPoint < amount) return false;
+        if (levelPoint < amount)
+        {
+            UIManager.Instance.ShowPanel<TipsPanel>();
+            return false;
+        }
 
         levelPoint -= amount;
         // 更新GamePanel等级点数
@@ -110,6 +115,11 @@ class ExpSpritePool
         }
         else
         {
+            if (expSpritePool[0] == null)
+            {
+                expSpritePool.RemoveAt(0);
+                return GetFromPool(position);
+            }
             // 从池中取出一个
             expSpriteToSpawn = expSpritePool[0];
             expSpritePool.RemoveAt(0);

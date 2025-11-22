@@ -23,7 +23,7 @@ public class DamageNumManager : MonoBehaviour
     /// </summary>
     /// <param name="position"></param>
     /// <param name="damage"></param>
-    public void SpawnDamageNum(Vector3 position, float damage)
+    public DamageNumText SpawnDamageNum(Vector3 position, float damage)
     {
         // 从池中取出
         DamageNumText text = GetFromPool();
@@ -31,6 +31,8 @@ public class DamageNumManager : MonoBehaviour
         text.transform.position = position;
         // 设置数值
         text.GetComponent<DamageNumText>().SetUp((int)damage);
+
+        return text;
     }
 
 

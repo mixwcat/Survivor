@@ -2,53 +2,45 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Teto : MonoBehaviour
+public class Teto : BaseTower
 {
+    [Header("属性")]
     public float fireInterval;
     public int damage;
     public int hitForce;
-    private List<EnemyController> enemiesInRange = new List<EnemyController>();
+    [Header("事件")]
+    public LevelUpSO fireIntervalLevelUpSO;
+    public LevelUpSO damageLevelUpSO;
+    public LevelUpSO hitForceLevelUpSO;
 
 
-    private void Start()
+    void Start()
     {
         StartCoroutine(GenerateBullet());
     }
 
 
     /// <summary>
-    /// 寻找目标
+    /// 用于订阅的方法
     /// </summary>
-    /// <returns></returns>
-    private Transform FindTarget()
+    private void IncreaseFireInterval()
     {
-        if (enemiesInRange.Count == 0) return null;
-
-        if (enemiesInRange[0] != null)
-        {
-            Transform target = enemiesInRange[0].transform;
-            return target;
-        }
-        else
-        {
-            enemiesInRange.RemoveAt(0);
-            return FindTarget();
-        }
+        fireInterval *= 0.8f;
+    }
+    private void IncreaseDamage()
+    {
+        damage += 2;
+    }
+    private void IncreaseHitForce()
+    {
+        hitForce += 15;
     }
 
 
     /// <summary>
-    /// 碰撞检测，记录进入范围的敌人
+    /// 发射子弹
     /// </summary>
-    /// <param name="other"></param>
-    private void OnTriggerEnter2D(Collider2D other)
-    {
-        if (other.CompareTag("Enemy"))
-        {
-            enemiesInRange.Add(other.GetComponent<EnemyController>());
-        }
-    }
-
+    /// <returns></returns>
     IEnumerator GenerateBullet()
     {
         while (true)
@@ -68,10 +60,23 @@ public class Teto : MonoBehaviour
 
             // 生成子弹
             Instantiate(Resources.Load<GameObject>("Tower/TetoBullet"), transform.position, Quaternion.identity).GetComponents<TetoBulletController>()[0].Init(damage, hitForce, direction);
-            Debug.Log("发射子弹");
 
             // 等待一段时间
             yield return new WaitForSeconds(fireInterval);
         }
+    }
+
+    private void OnEnable()
+    {
+        fireIntervalLevelUpSO.onLevelUp += IncreaseFireInterval;
+        damageLevelUpSO.onLevelUp += IncreaseDamage;
+        hitForceLevelUpSO.onLevelUp += IncreaseHitForce;
+    }
+
+    private void OnDisable()
+    {
+        fireIntervalLevelUpSO.onLevelUp -= IncreaseFireInterval;
+        damageLevelUpSO.onLevelUp -= IncreaseDamage;
+        hitForceLevelUpSO.onLevelUp -= IncreaseHitForce;
     }
 }

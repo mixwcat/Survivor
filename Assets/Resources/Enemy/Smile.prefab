@@ -99,7 +99,6 @@ GameObject:
   - component: {fileID: 4188723748542741765}
   - component: {fileID: 1105557957183819941}
   - component: {fileID: 8407656575314816345}
-  - component: {fileID: 4584673816324570786}
   - component: {fileID: 162454493895878068}
   m_Layer: 0
   m_Name: Smile
@@ -200,24 +199,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2190df186f782ae4385867b572629e0b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 2
+  moveSpeed: 3
   targetTransform: {fileID: 0}
---- !u!114 &4584673816324570786
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7301198939922729023}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e0dd70062cebb074598652aa7f1e3998, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  spriteTransform: {fileID: 3954458844039165424}
-  maxSize: 1.1
-  minSize: 0.7
-  sizeChangeSpeed: 0.5
 --- !u!114 &162454493895878068
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -230,9 +213,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 80b72819efe0ad74f8796221de1081a8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 20
+  maxHealth: 8
   currentHealth: 0
-  damage: 8
+  damage: 2
 --- !u!1 &7906422964212571449
 GameObject:
   m_ObjectHideFlags: 0

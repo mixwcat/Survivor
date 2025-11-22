@@ -2,8 +2,19 @@ using UnityEngine;
 
 public class PlayerHealthController : BaseHealthController
 {
+    [Header("无敌时间")]
     private bool isUnbeatable = false;
     public float unbeatableTime = 0.5f;
+    [Header("组件")]
+    private HealthPanel healthPanel;
+    [Header("事件")]
+    public LevelUpSO recoverHealthLevelUpSO;
+
+    void Start()
+    {
+        currentHealth = maxHealth;
+        healthPanel = GetComponentInChildren<HealthPanel>();
+    }
 
 
     /// <summary>
@@ -20,8 +31,11 @@ public class PlayerHealthController : BaseHealthController
         // 造成伤害
         base.TakeDamage(damage);
 
+        // 生成伤害数字
+        DamageNumManager.Instance.SpawnDamageNum(transform.position, damage).SpawmRedNum();
+
         // 触发血量变化事件
-        EventCenter.Trigger(PlayerEnum.OnHealthChanged, null);
+        healthPanel.UpdateHealthUI();
 
         // 开始无敌时间计时
         isUnbeatable = true;
@@ -37,6 +51,21 @@ public class PlayerHealthController : BaseHealthController
         isUnbeatable = false;
     }
 
+    private void RecoverHealth()
+    {
+        currentHealth = maxHealth;
+        healthPanel.UpdateHealthUI();
+    }
+
+    private void OnEnable()
+    {
+        recoverHealthLevelUpSO.onLevelUp += RecoverHealth;
+    }
+
+    private void OnDisable()
+    {
+        recoverHealthLevelUpSO.onLevelUp -= RecoverHealth;
+    }
 
     protected override void Die()
     {

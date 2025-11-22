@@ -28,6 +28,13 @@ public class DamageNumText : MonoBehaviour
         Invoke(nameof(ReturnToPool), lifeTime);
     }
 
+    
+    public void SpawmRedNum()
+    {
+        damageText.color = Color.red;
+        transform.localScale = Vector3.one * 1.5f;
+    }
+
 
     /// <summary>
     /// 归还到对象池
@@ -35,5 +42,15 @@ public class DamageNumText : MonoBehaviour
     private void ReturnToPool()
     {
         DamageNumManager.Instance.ReturnToPool(this);
+    }
+
+
+    /// <summary>
+    /// 启用时重置状态
+    /// </summary>
+    private void OnEnable()
+    {
+        transform.localScale = Vector3.one;
+        GetComponent<TextMeshProUGUI>().color = Color.white;
     }
 }

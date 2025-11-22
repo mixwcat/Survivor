@@ -3,8 +3,8 @@ using UnityEngine;
 public class BaseHealthController : MonoBehaviour
 {
     public float maxHealth, currentHealth, damage;
-    
-    
+
+
     void Start()
     {
         currentHealth = maxHealth;
@@ -26,6 +26,6 @@ public class BaseHealthController : MonoBehaviour
 
     protected virtual void Die()
     {
-        gameObject.SetActive(false);
+        Destroy(gameObject);
     }
 }

@@ -54,7 +54,7 @@ public class SpinWeapon : BaseWeapon
     /// </summary>
     public void FireBallLifeTimeUpgrade()
     {
-        fireBallInterval += .5f;
+        fireBallInterval += 1f;
     }
 
     /// <summary>
@@ -62,7 +62,7 @@ public class SpinWeapon : BaseWeapon
     /// </summary>
     public void FireBallSizeUpgrade()
     {
-        fireBallSize += 0.2f;
+        fireBallSize += 0.4f;
         foreach (Transform fireBall in fireBallHolder)
         {
             fireBall.localScale = new Vector3(fireBallSize, fireBallSize, 1);
@@ -74,7 +74,7 @@ public class SpinWeapon : BaseWeapon
     /// </summary>
     public void FireBallRotationSpeedUpgrade()
     {
-        rotationSpeed += 60f;
+        rotationSpeed += 90f;
     }
 
     protected override void OnEnable()

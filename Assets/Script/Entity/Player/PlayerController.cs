@@ -13,6 +13,10 @@ public class PlayerController : MonoBehaviour
     [Header("属性")]
     public int pickRange;
 
+    [Header("事件")]
+    public LevelUpSO pickRangeLevelUpSO;
+    public LevelUpSO moveSpeedLevelUpSO;
+
 
     void Start()
     {
@@ -22,10 +26,6 @@ public class PlayerController : MonoBehaviour
     void FixedUpdate()
     {
         Move();
-    }
-
-    void Update()
-    {
     }
 
 
@@ -41,13 +41,28 @@ public class PlayerController : MonoBehaviour
     }
 
 
+    private void IncreasePickRange()
+    {
+        pickRange += 1;
+    }
+
+    private void IncreaseMoveSpeed()
+    {
+        moveSpeed *= 1.5f;
+    }
+
+
     private void OnEnable()
     {
         PlayerManager.Instance.FindPlayer(this);
+        pickRangeLevelUpSO.onLevelUp += IncreasePickRange;
+        moveSpeedLevelUpSO.onLevelUp += IncreaseMoveSpeed;
     }
 
     private void OnDisable()
     {
         PlayerManager.Instance.MissPlayer();
+        pickRangeLevelUpSO.onLevelUp -= IncreasePickRange;
+        moveSpeedLevelUpSO.onLevelUp -= IncreaseMoveSpeed;
     }
 }

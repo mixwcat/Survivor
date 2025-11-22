@@ -17,14 +17,12 @@ public class GameLevelManager : MonoBehaviour
     private void Awake()
     {
         instance = this;
-
-        // 初始化GameScene
-        UIManager.Instance.ShowPanel<GamePanel>();
     }
 
     private void Start()
     {
         UIManager.Instance.ShowPanel<ChooseWeaponPanel>();
+        UIManager.Instance.ShowPanel<GamePanel>();
     }
 
     void Update()
@@ -33,6 +31,14 @@ public class GameLevelManager : MonoBehaviour
         {
             levelTime += Time.deltaTime;
             UpdateGameTimeUI();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            if (isGameActive)
+            {
+                UIManager.Instance.ShowPanel<PausePanel>();
+            }
         }
     }
 

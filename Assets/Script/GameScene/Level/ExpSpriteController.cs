@@ -8,6 +8,7 @@ public class ExpSpriteController : MonoBehaviour
     private void Start()
     {
         player = PlayerManager.Instance.player;
+        Invoke(nameof(DestorySelf), 20f);
     }
 
     void Update()
@@ -21,7 +22,7 @@ public class ExpSpriteController : MonoBehaviour
         {
             return;
         }
-        
+
         if (Vector2.Distance(transform.position, player.transform.position) < player.pickRange)
         {
             transform.position = Vector2.MoveTowards(transform.position, player.transform.position, moveSpeed * Time.deltaTime);
@@ -35,5 +36,10 @@ public class ExpSpriteController : MonoBehaviour
             ExperienceLevController.Instance.AddExperience(1);
             ExpSpritePool.Instance.ReturnToPool(this);
         }
+    }
+
+    private void DestorySelf()
+    {
+        ExpSpritePool.Instance.ReturnToPool(this);
     }
 }

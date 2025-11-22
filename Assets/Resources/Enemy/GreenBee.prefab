@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 7491093147748499855}
   - component: {fileID: 7498146809608299096}
   - component: {fileID: 3350021575282172774}
-  - component: {fileID: 4512610276176808461}
   - component: {fileID: 7648157431313966360}
   m_Layer: 0
   m_Name: GreenBee
@@ -115,22 +114,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 2
   targetTransform: {fileID: 0}
---- !u!114 &4512610276176808461
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1877107013632305511}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e0dd70062cebb074598652aa7f1e3998, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  spriteTransform: {fileID: 4697773116208724377}
-  maxSize: 1.1
-  minSize: 0.7
-  sizeChangeSpeed: 0.5
 --- !u!114 &7648157431313966360
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -145,7 +128,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHealth: 5
   currentHealth: 0
-  damage: 5
+  damage: 2
 --- !u!1 &4517807999206310094
 GameObject:
   m_ObjectHideFlags: 0

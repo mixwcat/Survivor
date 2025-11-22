@@ -4,7 +4,7 @@ public class BulletController : MonoBehaviour
 {
     private int damage = 20;
     private int hitForce = 20;
-    private float speed = 30f;
+    private float speed = 20f;
     private Vector3 direction;
 
 
@@ -12,7 +12,7 @@ public class BulletController : MonoBehaviour
     {
         damage = dmg;
         hitForce = force;
-        direction = dir.normalized + new Vector3(0, 0, 45);
+        direction = dir;
     }
 
 

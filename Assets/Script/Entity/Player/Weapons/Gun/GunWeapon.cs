@@ -32,7 +32,7 @@ public class GunWeapon : BaseWeapon
 
     private void ReduceFireInterval()
     {
-        fireInterval = fireInterval * .8f;
+        fireInterval = fireInterval * .9f;
     }
     private void IncreaseBulletDamage()
     {
@@ -40,7 +40,7 @@ public class GunWeapon : BaseWeapon
     }
     private void IncreaseBulletHitForce()
     {
-        bulletHitForce += 5;
+        bulletHitForce += 10;
     }
     protected override void OnEnable()
     {
@@ -64,6 +64,7 @@ public class GunWeapon : BaseWeapon
     private void RotateWithMouse()
     {
         mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        mousePosition.z = 0; // 确保 Z 分量为 0
         direction = (mousePosition - transform.position).normalized;
         angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         transform.rotation = Quaternion.Euler(new Vector3(0, 0, angle));

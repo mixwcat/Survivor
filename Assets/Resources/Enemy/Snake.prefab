@@ -113,7 +113,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2190df186f782ae4385867b572629e0b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 5
+  moveSpeed: 2
   targetTransform: {fileID: 0}
 --- !u!114 &7362739770887715003
 MonoBehaviour:
@@ -143,9 +143,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 80b72819efe0ad74f8796221de1081a8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 5
+  maxHealth: 3
   currentHealth: 0
-  damage: 20
+  damage: 6
 --- !u!1 &2727696676833263436
 GameObject:
   m_ObjectHideFlags: 0

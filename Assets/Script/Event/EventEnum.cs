@@ -4,3 +4,8 @@ public enum PlayerEnum
     OnHealthChanged,
     OnPlayerDead
 }
+
+public enum TowerEnum
+{
+    TetoOnHealthChanged
+}

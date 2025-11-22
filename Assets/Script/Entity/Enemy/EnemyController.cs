@@ -16,7 +16,7 @@ public class EnemyController : MonoBehaviour
 
     void Start()
     {
-        targetTransform = PlayerManager.Instance.player.transform;
+        targetTransform = FindTarget();
         rb = GetComponent<Rigidbody2D>();
         originalMoveSpeed = moveSpeed;
     }
@@ -26,8 +26,7 @@ public class EnemyController : MonoBehaviour
     /// </summary>
     void FixedUpdate()
     {
-        if (PlayerManager.Instance.player == null) return;
-        MoveTowardsPlayer();
+        MoveTowardsTarget();
     }
 
 
@@ -50,10 +49,37 @@ public class EnemyController : MonoBehaviour
 
 
     /// <summary>
-    /// 向玩家移动
+    /// 寻找目标
     /// </summary>
-    private void MoveTowardsPlayer()
+    private Transform FindTarget()
     {
+        if (PlayerManager.Instance.player != null)
+        {
+            // 挑选距离敌人近的目标
+            Transform targetTrans = PlayerManager.Instance.player.transform;
+            foreach (var tower in TowerManager.Instance.towers)
+            {
+                if (tower == null) continue;
+                targetTrans = Vector3.Distance(transform.position, tower.transform.position) < Vector3.Distance(transform.position, targetTrans.position) ? tower.transform : targetTrans;
+            }
+
+            return targetTrans;
+        }
+
+        return null;
+    }
+
+
+    /// <summary>
+    /// 向目标移动
+    /// </summary>
+    private void MoveTowardsTarget()
+    {
+        if (targetTransform == null)
+        {
+            targetTransform = FindTarget();
+            if (targetTransform == null) return;
+        }
         direction = (targetTransform.position - transform.position).normalized;
         rb.linearVelocity = direction * moveSpeed;
     }
@@ -69,9 +95,12 @@ public class EnemyController : MonoBehaviour
 
     void OnDisable()
     {
+
+        // 正在退出时不执行逻辑
         if (isQuitting || !gameObject.scene.isLoaded) return;
         GameLevelManager.Instance.UnregisterEnemy(this);
 
+        // 生成经验精灵
         if (ExpSpritePool.Instance != null)
             ExpSpritePool.Instance.SpawnExpSprite(transform);
     }
