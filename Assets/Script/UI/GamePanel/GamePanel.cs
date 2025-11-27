@@ -16,6 +16,9 @@ public class GamePanel : BasePanel
     public Button btnWeaponShop;
     public Button btnTowerShop;
 
+    [Header("摇杆")]
+    public Joystick joystick;
+
 
     public override void Init()
     {
@@ -23,6 +26,7 @@ public class GamePanel : BasePanel
         // 开始游戏时，播放音效
         BKMusic.Instance.audioSource.mute = true;
         BKMusic.Instance.PlaySound(ResourceEnum.StartGame);
+        SendJoystickToPlayer(joystick);
 
         btnWeaponShop.onClick.AddListener(() =>
         {
@@ -72,5 +76,15 @@ public class GamePanel : BasePanel
     public void UpdateLevelPoint(int levelPoint)
     {
         txtLevelPoint.text = "等级点:" + levelPoint.ToString("00");
+    }
+
+
+    public void SendJoystickToPlayer(Joystick js)
+    {
+        PlayerController player = PlayerManager.Instance.player;
+        if (player != null)
+        {
+            player.GetJoystick(js);
+        }
     }
 }
