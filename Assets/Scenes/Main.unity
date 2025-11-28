@@ -516,6 +516,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 2
   rb: {fileID: 0}
+  joystick: {fileID: 0}
   pickRange: 1
   pickRangeLevelUpSO: {fileID: 11400000, guid: 4388f125628534b4c852b6cd99263958, type: 2}
   moveSpeedLevelUpSO: {fileID: 11400000, guid: f3011556ba10f124e8d6d6f42724bcb6, type: 2}
