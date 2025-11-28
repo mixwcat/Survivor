@@ -8,6 +8,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("组件")]
     public Rigidbody2D rb;
+    public Joystick joystick;
 
     [Header("属性")]
     public int pickRange;
@@ -33,10 +34,15 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     private void Move()
     {
-        moveInput.x = Input.GetAxisRaw("Horizontal");
-        moveInput.y = Input.GetAxisRaw("Vertical");
+        if (joystick == null) return;
+        moveInput.x = joystick.Horizontal;
+        moveInput.y = joystick.Vertical;
         moveInput.Normalize();
         rb.linearVelocity = moveInput * moveSpeed;
+    }
+    public void GetJoystick(Joystick js)
+    {
+        joystick = js;
     }
 
 
