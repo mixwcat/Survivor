@@ -1,3 +1,4 @@
+using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -16,8 +17,17 @@ public class GamePanel : BasePanel
     public Button btnWeaponShop;
     public Button btnTowerShop;
 
+    public Button btnTowerLevelUp;
+    private BaseTower currentTower;
+
     [Header("摇杆")]
-    public Joystick joystick;
+    public Joystick joystickMove;
+    public Joystick joystickWeapon;
+
+    [Header("帧率")]
+    private float fpsUpdateInterval = 0.5f;
+    private float fpsTimer;
+    public TMPro.TextMeshProUGUI txtFPS;
 
 
     public override void Init()
@@ -26,7 +36,11 @@ public class GamePanel : BasePanel
         // 开始游戏时，播放音效
         BKMusic.Instance.audioSource.mute = true;
         BKMusic.Instance.PlaySound(ResourceEnum.StartGame);
+
+#if UNITY_ANDROID
+        // 安卓环境，获取摇杆
         SendJoystickToPlayer(joystick);
+#endif
 
         btnWeaponShop.onClick.AddListener(() =>
         {
@@ -38,7 +52,11 @@ public class GamePanel : BasePanel
         });
         btnSetting.onClick.AddListener(() =>
         {
-            UIManager.Instance.ShowPanel<MusicSettingPanel>();
+            UIManager.Instance.ShowPanel<GameSettingPanel>();
+        });
+        btnTowerLevelUp.onClick.AddListener(() =>
+        {
+            UIManager.Instance.ShowPanel<TowerLevelUpPanel>().SetTowerType(currentTower);
         });
     }
 
@@ -79,12 +97,51 @@ public class GamePanel : BasePanel
     }
 
 
-    public void SendJoystickToPlayer(Joystick js)
+    /// <summary>
+    /// 将摇杆发送给玩家
+    /// </summary>
+    /// <param name="js"></param>
+    public void SendJoystickToPlayer(Joystick jsMove, Joystick jsWeapon = null)
     {
         PlayerController player = PlayerManager.Instance.player;
+
         if (player != null)
         {
-            player.GetJoystick(js);
+            if (WeaponManager.Instance.weapons[0] is GunWeapon)
+            {
+                joystickMove.gameObject.SetActive(true);
+                joystickWeapon.gameObject.SetActive(true);
+                player.GetJoystick(jsMove, jsWeapon);
+            }
+            else
+            {
+                joystickMove.gameObject.SetActive(true);
+                joystickWeapon.gameObject.SetActive(false);
+                player.GetJoystick(jsMove);
+            }
+        }
+    }
+
+
+    public void SetButtonTowerLevelUpActive(bool isActive, BaseTower tower = null)
+    {
+        if (tower != null)
+            currentTower = tower;
+        btnTowerLevelUp.gameObject.SetActive(isActive);
+    }
+
+
+    protected override void Update()
+    {
+        base.Update();
+
+        fpsTimer += Time.unscaledDeltaTime;
+        if (fpsTimer > fpsUpdateInterval)
+        {
+            // 显示帧率
+            txtFPS.text = Mathf.Ceil(1.0f / Time.unscaledDeltaTime).ToString() + " FPS";
+            // 重置计时器
+            fpsTimer = 0f;
         }
     }
 }

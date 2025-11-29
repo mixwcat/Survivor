@@ -8,7 +8,8 @@ public class PlayerController : MonoBehaviour
 
     [Header("组件")]
     public Rigidbody2D rb;
-    public Joystick joystick;
+    public Joystick joystickMove;
+    public Joystick joystickWeapon;
 
     [Header("属性")]
     public int pickRange;
@@ -34,15 +35,24 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     private void Move()
     {
+#if UNITY_STANDALONE_WIN
+        // Windows 环境使用键盘输入
+        moveInput.x = Input.GetAxisRaw("Horizontal");
+        moveInput.y = Input.GetAxisRaw("Vertical");
+#elif UNITY_ANDROID
+        // 安卓环境使用虚拟摇杆
         if (joystick == null) return;
         moveInput.x = joystick.Horizontal;
         moveInput.y = joystick.Vertical;
+#endif
+
         moveInput.Normalize();
         rb.linearVelocity = moveInput * moveSpeed;
     }
-    public void GetJoystick(Joystick js)
+    public void GetJoystick(Joystick jsMove, Joystick jsWeapon = null)
     {
-        joystick = js;
+        joystickMove = jsMove;
+        joystickWeapon = jsWeapon;
     }
 
 
