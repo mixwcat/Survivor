@@ -75,13 +75,15 @@ public class SpriteToHandle : MonoBehaviour
         // 右键取消放置
         if (Input.GetMouseButtonDown(1))
         {
+            ExperienceLevController.Instance.AddLevelPoint(currentTowerSO.expConsumption);
             Destroy(gameObject);
         }
     }
 
 
     /// <summary>
-    /// 绘制圆环
+    /// 使用LineRenderer绘制圆环
+    /// 设置LineRenderer属性
     /// </summary>
     void DrawCircle()
     {
@@ -94,11 +96,6 @@ public class SpriteToHandle : MonoBehaviour
             angle += 2 * Mathf.PI / segments;
         }
     }
-
-
-    /// <summary>
-    /// 设置LineRenderer属性
-    /// </summary>
     void SetUpLineRenderer()
     {
         lineRenderer = gameObject.AddComponent<LineRenderer>();
@@ -130,6 +127,19 @@ public class SpriteToHandle : MonoBehaviour
     }
 
 
+
+    /// <summary>
+    /// 在指定位置放置塔
+    /// </summary>
+    /// <param name="positionToPlace"></param>
+    public void PlaceObject(Transform positionToPlace)
+    {
+        // 在指定位置实例化当前处理的塔预制体
+        Instantiate(currentTowerSO.towerPrefab, positionToPlace.position, Quaternion.identity);
+        Destroy(gameObject);
+    }
+
+
     /// <summary>
     /// 碰撞检测，判断是否可放置塔
     /// </summary>
@@ -152,16 +162,5 @@ public class SpriteToHandle : MonoBehaviour
                 canPlace = true;
             }
         }
-    }
-
-    /// <summary>
-    /// 在指定位置放置塔
-    /// </summary>
-    /// <param name="positionToPlace"></param>
-    public void PlaceObject(Transform positionToPlace)
-    {
-        // 在指定位置实例化当前处理的塔预制体
-        Instantiate(currentTowerSO.towerPrefab, positionToPlace.position, Quaternion.identity);
-        Destroy(gameObject);
     }
 }

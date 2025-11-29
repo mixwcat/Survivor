@@ -84,6 +84,18 @@ public class ExperienceLevController : MonoBehaviour
 
         return true;
     }
+
+
+    /// <summary>
+    /// 增加等级点数
+    /// </summary>
+    /// <param name="amount"></param>
+    public void AddLevelPoint(int amount)
+    {
+        levelPoint += amount;
+        // 更新GamePanel等级点数
+        UIManager.Instance.GetPanel<GamePanel>().UpdateLevelPoint(levelPoint);
+    }
 }
 
 class ExpSpritePool
