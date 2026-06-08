@@ -133,7 +133,7 @@ public interface IInputHandle
 
 ### 工厂创建
 
-`InputHandleFactory.CreateLocalInput()` 根据编译平台（`#if UNITY_STANDALONE_WIN` / `#elif UNITY_ANDROID`）自动创建对应实例：
+`InputHandleFactory.GetLocalInput()` 根据编译平台（`#if UNITY_STANDALONE_WIN` / `#elif UNITY_ANDROID`）自动创建对应实例：
 - Windows: `new PCInputHandle(InputReaderManager.Instance.inputReader)`
 - Android: `new MobileInputHandle(joysticks[0], joysticks[1])`
 - 未来扩展点：`CreateNetworkInput()` (联机模式)、`CreateAIInput()` (AI 玩家)
@@ -146,7 +146,7 @@ private IInputHandle _inputHandle;
 
 void Awake()
 {
-    _inputHandle = InputHandleFactory.CreateLocalInput();
+    _inputHandle = InputHandleFactory.GetLocalInput();
 }
 
 void FixedUpdate()
@@ -194,6 +194,43 @@ void OnEnable()
 - `InputSystem_Actions` (自动生成) — Unity Input System 的 C# 绑定类
 
 ## Tower System
+
+### Tower Placement (防御塔放置)
+
+**Key scripts**:
+- `TowerPlacementController.cs` (`Assets/Script/Entity/Tower/`) — drag-and-place ghost sprite
+- `ChooseTowerPanel.cs` (`Assets/Script/UI/GamePanel/`) — tower selection UI
+- `GamePanel.cs` (`Assets/Script/UI/GamePanel/`) — holds confirm/cancel buttons (mobile only)
+
+**Deleted (no longer used)**: `TowerSpriteController.cs` (old two-stage click intermediate layer)
+
+**Flow**:
+```
+ChooseTowerPanel button click
+→ Instantiate TowerPlacementController from "Prefabs/SpriteToHandle"
+→ Drag phase (platform-specific movement)
+→ Confirm: Instantiate actual tower prefab, destroy ghost
+→ Cancel: Destroy ghost only
+```
+
+**Platform differences**:
+
+| | Windows (`UNITY_STANDALONE_WIN`) | Android (`UNITY_ANDROID`) |
+|---|---|---|
+| **Spawn position** | Mouse world position | Screen center |
+| **Movement** | Direct mouse follow + grid snap | Touch delta drag (relative movement, not snapping to finger) |
+| **Confirm** | Left mouse click | `GamePanel.btnPlaceTowerConfirm` button |
+| **Cancel** | Right mouse click | `GamePanel.btnPlaceTowerCancel` button |
+| **Buttons shown** | None | Confirm + Cancel (top-right of GamePanel) |
+
+**Notes**:
+- `TowerPlacementController` uses `#if` macros in `Update()` for platform-specific input handling
+- Android spawns at screen center because the player's finger will be on the shop button; dragging then moves the sprite relative to finger movement
+- `GamePanel.SetTowerPlacementButtonsActive(bool, TowerPlacementController)` shows/hides buttons and stores the controller reference for callbacks
+- Collision detection (green/red color) checks against tags: Player, Enemy, Tower
+- Grid snapping via `GetGridCenter()` with configurable `gridSize`
+
+### Existing Towers
 
 `BaseTower` (`Assets/Script/Tower/`) features:
 - `CircleCollider2D` for enemy detection (radius auto-synced from `StatType.TowerAttackRange`)

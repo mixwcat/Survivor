@@ -19,7 +19,7 @@ public class PlayerAnimationController : MonoBehaviour
         animator = GetComponentInChildren<Animator>();
         moveAudioSource = GetComponent<AudioSource>();
 
-        _inputHandle = InputHandleFactory.CreateLocalInput();
+        _inputHandle = InputHandleFactory.GetLocalInput();
 
         if (_inputHandle == null)
         {

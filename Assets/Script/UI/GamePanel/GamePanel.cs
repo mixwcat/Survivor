@@ -20,6 +20,11 @@ public class GamePanel : BasePanel
     public Button btnTowerLevelUp;
     private BaseTower currentTower;
 
+    [Header("塔放置按钮")]
+    public Button btnPlaceTowerConfirm;
+    public Button btnPlaceTowerCancel;
+    private TowerPlacementController currentPlacementController;
+
     [Header("摇杆")]
     public Joystick joystickMove;
     public Joystick joystickWeapon;
@@ -53,6 +58,16 @@ public class GamePanel : BasePanel
         btnTowerLevelUp.onClick.AddListener(() =>
         {
             UIManager.Instance.ShowPanel<TowerLevelUpPanel>().SetTowerType(currentTower);
+        });
+
+        // 移动端塔放置确认与取消按钮事件
+        btnPlaceTowerConfirm.onClick.AddListener(() =>
+        {
+            currentPlacementController?.ConfirmPlacement();
+        });
+        btnPlaceTowerCancel.onClick.AddListener(() =>
+        {
+            currentPlacementController?.CancelPlacement();
         });
     }
 
@@ -112,12 +127,32 @@ public class GamePanel : BasePanel
         }
     }
 
-
+    /// <summary>
+    /// 移动端靠近防御塔显示升级按钮
+    /// </summary>
+    /// <param name="isActive"></param>
+    /// <param name="tower"></param>
     public void SetButtonTowerLevelUpActive(bool isActive, BaseTower tower = null)
     {
         if (tower != null)
             currentTower = tower;
         btnTowerLevelUp.gameObject.SetActive(isActive);
+    }
+
+    /// <summary>
+    /// 移动端确认放置后调用，隐藏按钮
+    /// </summary>
+    /// <param name="isActive"></param>
+    /// <param name="controller"></param>
+    public void SetTowerPlacementButtonsActive(bool isActive, TowerPlacementController controller = null)
+    {
+        if (controller != null)
+            currentPlacementController = controller;
+
+#if UNITY_ANDROID
+        btnPlaceTowerConfirm.gameObject.SetActive(isActive);
+        btnPlaceTowerCancel.gameObject.SetActive(isActive);
+#endif
     }
 
 

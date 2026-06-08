@@ -26,43 +26,30 @@ public class ChooseTowerPanel : BasePanel
 
         button1.onClick.AddListener(() =>
         {
-            // 检查是否有足够的等级点数
             if (ExperienceLevController.Instance.CanUseLevelPoint(towerSO1.expConsumption))
             {
-                // 获取防御塔，随鼠标移动
-                MouseHandleController.Instance.HandleSprite(towerSO1);
-                // 隐藏面板
+                InstantiateTowerPlacementSprite(towerSO1);
                 UIManager.Instance.HidePanel<ChooseTowerPanel>();
-                // 恢复游戏
                 GameLevelManager.Instance.ResumeGame();
-                // 播放音效
                 BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
             }
         });
         button2.onClick.AddListener(() =>
         {
-            // 检查是否有足够的等级点数
             if (ExperienceLevController.Instance.CanUseLevelPoint(towerSO2.expConsumption))
             {
-                // 获取防御塔，随鼠标移动
-                MouseHandleController.Instance.HandleSprite(towerSO2);
-                // 隐藏面板
+                InstantiateTowerPlacementSprite(towerSO2);
                 UIManager.Instance.HidePanel<ChooseTowerPanel>();
-                // 恢复游戏
                 GameLevelManager.Instance.ResumeGame();
                 BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
             }
         });
         button3.onClick.AddListener(() =>
         {
-            // 检查是否有足够的等级点数
             if (ExperienceLevController.Instance.CanUseLevelPoint(towerSO3.expConsumption))
             {
-                // 获取防御塔，随鼠标移动
-                MouseHandleController.Instance.HandleSprite(towerSO3);
-                // 隐藏面板
+                InstantiateTowerPlacementSprite(towerSO3);
                 UIManager.Instance.HidePanel<ChooseTowerPanel>();
-                // 恢复游戏
                 GameLevelManager.Instance.ResumeGame();
                 BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
             }
@@ -72,6 +59,11 @@ public class ChooseTowerPanel : BasePanel
             UIManager.Instance.HidePanel<ChooseTowerPanel>();
             GameLevelManager.Instance.ResumeGame();
         });
+
+#if UNITY_ANDROID
+        // 移动端显示确认与取消按钮
+        UIManager.Instance.GetPanel<GamePanel>()?.SetTowerPlacementButtonsActive(true);
+#endif
     }
 
     private void UpdateUI()
@@ -92,5 +84,22 @@ public class ChooseTowerPanel : BasePanel
         base.EscLogic();
         UIManager.Instance.HidePanel<ChooseTowerPanel>();
         GameLevelManager.Instance.ResumeGame();
+    }
+
+    private void InstantiateTowerPlacementSprite(TowerInfoSO towerSO)
+    {
+        Vector3 spawnPosition;
+
+#if UNITY_STANDALONE_WIN
+        spawnPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+#elif UNITY_ANDROID
+        spawnPosition = Camera.main.ScreenToWorldPoint(new Vector3(Screen.width / 2, Screen.height / 2, 0));
+#else
+        spawnPosition = Camera.main.ScreenToWorldPoint(new Vector3(Screen.width / 2, Screen.height / 2, 0));
+#endif
+        spawnPosition.z = 0;
+
+        GameObject placementObj = Instantiate(Resources.Load<GameObject>("Prefabs/SpriteToHandle"), spawnPosition, Quaternion.identity);
+        placementObj.GetComponent<TowerPlacementController>().Init(towerSO);
     }
 }

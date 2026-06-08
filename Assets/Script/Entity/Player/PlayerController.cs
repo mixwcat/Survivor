@@ -19,7 +19,7 @@ public class PlayerController : EntityBehaviour
         base.Awake();
 
         // 通过工厂创建平台对应的输入处理器
-        _inputHandle = InputHandleFactory.CreateLocalInput();
+        _inputHandle = InputHandleFactory.GetLocalInput();
 
         if (_inputHandle == null)
         {

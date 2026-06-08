@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4edc86b41064404b98f99290a78fe37, type: 3}
+  m_Name: LuoTower
+  m_EditorClassIdentifier: 
+  towerName: Luo Tianyi
+  description: "\u6CBB\u7597"
+  expConsumption: 1
+  towerPrefab: {fileID: 6905693178617535602, guid: d203647572a64624592c87d0c82052da, type: 3}
+  towerIcon: {fileID: 21300000, guid: 03e373fc758ad69418360a2dfad18a23, type: 3}

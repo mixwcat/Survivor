@@ -20,7 +20,7 @@ public class GunWeapon : BaseWeapon
 
     private void Start()
     {
-        _inputHandle = InputHandleFactory.CreateLocalInput();
+        _inputHandle = InputHandleFactory.GetLocalInput();
 
         if (_inputHandle == null)
         {
