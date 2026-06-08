@@ -3,9 +3,9 @@ using UnityEngine.UI;
 using TMPro;
 public class ChooseTowerPanel : BasePanel
 {
-    public TowerSO towerSO1;
-    public TowerSO towerSO2;
-    public TowerSO towerSO3;
+    public TowerInfoSO towerSO1;
+    public TowerInfoSO towerSO2;
+    public TowerInfoSO towerSO3;
     public Button button1;
     public Button button2;
     public Button button3;
@@ -89,6 +89,7 @@ public class ChooseTowerPanel : BasePanel
 
     public override void EscLogic()
     {
+        base.EscLogic();
         UIManager.Instance.HidePanel<ChooseTowerPanel>();
         GameLevelManager.Instance.ResumeGame();
     }

@@ -1,31 +1,33 @@
 using UnityEngine;
 using System.Collections;
 
+/// <summary>
+/// 枪械武器
+/// 所有数值从 StatModel 读取，不再持有独立字段
+/// </summary>
 public class GunWeapon : BaseWeapon
 {
     [Header("鼠标旋转参数")]
-    private Vector3 mousePosition;
-    private Vector3 direction;
-    private float angle;
+    private Vector3 _mousePosition;
+    private Vector3 _direction;
+    private float _angle;
 
     [Header("枪械参数")]
     public Transform firePoint;
-    public int bulletDamage = 8;
-    public int bulletHitForce = 20;
-    private float fireInterval = 1f;
 
-    [Header("升级SO")]
-    public LevelUpSO reduceFireIntervalSO;
-    public LevelUpSO increaseBulletDamageSO;
-    public LevelUpSO increaseBulletHitForceSO;
-
-    [Header("虚拟摇杆")]
-    private Joystick joystick;
+    [Header("输入系统")]
+    private IInputHandle _inputHandle;
 
     private void Start()
     {
+        _inputHandle = InputHandleFactory.CreateLocalInput();
+
+        if (_inputHandle == null)
+        {
+            Debug.LogError("GunWeapon: Failed to create IInputHandle!");
+        }
+
         StartCoroutine(GenerateBullet());
-        joystick = PlayerManager.Instance.player.joystickWeapon;
     }
 
     void Update()
@@ -33,79 +35,52 @@ public class GunWeapon : BaseWeapon
         RotateWeapon();
     }
 
-
-    private void ReduceFireInterval()
-    {
-        fireInterval = fireInterval * .9f;
-    }
-    private void IncreaseBulletDamage()
-    {
-        bulletDamage += 4;
-    }
-    private void IncreaseBulletHitForce()
-    {
-        bulletHitForce += 10;
-    }
     protected override void OnEnable()
     {
         base.OnEnable();
-        reduceFireIntervalSO.onLevelUp += ReduceFireInterval;
-        increaseBulletDamageSO.onLevelUp += IncreaseBulletDamage;
-        increaseBulletHitForceSO.onLevelUp += IncreaseBulletHitForce;
     }
+
     protected override void OnDisable()
     {
         base.OnDisable();
-        reduceFireIntervalSO.onLevelUp -= ReduceFireInterval;
-        increaseBulletDamageSO.onLevelUp -= IncreaseBulletDamage;
-        increaseBulletHitForceSO.onLevelUp -= IncreaseBulletHitForce;
     }
 
-
-    /// <summary>
-    /// 旋转武器
-    /// </summary>
     private void RotateWeapon()
     {
+        if (_inputHandle == null) return;
+
 #if UNITY_STANDALONE_WIN
-        RotateWithMouse();
+        // Windows: 使用鼠标位置计算方向
+        Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(_inputHandle.ScreenPointerPosition);
+        mouseWorld.z = 0;
+        _direction = (mouseWorld - transform.position).normalized;
 #elif UNITY_ANDROID
-        RotateWithJoystick();
+        // Android: 直接使用攻击摇杆方向
+        _direction = _inputHandle.AttackDirectionInput;
+        if (_direction.sqrMagnitude < 0.01f) return;
 #endif
-    }
-    private void RotateWithMouse()
-    {
-        mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        mousePosition.z = 0; // 确保 Z 分量为 0
-        direction = (mousePosition - transform.position).normalized;
-        angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        transform.rotation = Quaternion.Euler(new Vector3(0, 0, angle));
-    }
-    private void RotateWithJoystick()
-    {
-        if (joystick == null) return;
 
-        direction = new Vector3(joystick.Horizontal, joystick.Vertical, 0);
-        if (direction.sqrMagnitude < 0.01f) return; // 避免零向量
-        angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        transform.rotation = Quaternion.Euler(new Vector3(0, 0, angle));
+        _angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.Euler(new Vector3(0, 0, _angle));
     }
-
 
     /// <summary>
-    /// 携程生成子弹
+    /// 协程生成子弹
     /// </summary>
-    /// <returns></returns>
     IEnumerator GenerateBullet()
     {
         while (PlayerManager.Instance.player != null)
         {
-            // 生成子弹
-            Instantiate(Resources.Load<GameObject>("Weapon/Bullet"), firePoint.position, firePoint.rotation).GetComponent<BulletController>().Init(bulletDamage, bulletHitForce, direction);
-            // 播放音效
+            float interval = GetStat(StatType.TowerAttackInterval);
+            float damage = GetStat(StatType.BulletDamage);
+            float hitForce = GetStat(StatType.BulletHitForce);
+
+            Instantiate(Resources.Load<GameObject>("Weapon/Bullet"), firePoint.position, firePoint.rotation)
+                .GetComponent<BulletController>()
+                .Init((int)damage, (int)hitForce, _direction);
+
             BKMusic.Instance.PlaySound(ResourceEnum.PlayerShoot);
-            // 等待间隔
-            yield return new WaitForSeconds(fireInterval);
+            yield return new WaitForSeconds(interval);
         }
     }
 }

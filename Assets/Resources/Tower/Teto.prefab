@@ -368,16 +368,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 312c94f7e6320da4a9d0394e2acf6c76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  attackRange: 5
+  _entityData: {fileID: 11400000, guid: 1b80c7ade015d0e4fa60aba664043303, type: 2}
   segments: 50
   detectionCollider: {fileID: 2087132411544136691}
-  fireInterval: 1
-  damage: 4
-  hitForce: 1
-  tetoFireIntervalLevelUpSO: {fileID: 11400000, guid: cff69d2bf8d04f745a2df901916b628e, type: 2}
-  tetoDamageLevelUpSO: {fileID: 11400000, guid: 8a3c8aa8d57788544b70569ad7a5b7e6, type: 2}
-  tetoHitForceLevelUpSO: {fileID: 11400000, guid: 7f20a989d3f739545b006bc977bcfafe, type: 2}
-  tetoAttackRangeLevelUpSO: {fileID: 11400000, guid: b6c753a9dc6cd0949be7cb78e8abe8a4, type: 2}
 --- !u!50 &6012883537708947247
 Rigidbody2D:
   serializedVersion: 5
@@ -439,7 +432,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: -0.01664859, y: 0}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -449,7 +442,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1.128, y: 1.208}
+  m_Size: {x: 0.67016256, y: 1.208}
   m_EdgeRadius: 0
 --- !u!114 &928205698549358198
 MonoBehaviour:
@@ -463,10 +456,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa3c3a2531ad5a34689af8966135dcb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 60
-  currentHealth: 0
-  damage: 0
-  tetoRecoverHealthLevelUpSO: {fileID: 11400000, guid: c440b9f436b86624ca717fba1c532fea, type: 2}
 --- !u!1 &3040447304497352635
 GameObject:
   m_ObjectHideFlags: 0

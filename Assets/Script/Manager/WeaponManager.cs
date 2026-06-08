@@ -29,13 +29,13 @@ public class WeaponManager : MonoBehaviour
     }
     private void OnEnable()
     {
-        choooseFireBallSO.onLevelUp += ChooseFireBall;
-        chooseShootGunSO.onLevelUp += ChooseShootGun;
+        choooseFireBallSO.onApplyEffect += ChooseFireBall;
+        chooseShootGunSO.onApplyEffect += ChooseShootGun;
     }
     private void OnDisable()
     {
-        choooseFireBallSO.onLevelUp -= ChooseFireBall;
-        chooseShootGunSO.onLevelUp -= ChooseShootGun;
+        choooseFireBallSO.onApplyEffect -= ChooseFireBall;
+        chooseShootGunSO.onApplyEffect -= ChooseShootGun;
     }
 
 

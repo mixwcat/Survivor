@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class PlayerAnimationController : MonoBehaviour
 {
+    private IInputHandle _inputHandle;
     private Animator animator;
     private AudioSource moveAudioSource;
     public float soundInterval = 0.5f;
@@ -17,11 +18,17 @@ public class PlayerAnimationController : MonoBehaviour
     {
         animator = GetComponentInChildren<Animator>();
         moveAudioSource = GetComponent<AudioSource>();
+
+        _inputHandle = InputHandleFactory.CreateLocalInput();
+
+        if (_inputHandle == null)
+        {
+            Debug.LogError("PlayerAnimationController: Failed to create IInputHandle!");
+        }
     }
 
     private void Start()
     {
-        //StartCoroutine(PlayMoveSound());
     }
 
     // Update is called once per frame
@@ -37,10 +44,12 @@ public class PlayerAnimationController : MonoBehaviour
     /// </summary>
     private void GetWalkingState()
     {
-        rightWalking = Input.GetAxisRaw("Horizontal") > 0;
-        leftWalking = Input.GetAxisRaw("Horizontal") < 0;
-        backWalking = Input.GetAxisRaw("Vertical") > 0;
-        towardWalking = Input.GetAxisRaw("Vertical") < 0;
+        if (_inputHandle == null) return;
+
+        rightWalking = _inputHandle.MoveInput.x > 0;
+        leftWalking = _inputHandle.MoveInput.x < 0;
+        backWalking = _inputHandle.MoveInput.y > 0;
+        towardWalking = _inputHandle.MoveInput.y < 0;
         isMoving = rightWalking || leftWalking || backWalking || towardWalking;
     }
 

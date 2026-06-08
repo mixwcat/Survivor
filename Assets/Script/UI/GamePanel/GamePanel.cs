@@ -37,10 +37,6 @@ public class GamePanel : BasePanel
         BKMusic.Instance.audioSource.mute = true;
         BKMusic.Instance.PlaySound(ResourceEnum.StartGame);
 
-#if UNITY_ANDROID
-        // 安卓环境，获取摇杆
-        SendJoystickToPlayer(joystick);
-#endif
 
         btnWeaponShop.onClick.AddListener(() =>
         {
@@ -98,27 +94,21 @@ public class GamePanel : BasePanel
 
 
     /// <summary>
-    /// 将摇杆发送给玩家
+    /// 控制摇杆显示（根据武器类型）
     /// </summary>
-    /// <param name="js"></param>
-    public void SendJoystickToPlayer(Joystick jsMove, Joystick jsWeapon = null)
+    public void UpdateJoystickVisibility()
     {
-        PlayerController player = PlayerManager.Instance.player;
-
-        if (player != null)
+        if (WeaponManager.Instance.weapons[0] is GunWeapon)
         {
-            if (WeaponManager.Instance.weapons[0] is GunWeapon)
-            {
-                joystickMove.gameObject.SetActive(true);
-                joystickWeapon.gameObject.SetActive(true);
-                player.GetJoystick(jsMove, jsWeapon);
-            }
-            else
-            {
-                joystickMove.gameObject.SetActive(true);
-                joystickWeapon.gameObject.SetActive(false);
-                player.GetJoystick(jsMove);
-            }
+            // 枪械武器：显示移动摇杆和攻击摇杆
+            joystickMove.gameObject.SetActive(true);
+            joystickWeapon.gameObject.SetActive(true);
+        }
+        else
+        {
+            // 其他武器：只显示移动摇杆
+            joystickMove.gameObject.SetActive(true);
+            joystickWeapon.gameObject.SetActive(false);
         }
     }
 

@@ -1,76 +1,44 @@
 using UnityEngine;
 
+/// <summary>
+/// 玩家血量控制器
+/// 无敌时间从 StatModel 读取
+/// 满血恢复由 LevelUpSO.fullHeal 数据驱动，不再需要事件订阅
+/// </summary>
 public class PlayerHealthController : BaseHealthController
 {
-    [Header("无敌时间")]
-    private bool isUnbeatable = false;
-    public float unbeatableTime = 0.5f;
-    [Header("组件")]
-    private HealthPanel healthPanel;
-    [Header("事件")]
-    public LevelUpSO recoverHealthLevelUpSO;
+    [Header("无敌")]
+    private bool _isUnbeatable = false;
 
-    void Start()
+    [Header("组件")]
+    private HealthPanel _healthPanel;
+
+    private void Start()
     {
-        currentHealth = maxHealth;
-        healthPanel = GetComponentInChildren<HealthPanel>();
+        _healthPanel = GetComponentInChildren<HealthPanel>();
+        CurrentHealth = MaxHealth;
     }
 
-
     /// <summary>
-    /// 受到伤害
+    /// 受到伤害（无敌时间从 StatModel 读取）
     /// </summary>
-    /// <param name="damage"></param>
     public override void TakeDamage(float damage)
     {
-        if (isUnbeatable)
-        {
-            return;
-        }
+        if (_isUnbeatable) return;
 
-        // 造成伤害
         base.TakeDamage(damage);
-
-        // 生成伤害数字
         DamageNumManager.Instance.SpawnDamageNum(transform.position, damage, DamageNumType.Red);
-
-        // 音效
         BKMusic.Instance.PlaySound(ResourceEnum.PlayerGetHurt);
+        _healthPanel.UpdateHealthUI();
 
-        // 触发血量变化事件
-        healthPanel.UpdateHealthUI();
-
-        // 开始无敌时间计时
-        isUnbeatable = true;
+        float unbeatableTime = _entity.GetStat(StatType.PlayerUnbeatableTime);
+        _isUnbeatable = true;
         Invoke(nameof(ResetUnbeatableState), unbeatableTime);
     }
 
-
-    /// <summary>
-    /// 重置无敌状态
-    /// </summary>
     private void ResetUnbeatableState()
     {
-        isUnbeatable = false;
-    }
-
-    /// <summary>
-    /// 订阅恢复生命值事件
-    /// </summary>
-    private void RecoverHealth()
-    {
-        currentHealth = maxHealth;
-        healthPanel.UpdateHealthUI();
-    }
-
-    private void OnEnable()
-    {
-        recoverHealthLevelUpSO.onLevelUp += RecoverHealth;
-    }
-
-    private void OnDisable()
-    {
-        recoverHealthLevelUpSO.onLevelUp -= RecoverHealth;
+        _isUnbeatable = false;
     }
 
     protected override void Die()

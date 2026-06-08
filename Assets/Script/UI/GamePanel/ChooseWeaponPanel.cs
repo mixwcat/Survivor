@@ -14,7 +14,6 @@ public class ChooseWeaponPanel : BasePanel
         GameLevelManager.Instance.PauseGame();
         SetupPanel();
 
-
         btn1.onClick.AddListener(() =>
         {
             fireBallSO.RaiseEvent();
@@ -22,6 +21,10 @@ public class ChooseWeaponPanel : BasePanel
             GameLevelManager.Instance.ResumeGame();
             BKMusic.Instance.PlaySound(ResourceEnum.ChooseWeapon);
             BKMusic.Instance.audioSource.mute = false;
+
+#if UNITY_ANDROID
+            UIManager.Instance.GetPanel<GamePanel>().UpdateJoystickVisibility();
+#endif
         });
         btn2.onClick.AddListener(() =>
         {
@@ -30,6 +33,10 @@ public class ChooseWeaponPanel : BasePanel
             GameLevelManager.Instance.ResumeGame();
             BKMusic.Instance.PlaySound(ResourceEnum.ChooseWeapon);
             BKMusic.Instance.audioSource.mute = false;
+
+#if UNITY_ANDROID
+            UIManager.Instance.GetPanel<GamePanel>().UpdateJoystickVisibility();
+#endif
         });
     }
 

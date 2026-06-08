@@ -580,7 +580,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: -0.010951281, y: 0}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -590,7 +590,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1.128, y: 1.208}
+  m_Size: {x: 0.76441336, y: 1.208}
   m_EdgeRadius: 0
 --- !u!114 &7800941054822066014
 MonoBehaviour:
@@ -604,15 +604,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 041ffd157a233fe45baecba65c91ace3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  attackRange: 3
+  _entityData: {fileID: 11400000, guid: 7f5f7ff204afbdf4ab89960b33b76cfc, type: 2}
   segments: 50
   detectionCollider: {fileID: 1891829515740829563}
-  healInterval: 2
-  healAmount: 5
   anim: {fileID: 7880016716604067861}
-  luoIncreaseHealAmountSO: {fileID: 11400000, guid: d4a24a1516413fd43bbf9b3732ed0626, type: 2}
-  luoHealIntervalSO: {fileID: 11400000, guid: 2e138c229fba3664784156c2d505f3c5, type: 2}
-  luoHealRangeSO: {fileID: 11400000, guid: 095bea29e8236e244a4c8949766e638d, type: 2}
 --- !u!114 &5308538335101499014
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -625,10 +620,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bac6de78bb0a9894184b6a6c25fed5eb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 50
-  currentHealth: 0
-  damage: 0
-  luoRecoverHealthLevelUpSO: {fileID: 11400000, guid: 8b32530509965f245a3fbd810ce60c41, type: 2}
 --- !u!1 &7071437248935691400
 GameObject:
   m_ObjectHideFlags: 0

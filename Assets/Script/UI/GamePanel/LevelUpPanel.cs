@@ -19,8 +19,11 @@ public class LevelUpPanel : BasePanel
     public TextMeshProUGUI txtConsumption3;
 
     private LevelUpSO[] levelUpSOs = new LevelUpSO[3];
+    private EntityBehaviour _player;
+
     public override void Init()
     {
+        _player = PlayerManager.Instance.player;
         InitLevelUpSOs();
         UpdateOptionsUI();
         GameLevelManager.Instance.PauseGame();
@@ -29,7 +32,7 @@ public class LevelUpPanel : BasePanel
         {
             if (ExperienceLevController.Instance.CanUseLevelPoint(levelUpSOs[0].cost))
             {
-                levelUpSOs[0].RaiseEvent();
+                levelUpSOs[0].ApplyTo(_player);
                 GetRandomSOs();
                 this.UpdateOptionsUI();
                 BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
@@ -39,7 +42,7 @@ public class LevelUpPanel : BasePanel
         {
             if (ExperienceLevController.Instance.CanUseLevelPoint(levelUpSOs[1].cost))
             {
-                levelUpSOs[1].RaiseEvent();
+                levelUpSOs[1].ApplyTo(_player);
                 GetRandomSOs();
                 this.UpdateOptionsUI();
                 BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
@@ -49,7 +52,7 @@ public class LevelUpPanel : BasePanel
         {
             if (ExperienceLevController.Instance.CanUseLevelPoint(levelUpSOs[2].cost))
             {
-                levelUpSOs[2].RaiseEvent();
+                levelUpSOs[2].ApplyTo(_player);
                 GetRandomSOs();
                 this.UpdateOptionsUI();
                 BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
@@ -62,10 +65,6 @@ public class LevelUpPanel : BasePanel
         });
     }
 
-
-    /// <summary>
-    /// 更新升级选项UI
-    /// </summary>
     private void UpdateOptionsUI()
     {
         img1.sprite = levelUpSOs[0].levelUpSprite;
@@ -81,24 +80,15 @@ public class LevelUpPanel : BasePanel
         txtConsumption3.text = levelUpSOs[2].cost.ToString();
     }
 
-
-    /// <summary>
-    /// 获得保存过的升级SO列表，如果没有则随机获取
-    /// </summary>
     private void InitLevelUpSOs()
     {
         levelUpSOs = SOManager.Instance.GetPreferSOs();
-
         if (levelUpSOs[0] == null)
         {
             GetRandomSOs();
         }
     }
 
-
-    /// <summary>
-    /// 随机获取升级SO列表，并保存
-    /// </summary>
     private void GetRandomSOs()
     {
         levelUpSOs = SOManager.Instance.GetRandomPlayerLevelUpSOs(3);
@@ -107,6 +97,7 @@ public class LevelUpPanel : BasePanel
 
     public override void EscLogic()
     {
+        base.EscLogic();
         GameLevelManager.Instance.ResumeGame();
         UIManager.Instance.HidePanel<LevelUpPanel>();
     }

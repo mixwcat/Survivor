@@ -178,7 +178,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: -0.00000011920929, y: 0}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -188,7 +188,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1.128, y: 1.208}
+  m_Size: {x: 0.69694066, y: 1.208}
   m_EdgeRadius: 0
 --- !u!114 &4077559481267141489
 MonoBehaviour:
@@ -202,14 +202,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8b837c453b62b1d43859b68ebce7068e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  attackRange: 2
-  segments: 50
+  _entityData: {fileID: 11400000, guid: b983f2a93f3cc8045b141b259bbfcf00, type: 2}
+  segments: 10
   detectionCollider: {fileID: 321512312491038469}
-  fireInterval: 2
-  damage: 2
-  rinIncreaseDamageSO: {fileID: 11400000, guid: c9a74074cbec5264fb387a457ec4cd19, type: 2}
-  rinFireIntervalSO: {fileID: 11400000, guid: 87ef6031a94169f40b83527b5eaea17e, type: 2}
-  rinAttackRangeSO: {fileID: 11400000, guid: 4682c9bce0f66184f8aa5baf91e9b483, type: 2}
 --- !u!114 &7004391404785752443
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -222,10 +217,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b737bd15e7d39a741b88920f46e73bd3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 150
-  currentHealth: 0
-  damage: 0
-  rinRecoverHealthLevelUpSO: {fileID: 11400000, guid: 259ed92b980cb244c87ecce32feb0020, type: 2}
 --- !u!1 &1206413824234566052
 GameObject:
   m_ObjectHideFlags: 0

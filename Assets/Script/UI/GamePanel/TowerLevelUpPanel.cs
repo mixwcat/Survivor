@@ -18,19 +18,19 @@ public class TowerLevelUpPanel : BasePanel
     public Button btn3;
     public Button btnExit;
     private LevelUpSO[] levelUpSOs = new LevelUpSO[3];
-    private BaseTower towerType;
+    private BaseTower _towerType;
 
     public override void Init()
     {
-        GetRandomSOs(towerType);
+        GetRandomSOs();
         GameLevelManager.Instance.PauseGame();
 
         btn1.onClick.AddListener(() =>
         {
             if (ExperienceLevController.Instance.CanUseLevelPoint(levelUpSOs[0].cost))
             {
-                levelUpSOs[0].RaiseEvent();
-                GetRandomSOs(towerType);
+                levelUpSOs[0].ApplyTo(_towerType);
+                GetRandomSOs();
                 BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
             }
         });
@@ -38,8 +38,8 @@ public class TowerLevelUpPanel : BasePanel
         {
             if (ExperienceLevController.Instance.CanUseLevelPoint(levelUpSOs[1].cost))
             {
-                levelUpSOs[1].RaiseEvent();
-                GetRandomSOs(towerType);
+                levelUpSOs[1].ApplyTo(_towerType);
+                GetRandomSOs();
                 BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
             }
         });
@@ -47,8 +47,8 @@ public class TowerLevelUpPanel : BasePanel
         {
             if (ExperienceLevController.Instance.CanUseLevelPoint(levelUpSOs[2].cost))
             {
-                levelUpSOs[2].RaiseEvent();
-                GetRandomSOs(towerType);
+                levelUpSOs[2].ApplyTo(_towerType);
+                GetRandomSOs();
                 BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
             }
         });
@@ -59,9 +59,6 @@ public class TowerLevelUpPanel : BasePanel
         });
     }
 
-    /// <summary>
-    /// 更新升级选项UI
-    /// </summary>
     private void UpdateOptionsUI()
     {
         img1.sprite = levelUpSOs[0].levelUpSprite;
@@ -75,9 +72,9 @@ public class TowerLevelUpPanel : BasePanel
         txtConsumption3.text = levelUpSOs[2].cost.ToString();
     }
 
-    private void GetRandomSOs(BaseTower towerType)
+    private void GetRandomSOs()
     {
-        levelUpSOs = SOManager.Instance.GetRandomTowerLevelUpSOs(3, towerType);
+        levelUpSOs = SOManager.Instance.GetRandomTowerLevelUpSOs(3, _towerType);
         UpdateOptionsUI();
     }
 
@@ -89,6 +86,6 @@ public class TowerLevelUpPanel : BasePanel
 
     public void SetTowerType(BaseTower tower)
     {
-        towerType = tower;
+        _towerType = tower;
     }
 }

@@ -1,23 +1,31 @@
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour
+/// <summary>
+/// 玩家控制器
+/// 继承 EntityBehaviour，所有数值从 StatModel 读取
+/// </summary>
+public class PlayerController : EntityBehaviour
 {
-    [Header("移动")]
-    public float moveSpeed;
-    private Vector2 moveInput;
-
     [Header("组件")]
     public Rigidbody2D rb;
-    public Joystick joystickMove;
-    public Joystick joystickWeapon;
 
-    [Header("属性")]
-    public int pickRange;
+    [Header("输入系统")]
+    private IInputHandle _inputHandle;
+    private Vector2 inputVector;
+    public IInteractable currentInteractable;
 
-    [Header("事件")]
-    public LevelUpSO pickRangeLevelUpSO;
-    public LevelUpSO moveSpeedLevelUpSO;
+    protected override void Awake()
+    {
+        base.Awake();
 
+        // 通过工厂创建平台对应的输入处理器
+        _inputHandle = InputHandleFactory.CreateLocalInput();
+
+        if (_inputHandle == null)
+        {
+            Debug.LogError("Failed to create IInputHandle! Check InputHandleFactory logs.");
+        }
+    }
 
     void Start()
     {
@@ -29,59 +37,43 @@ public class PlayerController : MonoBehaviour
         Move();
     }
 
-
     /// <summary>
-    /// 玩家移动
+    /// 玩家移动（速度从 StatModel 读取）
     /// </summary>
     private void Move()
     {
-#if UNITY_STANDALONE_WIN
-        // Windows 环境使用键盘输入
-        moveInput.x = Input.GetAxisRaw("Horizontal");
-        moveInput.y = Input.GetAxisRaw("Vertical");
-#elif UNITY_ANDROID
-        // 安卓环境使用虚拟摇杆
-        if (joystick == null) return;
-        moveInput.x = joystick.Horizontal;
-        moveInput.y = joystick.Vertical;
-#endif
+        if (_inputHandle == null) return;
 
-        moveInput.Normalize();
-        rb.linearVelocity = moveInput * moveSpeed;
+        inputVector = _inputHandle.MoveInput;
+        float speed = GetStat(StatType.BaseMoveSpeed);
+        rb.linearVelocity = new Vector2(inputVector.x, inputVector.y).normalized * speed;
     }
-    public void GetJoystick(Joystick jsMove, Joystick jsWeapon = null)
+
+    private void InteractWithObject()
     {
-        joystickMove = jsMove;
-        joystickWeapon = jsWeapon;
+        if (currentInteractable != null)
+        {
+            currentInteractable.Interact();
+        }
     }
-
-
-    /// <summary>
-    /// 订阅升级事件
-    /// </summary>
-    private void IncreasePickRange()
-    {
-        // 拾取范围
-        pickRange += 1;
-    }
-    private void IncreaseMoveSpeed()
-    {
-        // 移动速度
-        moveSpeed *= 1.5f;
-    }
-
 
     private void OnEnable()
     {
         PlayerManager.Instance.FindPlayer(this);
-        pickRangeLevelUpSO.onLevelUp += IncreasePickRange;
-        moveSpeedLevelUpSO.onLevelUp += IncreaseMoveSpeed;
+
+        if (_inputHandle != null)
+        {
+            _inputHandle.OnInteract += InteractWithObject;
+        }
     }
 
     private void OnDisable()
     {
         PlayerManager.Instance.MissPlayer();
-        pickRangeLevelUpSO.onLevelUp -= IncreasePickRange;
-        moveSpeedLevelUpSO.onLevelUp -= IncreaseMoveSpeed;
+
+        if (_inputHandle != null)
+        {
+            _inputHandle.OnInteract -= InteractWithObject;
+        }
     }
 }

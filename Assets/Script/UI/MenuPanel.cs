@@ -12,7 +12,7 @@ public class MenuPanel : BasePanel
         startButton.onClick.AddListener(() =>
         {
             // 开始游戏
-            SceneManager.LoadSceneAsync("Main");
+            SceneManager.LoadSceneAsync("Level0");
             UIManager.Instance.HidePanel<MenuPanel>();
         });
         settingsButton.onClick.AddListener(() =>

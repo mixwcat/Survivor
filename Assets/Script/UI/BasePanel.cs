@@ -1,7 +1,6 @@
-using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.UI;
+
 
 public abstract class BasePanel : MonoBehaviour
 {
@@ -11,6 +10,7 @@ public abstract class BasePanel : MonoBehaviour
     public bool isShow = false;
     // 隐藏UI后的回调
     private UnityAction hideCallBack;
+    private IInputHandle _inputHandle;
 
 
     protected virtual void Awake()
@@ -22,6 +22,13 @@ public abstract class BasePanel : MonoBehaviour
         }
 
         canvasGroup.blocksRaycasts = true;
+
+        _inputHandle = InputHandleFactory.CreateLocalInput();
+
+        if (_inputHandle == null)
+        {
+            Debug.LogError("BasePanel: Failed to create IInputHandle!");
+        }
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -52,11 +59,6 @@ public abstract class BasePanel : MonoBehaviour
                 hideCallBack?.Invoke();
             }
         }
-
-        if (Input.GetKeyDown(KeyCode.Escape) && isShow)
-        {
-            EscLogic();
-        }
     }
 
 
@@ -75,6 +77,11 @@ public abstract class BasePanel : MonoBehaviour
     {
         canvasGroup.alpha = 0;
         isShow = true;
+
+        if (_inputHandle != null)
+        {
+            _inputHandle.OnEscape += EscLogic;
+        }
     }
 
     /// <summary>
@@ -86,5 +93,10 @@ public abstract class BasePanel : MonoBehaviour
         isShow = false;
 
         hideCallBack = callBack;
+
+        if (_inputHandle != null)
+        {
+            _inputHandle.OnEscape -= EscLogic;
+        }
     }
 }

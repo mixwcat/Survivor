@@ -1,75 +1,74 @@
-using System;
 using UnityEngine;
 
-public class EnemyController : MonoBehaviour
+/// <summary>
+/// 敌人控制器
+/// 继承 EntityBehaviour，移速从 StatModel 读取
+/// </summary>
+public class EnemyController : EntityBehaviour
 {
-    [Header("移动")]
-    public float moveSpeed;
-    private float originalMoveSpeed;
-    public Transform targetTransform;
-    private Vector2 direction;
-    private Rigidbody2D rb;
+    private float _originalMoveSpeed;
+    private Transform targetTransform;
+    private Vector2 _direction;
+    private Rigidbody2D _rb;
 
     [Header("游戏控制")]
-    private bool isQuitting = false;
-
+    private bool _isQuitting = false;
 
     void Start()
     {
         targetTransform = FindTarget();
-        rb = GetComponent<Rigidbody2D>();
-        originalMoveSpeed = moveSpeed;
+        _rb = GetComponent<Rigidbody2D>();
+        _originalMoveSpeed = GetStat(StatType.BaseMoveSpeed);
+
+        // 波次增强
+        EnhanceWithWave();
     }
 
     /// <summary>
-    /// 向玩家移动
+    /// 根据当前波次增强属性
     /// </summary>
+    private void EnhanceWithWave()
+    {
+        int wave = GameLevelManager.Instance.currentWave;
+        StatModel.AddModifier(new StatModifier(StatType.BaseMaxHealth, wave * 5, EModifierType.Add, GameLevelManager.Instance));
+        StatModel.AddModifier(new StatModifier(StatType.BaseDamage, wave * 0.5f, EModifierType.Add, GameLevelManager.Instance));
+    }
+
     void FixedUpdate()
     {
         MoveTowardsTarget();
         TowardsTarget();
     }
 
-
     /// <summary>
     /// 受伤击退
     /// </summary>
-    /// <param name="hitForce"></param>
-    /// <param name="hitDuration"></param>
     public void HitImpact(float hitForce, float hitDuration)
     {
-        moveSpeed = originalMoveSpeed;
-        moveSpeed = -moveSpeed * hitForce;
+        float speed = GetStat(StatType.BaseMoveSpeed);
+        _rb.linearVelocity = -_direction.normalized * speed * hitForce;
         Invoke(nameof(ResetSpeed), hitDuration);
     }
 
-    void ResetSpeed()
+    private void ResetSpeed()
     {
-        moveSpeed = originalMoveSpeed;
+        _rb.linearVelocity = Vector2.zero;
     }
 
-
-    /// <summary>
-    /// 寻找目标
-    /// </summary>
     private Transform FindTarget()
     {
         if (PlayerManager.Instance.player != null)
         {
-            // 挑选距离敌人近的目标
             Transform targetTrans = PlayerManager.Instance.player.transform;
             foreach (var tower in TowerManager.Instance.towers)
             {
                 if (tower == null) continue;
                 targetTrans = Vector3.Distance(transform.position, tower.transform.position) < Vector3.Distance(transform.position, targetTrans.position) ? tower.transform : targetTrans;
             }
-
             return targetTrans;
         }
-
         return null;
     }
-
 
     private void TowardsTarget()
     {
@@ -77,10 +76,6 @@ public class EnemyController : MonoBehaviour
         transform.localScale = new Vector3(targetTransform.position.x > transform.position.x ? -1 : 1, transform.localScale.y, transform.localScale.z);
     }
 
-
-    /// <summary>
-    /// 向目标移动
-    /// </summary>
     private void MoveTowardsTarget()
     {
         if (targetTransform == null)
@@ -88,14 +83,10 @@ public class EnemyController : MonoBehaviour
             targetTransform = FindTarget();
             if (targetTransform == null) return;
         }
-        direction = (targetTransform.position - transform.position).normalized;
-        rb.linearVelocity = direction * moveSpeed;
+        _direction = (targetTransform.position - transform.position).normalized;
+        _rb.linearVelocity = _direction * GetStat(StatType.BaseMoveSpeed);
     }
 
-
-    /// <summary>
-    /// 在GameLevManager中注册
-    /// </summary>
     void OnEnable()
     {
         GameLevelManager.Instance.RegisterEnemy(this);
@@ -103,18 +94,14 @@ public class EnemyController : MonoBehaviour
 
     void OnDisable()
     {
-
-        // 正在退出时不执行逻辑
-        if (isQuitting || !gameObject.scene.isLoaded) return;
+        if (_isQuitting || !gameObject.scene.isLoaded) return;
         GameLevelManager.Instance.UnregisterEnemy(this);
-
-        // 生成经验精灵
         if (ExpSpritePool.Instance != null)
             ExpSpritePool.Instance.SpawnExpSprite(transform);
     }
 
     void OnApplicationQuit()
     {
-        isQuitting = true;
+        _isQuitting = true;
     }
 }
