@@ -8,10 +8,11 @@ public class BulletController : MonoBehaviour
     private Vector3 direction;
 
 
-    public virtual void Init(int dmg, int force, Vector3 dir)
+    public virtual void Init(int dmg, int force,float speed, Vector3 dir)
     {
         damage = dmg;
         hitForce = force;
+        this.speed = speed;
         direction = dir;
     }
 

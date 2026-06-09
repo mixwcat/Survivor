@@ -58,13 +58,13 @@ public class DetectPlayer : MonoBehaviour, IInteractable
     private void ShowInteractTips(bool isTouching)
     {
 #if UNITY_STANDALONE_WIN
-        SetButtonActive(isTouching);
+        SetTipsActive(isTouching);
 #elif UNITY_ANDROID
         ShowTowerLevelUpButton(isTouching);
 #endif
     }
     // 显示或隐藏交互提示
-    private void SetButtonActive(bool isActive)
+    private void SetTipsActive(bool isActive)
     {
         arrow.SetActive(isActive);
         isPlayerInRange = isActive;

@@ -3,7 +3,7 @@ using UnityEngine;
 /// <summary>
 /// 玩家基础配置数据
 /// </summary>
-[CreateAssetMenu(fileName = "PlayerData", menuName = "EDM/Player Data")]
+[CreateAssetMenu(fileName = "PlayerData", menuName = "Game/Data/Player Data")]
 public class PlayerDataSO : BaseEntityDataSO
 {
     [Header("玩家专属属性")]
@@ -16,6 +16,6 @@ public class PlayerDataSO : BaseEntityDataSO
         base.FillStatModel(model);
         model.SetBaseValue(StatType.PlayerPickRange, PickRange);
         model.SetBaseValue(StatType.PlayerUnbeatableTime, UnbeatableTime);
-        model.SetBaseValue(StatType.TowerAttackInterval, AttackInterval);
+        model.SetBaseValue(StatType.AttackInterval, AttackInterval);
     }
 }

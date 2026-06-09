@@ -113,7 +113,7 @@ public class GamePanel : BasePanel
     /// </summary>
     public void UpdateJoystickVisibility()
     {
-        if (WeaponManager.Instance.weapons[0] is GunWeapon)
+        if (WeaponManager.Instance.GetWeapon<GunWeapon>() != null)
         {
             // 枪械武器：显示移动摇杆和攻击摇杆
             joystickMove.gameObject.SetActive(true);

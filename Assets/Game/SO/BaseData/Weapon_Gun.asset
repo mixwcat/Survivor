@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 18e4ba9aa5e75124fb05496d7663b35e, type: 3}
+  m_Script: {fileID: 11500000, guid: e20d1d4b112cd264899f931eed83056f, type: 3}
   m_Name: Weapon_Gun
   m_EditorClassIdentifier: 
   EntityName: 
@@ -17,9 +17,6 @@ MonoBehaviour:
   MoveSpeed: 5
   Damage: 10
   AttackInterval: 1
-  RotationSpeed: 360
-  BulletSize: 1
-  FireBallLifeTime: 4
+  projectilePrefab: {fileID: 9040428627918888405, guid: 98a17a0949cc21043a90d452c78bbc51, type: 3}
   BulletSpeed: 20
-  BulletDamage: 8
-  BulletHitForce: 30
+  BulletHitForce: 20

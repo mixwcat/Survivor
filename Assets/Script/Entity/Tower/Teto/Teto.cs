@@ -28,7 +28,7 @@ public class Teto : BaseTower
             }
             else
             {
-                yield return new WaitForSeconds(GetStat(StatType.TowerAttackInterval));
+                yield return new WaitForSeconds(GetStat(StatType.AttackInterval));
                 continue;
             }
 
@@ -36,11 +36,12 @@ public class Teto : BaseTower
 
             int damage = (int)GetStat(StatType.BaseDamage);
             int hitForce = (int)GetStat(StatType.TowerHitForce);
-            float interval = GetStat(StatType.TowerAttackInterval);
+            float interval = GetStat(StatType.AttackInterval);
+            float speed = GetStat(StatType.BulletSpeed);
 
             Instantiate(Resources.Load<GameObject>("Tower/TetoBullet"), transform.position, Quaternion.identity)
                 .GetComponents<TetoBulletController>()[0]
-                .Init(damage, hitForce, direction);
+                .Init(damage, hitForce, speed, direction);
 
             yield return new WaitForSeconds(interval);
         }

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Enemy_Slime
   m_EditorClassIdentifier: 
   EntityName: 
-  MaxHealth: 100
-  MoveSpeed: 5
-  Damage: 10
+  MaxHealth: 50
+  MoveSpeed: 2
+  Damage: 3
   ExpReward: 1

@@ -1,6 +1,18 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// WeaponSlot —— 武器槽配置
+/// 新增武器时只需在 Inspector 的 weaponSlots 列表中加一条配置，无需修改代码
+/// </summary>
+[System.Serializable]
+public class WeaponSlot
+{
+    public string weaponId;           // 标识，如 "FireBall", "Gun"
+    public GameObject weaponRoot;     // 挂载点（初始 inactive）
+    public WeaponSelectSO weaponSelectSO;  // 选择时触发的 SO
+}
+
 public class WeaponManager : MonoBehaviour
 {
     [Header("单例模式")]
@@ -11,33 +23,43 @@ public class WeaponManager : MonoBehaviour
         instance = this;
     }
 
-    
-    [Header("武器列表")]
-    public GameObject fireBallPosition;
-    public GameObject shootGunPosition;
-    public LevelUpSO choooseFireBallSO;
-    public LevelUpSO chooseShootGunSO;
+    [Header("武器槽列表")]
+    [Tooltip("在 Inspector 中配置所有可用武器，无需修改代码即可新增武器")]
+    public List<WeaponSlot> weaponSlots = new List<WeaponSlot>();
+
+    [Header("已注册武器实例")]
     public List<BaseWeapon> weapons = new List<BaseWeapon>();
 
-    private void ChooseFireBall()
-    {
-        fireBallPosition.SetActive(true);
-    }
-    private void ChooseShootGun()
-    {
-        shootGunPosition.SetActive(true);
-    }
     private void OnEnable()
     {
-        choooseFireBallSO.onApplyEffect += ChooseFireBall;
-        chooseShootGunSO.onApplyEffect += ChooseShootGun;
-    }
-    private void OnDisable()
-    {
-        choooseFireBallSO.onApplyEffect -= ChooseFireBall;
-        chooseShootGunSO.onApplyEffect -= ChooseShootGun;
+        foreach (var slot in weaponSlots)
+        {
+            if (slot.weaponSelectSO != null)
+            {
+                // 用局部变量捕获，避免闭包陷阱
+                var capturedSlot = slot;
+                capturedSlot.weaponSelectSO.OnSelect += () => OnChooseWeapon(capturedSlot);
+            }
+        }
     }
 
+    private void OnDisable()
+    {
+        foreach (var slot in weaponSlots)
+        {
+            if (slot.weaponSelectSO != null)
+            {
+                var capturedSlot = slot;
+                capturedSlot.weaponSelectSO.OnSelect -= () => OnChooseWeapon(capturedSlot);
+            }
+        }
+    }
+
+    private void OnChooseWeapon(WeaponSlot slot)
+    {
+        if (slot.weaponRoot != null)
+            slot.weaponRoot.SetActive(true);
+    }
 
     public void RegisterWeapon(BaseWeapon weapon)
     {
@@ -65,5 +87,13 @@ public class WeaponManager : MonoBehaviour
             }
         }
         return null;
+    }
+
+    /// <summary>
+    /// 根据 weaponId 查找武器槽配置
+    /// </summary>
+    public WeaponSlot GetWeaponSlot(string weaponId)
+    {
+        return weaponSlots.Find(s => s.weaponId == weaponId);
     }
 }

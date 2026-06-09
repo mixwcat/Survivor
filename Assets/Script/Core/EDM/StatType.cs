@@ -15,23 +15,26 @@ public enum StatType
 
     // === 塔 ===
     TowerAttackRange,
-    TowerAttackInterval,
     TowerHitForce,
 
     // === 武器：旋转火球 ===
-    FireBallRotationSpeed,
-    FireBallSize,
-    FireBallLifeTime,
+    SpinWeaponRotationSpeed,
+    SpinWeaponSize,
+    SpinWeaponLifeTime,
+
 
     // === 武器：枪械 ===
     BulletSpeed,
-    BulletDamage,
     BulletHitForce,
+
+    // === 武器：通用 ===
+    HitPushForce,
+    AttackInterval,
 
     // === Luo ===
     HealAmount,
-    HealInterval,
     HealRange,
+    HealInterval,
 
     // === 敌人 ===
     ExpReward,

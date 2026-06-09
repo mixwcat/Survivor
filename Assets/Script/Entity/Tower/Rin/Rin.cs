@@ -19,7 +19,7 @@ public class Rin : BaseTower
     {
         base.Update();
         _fireTimer += Time.deltaTime;
-        float interval = GetStat(StatType.TowerAttackInterval);
+        float interval = GetStat(StatType.AttackInterval);
         if (_fireTimer >= interval)
         {
             Attack();

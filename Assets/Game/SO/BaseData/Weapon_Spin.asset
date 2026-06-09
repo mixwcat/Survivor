@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7c4ac417b45d184aba4840c8bf25a9e, type: 3}
+  m_Name: Weapon_Spin
+  m_EditorClassIdentifier: 
+  EntityName: 
+  MaxHealth: 100
+  MoveSpeed: 5
+  Damage: 5
+  AttackInterval: 1
+  projectilePrefab: {fileID: 8026123989119196323, guid: ed6ea9dfa01fa9148beff33fe2995843, type: 3}
+  RotationSpeed: 360
+  Size: 1
+  LifeTime: 4
+  HitPushForce: 20

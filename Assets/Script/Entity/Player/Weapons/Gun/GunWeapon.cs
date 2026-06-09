@@ -60,6 +60,7 @@ public class GunWeapon : BaseWeapon
         if (_direction.sqrMagnitude < 0.01f) return;
 #endif
 
+        if (_direction.sqrMagnitude < 0.01f) _direction = transform.up; // 避免零向量导致的旋转问题
         _angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
         transform.rotation = Quaternion.Euler(new Vector3(0, 0, _angle));
     }
@@ -71,13 +72,14 @@ public class GunWeapon : BaseWeapon
     {
         while (PlayerManager.Instance.player != null)
         {
-            float interval = GetStat(StatType.TowerAttackInterval);
-            float damage = GetStat(StatType.BulletDamage);
+            float interval = GetAttackInterval();      // 从玩家读取（受升级影响）
+            int damage = (int)GetBaseDamage();           // 从玩家读取（受升级影响）
             float hitForce = GetStat(StatType.BulletHitForce);
+            float speed = GetStat(StatType.BulletSpeed);
 
             Instantiate(Resources.Load<GameObject>("Weapon/Bullet"), firePoint.position, firePoint.rotation)
                 .GetComponent<BulletController>()
-                .Init((int)damage, (int)hitForce, _direction);
+                .Init(damage, (int)hitForce, speed, _direction);
 
             BKMusic.Instance.PlaySound(ResourceEnum.PlayerShoot);
             yield return new WaitForSeconds(interval);

@@ -51,15 +51,23 @@ EntityBehaviour (MonoBehaviour base class for all gameplay entities)
 ```
 
 **How it works**:
-1. `BaseEntityDataSO` (abstract ScriptableObject) declares stat base values. Subclasses: `PlayerDataSO`, `TowerDataSO`, `WeaponDataSO`, `EnemyDataSO`.
+1. `BaseEntityDataSO` (abstract ScriptableObject) declares stat base values.
+   - **DataSO 已按实体类型拆分为子类**：`PlayerDataSO` / `EnemyDataSO` / `TowerDataSO` / `LuoTowerDataSO` / `WeaponDataSO`（抽象基类） / `SpinWeaponDataSO` / `GunWeaponDataSO`
+   - 每种武器/塔独立子类，新增类型只需新建子类，零修改现有代码
 2. `EntityBehaviour.Awake()` calls `_entityData.FillStatModel(StatModel)` to populate runtime stats.
 3. `EntityStatModel.GetStat(type)` computes final value: `(base + ΣAdd) * (1 + ΣMultiply)`, or raw value if Override exists.
 4. `LevelUpSO.ApplyTo(entity)` adds `StatModifier` entries into the target's `StatModel` — **upgrades are entirely data-driven**, no code changes needed.
 
+**EntityDataRegistry** — 集中式 DataSO 配置（解决 Inspector 分散拖拽问题）：
+- `EntityDataRegistry` SO 统一存放所有 `entityId → DataSO` 映射
+- `EntityBehaviour` 支持通过 `_registryId` 字段自动从 Registry 查找 DataSO
+- 所有 DataSO 配置集中在一个 asset 中管理，无需在多个 Prefab/Scene 中逐个拖拽
+
 **Entity hierarchy**:
 - `EntityBehaviour` → `BaseTower` (towers: Teto/Rin/Luo)
-- `EntityBehaviour` → `BaseWeapon` → `SpinWeapon` (fireball), `GunWeapon` (shotgun)
+- `EntityBehaviour` → `BaseWeapon` → `SpinWeapon` (spin weapon), `GunWeapon` (shotgun)
 - `EntityBehaviour` → `PlayerController`
+- `MonoBehaviour` → `PlayerInteraction` (interaction system, independent component)
 - `EntityBehaviour` → `EnemyController`
 
 ## Manager System
@@ -70,11 +78,11 @@ All managers are **MonoBehaviour singletons** placed in scene (except `UIManager
 |---|---|---|
 | `GameLevelManager` | `Assets/Script/Level/` | Game state, time tracking, pause/resume, enemy registry, game-over handling |
 | `PlayerManager` | `Assets/Script/Manager/` | Player reference cache, find/miss player |
-| `WeaponManager` | `Assets/Script/Manager/` | Weapon registry, weapon lookup by type, weapon selection callbacks |
+| `WeaponManager` | `Assets/Script/Manager/` | Weapon registry (`List<WeaponSlot>`), weapon lookup by type, weapon selection callbacks — 新增武器只需 Inspector 配置 `weaponSlots` |
 | `TowerManager` | `Assets/Script/Manager/` | Tower registry |
 | `UIManager` | `Assets/Script/UI/` | Panel lifecycle (Show/Hide/Get), loads panels from `Resources/UI/` |
 | `InputReaderManager` | `Assets/Script/Manager/` | Holds the `InputReader` SO reference |
-| `SOManager` | `Assets/Script/Manager/` | ScriptableObject reference hub |
+| `SOManager` | `Assets/Script/Manager/` | ScriptableObject reference hub + `EntityDataRegistry` holder + LevelUpSO pool (tag-based filtering) |
 | `BKMusic` | `Assets/Script/Manager/` | Background music singleton |
 
 **UI System**: `BasePanel` (abstract base in `Assets/Script/UI/`) → concrete panels. Panels support fade-in/out via `CanvasGroup`. Loaded from `Resources/UI/<PanelName>` by `UIManager.ShowPanel<T>()`. Panels auto-subscribe to Escape key via `InputReader.EscapePressEvent`. Animations use `Time.unscaledDeltaTime` for pause-independent behavior.
@@ -232,23 +240,78 @@ ChooseTowerPanel button click
 
 ### Existing Towers
 
-`BaseTower` (`Assets/Script/Tower/`) features:
+`BaseTower` (`Assets/Script/Entity/Tower/`) features:
 - `CircleCollider2D` for enemy detection (radius auto-synced from `StatType.TowerAttackRange`)
 - `LineRenderer` for attack range visualization (fades out over time)
+- **Highlight**: `SetHighlight(bool)` switches all child `SpriteRenderer` materials to `highlightMaterial`; falls back to `SOManager.towerHighlightMaterial` if unset
 - Enemy tracking via `OnTriggerEnter2D/Exit2D`, target selection picks first enemy in range
 - Concrete towers: **Teto** (ranged attack projectiles), **Rin** (melee AoE), **Luo** (healing tower)
+
+**DataSO 拆分**:
+- `TowerDataSO` — 攻击型塔通用配置（AttackRange, AttackInterval, HitForce）
+- `LuoTowerDataSO` — 继承 TowerDataSO，添加治疗专属（HealAmount, HealInterval, HealRange）
+- 新增塔类型只需创建 TowerDataSO 子类
+
+### Tower Interaction
+
+- `DetectPlayer` (on tower child object) implements `IInteractable` with `OnSelected()` / `OnDeselected()` callbacks
+- `PlayerInteraction` component (on Player) manages nearby interactables via `Register/Unregister`; only the most recent target shows highlight + UI tips
 
 ## Upgrade System
 
 `LevelUpSO` (ScriptableObject in `Assets/Script/SO/`) defines upgrade options displayed in `LevelUpPanel` / `TowerLevelUpPanel`:
 - `statModifiers: List<StatModifierData>` — data-driven stat changes
 - `fullHeal` / `bonusHeal` — heal effects
-- `onApplyEffect` — UnityAction for weapon-selection side effects (used by `ChooseWeaponPanel`)
+- `targetTags: List<string>` — for SOManager upgrade pool filtering (e.g. `"FireBall"`, `"Gun"`, `"Universal"`)
 - `ApplyTo(EntityBehaviour)` applies all modifiers to the target's `StatModel`
 
-## Weapon Selection Flow
+**Weapon Selection Flow** (separated from LevelUpSO):
+- `WeaponSelectSO` (`Assets/Script/SO/`) — dedicated SO for weapon selection, decoupled from LevelUpSO:
+  - `displayName` / `displaySprite` — UI display
+  - `weaponId` — matches `WeaponSlot.weaponId`
+  - `OnSelect` event — WeaponManager subscribes to activate the weapon GameObject
+- `ChooseWeaponPanel` → reads inactive `WeaponSlot`s from `WeaponManager.weaponSlots` → on click, calls `WeaponSelectSO.RaiseSelectEvent()` → `WeaponManager` activates the weapon → weapon registers via `BaseWeapon.OnEnable()`
 
-`ChooseWeaponPanel` → offers `LevelUpSO` choices → on selection, fires `onApplyEffect` → `WeaponManager` activates the corresponding weapon GameObject → weapon registers itself via `BaseWeapon.OnEnable()`.
+## Weapon System
+
+### Architecture
+
+```
+BaseWeapon (EntityBehaviour)
+  ├── StatModel — 武器专属属性（火球旋转速度、子弹速度等）
+  ├── GetAttackInterval() / GetBaseDamage() — 读取武器自己的 StatModel
+  └── weaponTags — 用于 SOManager 升级池过滤
+
+SpinWeapon (BaseWeapon)
+  ├── SpinWeaponController — 旋转投射物（淡入淡出、碰撞检测）
+  └── 属性：SpinWeaponRotationSpeed, SpinWeaponSize, SpinWeaponLifeTime, HitPushForce
+
+GunWeapon (BaseWeapon)
+  ├── BulletController — 直线子弹（飞行、碰撞检测）
+  └── 属性：BulletSpeed, BulletHitForce
+```
+
+### DataSO 拆分
+
+- `WeaponDataSO` (abstract) — 通用属性（AttackInterval, projectilePrefab）
+- `SpinWeaponDataSO` — 火球专属（RotationSpeed, Size, LifeTime, HitPushForce）
+- `GunWeaponDataSO` — 枪械专属（BulletSpeed, BulletHitForce）
+- 新增武器：新建 `*WeaponDataSO` 子类 → 新建武器脚本 → WeaponManager `weaponSlots` Inspector 配置
+
+### WeaponManager 泛化
+
+```csharp
+[System.Serializable]
+public class WeaponSlot
+{
+    public string weaponId;           // e.g. "FireBall", "Gun"
+    public GameObject weaponRoot;     // 挂载点（初始 inactive）
+    public WeaponSelectSO weaponSelectSO;  // 选择时触发的 SO
+}
+public List<WeaponSlot> weaponSlots;
+```
+
+新增武器无需修改 WeaponManager / ChooseWeaponPanel / SOManager 代码。
 
 ## Important Patterns
 
@@ -260,3 +323,67 @@ ChooseTowerPanel button click
   3. Create `LevelUpSO` assets for upgrades
 - **`.meta` files**: Auto-generated by Unity; never manually edit or delete
 - **FindObjectOfType**: Always use `FindFirstObjectByType<T>()` (Unity 6+ API)
+- **Avoid Inspector configuration**: Prefer code-driven setup over Inspector drag-and-drop to prevent broken references. Use `GetComponent`, `Resources.Load`, `FindFirstObjectByType`, or singleton references instead of serialized fields whenever feasible.
+
+## 最新修改 (2026-06-09)
+
+### 交互系统重构
+- `PlayerController` 只负责移动；**新增 `PlayerInteraction`** 组件独立管理交互
+- `IInteractable` 扩展 `OnSelected()` / `OnDeselected()` 回调，解决多塔同时显示提示的问题
+- `DetectPlayer` 不再直接操作玩家字段，改为调用 `PlayerInteraction.Register/Unregister`
+
+### 防御塔高亮 (Shader)
+- `BaseTower.SetHighlight(bool)` 切换高亮材质，支持多 SpriteRenderer 复合结构
+- `SOManager.towerHighlightMaterial` 提供统一材质配置，也可在单个塔 Prefab 上覆盖
+- **新增 Shader**: `sg_HighLight2D.shadergraph`（Renderer2D 下的 Sprite Outline 发光效果）
+- **新增材质**: `mat_HightLight.mat`
+
+### 武器系统重构（DataSO 拆分 + 泛化 Manager + 职责解耦）
+
+**核心改动**:
+- `WeaponDataSO` 改为 abstract，专属字段拆分到子类：`SpinWeaponDataSO` / `GunWeaponDataSO`
+- 新增 `WeaponSelectSO` — 武器选择专用 SO，与 `LevelUpSO`（数值升级）彻底解耦
+- `WeaponManager` 泛化 — `List<WeaponSlot>` 替代硬编码字段，新增武器零代码修改
+- `ChooseWeaponPanel` 从 `WeaponManager.weaponSlots` 动态读取未激活武器
+- `SOManager` 升级池标签化 — `LevelUpSO.targetTags` + `BaseWeapon.weaponTags` 按标签过滤，消除 `is` 类型判断
+- `BaseHealthController` 增加 `BaseMaxHealth` 变化时的 CurrentHealth 补偿逻辑
+- `FireBallController` 改名为 `SpinWeaponController`，伤害通过 `Init()` 传入（不再硬编码）
+
+**DataSO 拆分**:
+```
+WeaponDataSO (abstract) — AttackInterval, projectilePrefab
+├── SpinWeaponDataSO — RotationSpeed, Size, LifeTime, HitPushForce
+└── GunWeaponDataSO — BulletSpeed, BulletHitForce
+```
+
+**EntityDataRegistry（统一配置表）**:
+- 新建 `EntityDataRegistry` SO — 集中存放所有 `entityId → DataSO` 映射
+- `EntityBehaviour` 支持 `_registryId` 自动从 Registry 查找 DataSO
+- 解决 DataSO 分散在多个 Prefab/Scene Inspector 中难以管理的问题
+
+### 关键文件
+```
+Assets/Script/Entity/Player/PlayerInteraction.cs            ← 新增
+Assets/Script/Entity/Player/PlayerController.cs             ← 简化（删除交互逻辑）
+Assets/Script/Core/IInteractable.cs                         ← 扩展接口
+Assets/Script/Entity/Tower/BaseTower.cs                     ← 新增 SetHighlight
+Assets/Script/Entity/Tower/DetectPlayer.cs                  ← 调用 SetHighlight
+
+// 武器系统重构
+Assets/Script/Core/EDM/Data/WeaponDataSO.cs                 ← 改为 abstract
+Assets/Script/Core/EDM/Data/SpinWeaponDataSO.cs             ← 新增
+Assets/Script/Core/EDM/Data/GunWeaponDataSO.cs              ← 新增
+Assets/Script/SO/WeaponSelectSO.cs                          ← 新增
+Assets/Script/Manager/WeaponManager.cs                      ← List<WeaponSlot> 泛化
+Assets/Script/Manager/SOManager.cs                          ← 标签过滤 + EntityDataRegistry
+Assets/Script/SO/EntityDataRegistry.cs                      ← 新增
+Assets/Script/Entity/Player/Weapons/BaseWeapon.cs           ← weaponTags + GetAttackInterval/GetBaseDamage
+Assets/Script/Entity/Player/Weapons/FireBall/SpinWeaponController.cs   ← 改名 + Init 传入 damage
+
+// 塔 DataSO 拆分
+Assets/Script/Core/EDM/Data/TowerDataSO.cs                  ← 删除 Luo 专属字段
+Assets/Script/Core/EDM/Data/LuoTowerDataSO.cs               ← 新增
+
+// EDM 核心
+Assets/Script/Core/EDM/EntityBehaviour.cs                   ← _registryId + Registry 自动查找
+```

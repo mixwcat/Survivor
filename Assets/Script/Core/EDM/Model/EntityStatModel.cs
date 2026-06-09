@@ -70,6 +70,11 @@ public class EntityStatModel
         return baseVal;
     }
 
+    public bool HasStat(StatType type)
+    {
+        return _baseValues.ContainsKey(type);
+    }
+
     /// <summary>
     /// 获取基础值（不含修饰符）
     /// </summary>

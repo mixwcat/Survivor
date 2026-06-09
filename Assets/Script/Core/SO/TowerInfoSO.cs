@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "New Tower", menuName = "Tower")]
+[CreateAssetMenu(fileName = "Tower", menuName = "Game/Tower")]
 public class TowerInfoSO : ScriptableObject
 {
     public string towerName;

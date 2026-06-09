@@ -81,7 +81,7 @@ public class EnemyController : EntityBehaviour
         if (targetTransform == null)
         {
             targetTransform = FindTarget();
-            if (targetTransform == null) return;
+            return;
         }
         _direction = (targetTransform.position - transform.position).normalized;
         _rb.linearVelocity = _direction * GetStat(StatType.BaseMoveSpeed);

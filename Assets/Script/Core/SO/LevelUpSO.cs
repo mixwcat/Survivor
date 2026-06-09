@@ -12,7 +12,7 @@ using UnityEngine.Events;
 ///   simpleUpgradeSO.ApplyTo(targetEntity);
 ///   -> 应用 StatModifier → 回血 → 完成
 /// </summary>
-[CreateAssetMenu(fileName = "LevelUpSO", menuName = "LevelUp/Stat Modifier")]
+[CreateAssetMenu(fileName = "LevelUpSO", menuName = "Game/Selection/Stat Modifier")]
 public class LevelUpSO : ScriptableObject
 {
     [Header("UI 显示")]
@@ -28,6 +28,10 @@ public class LevelUpSO : ScriptableObject
     public bool fullHeal;
     [Tooltip("额外恢复血量（如 Teto recover: bonusHeal=60）")]
     public float bonusHeal;
+
+    [Header("目标标签")]
+    [Tooltip("用于 SOManager 升级池过滤，如 FireBall / Gun / Universal")]
+    public List<string> targetTags = new();
 
     /// <summary>
     /// 武器选择回调（仅 ChooseWeaponPanel 使用，不涉及数值修改）

@@ -405,6 +405,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _entityData: {fileID: 11400000, guid: 90d8d153933596a4a9903493c6802f2c, type: 2}
+  _registryId: Player
   rb: {fileID: 0}
 --- !u!114 &209286870
 MonoBehaviour:
@@ -596,7 +597,7 @@ GameObject:
   - component: {fileID: 289837581}
   - component: {fileID: 289837582}
   m_Layer: 7
-  m_Name: ShootGunRotate
+  m_Name: Weapon_Gun
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -631,6 +632,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _entityData: {fileID: 11400000, guid: 72005679ad543b041ad650ef560773e0, type: 2}
+  _registryId: Weapon_Gun
+  weaponTags: []
   firePoint: {fileID: 1349178816}
 --- !u!1 &482714189
 GameObject:
@@ -658,6 +661,58 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -1.1860511, y: -0.58525753, z: -0.09165102}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &496905266
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 496905268}
+  - component: {fileID: 496905267}
+  m_Layer: 0
+  m_Name: WeaponManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &496905267
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 496905266}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e16fb229256a39945bf4cd813d563e3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  weaponSlots:
+  - weaponId: Spin
+    weaponRoot: {fileID: 712366146}
+    weaponSelectSO: {fileID: 11400000, guid: 60932482e9947bd4a836789de9833de8, type: 2}
+  - weaponId: Gun
+    weaponRoot: {fileID: 289837580}
+    weaponSelectSO: {fileID: 11400000, guid: ab2492f69edbbc14b954a4fc13e5db62, type: 2}
+  weapons: []
+--- !u!4 &496905268
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 496905266}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1021,7 +1076,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 669348521}
-  - component: {fileID: 669348522}
   m_Layer: 7
   m_Name: Weapons
   m_TagString: Untagged
@@ -1046,23 +1100,6 @@ Transform:
   - {fileID: 289837581}
   m_Father: {fileID: 209286866}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &669348522
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 669348520}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e16fb229256a39945bf4cd813d563e3d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  fireBallPosition: {fileID: 712366146}
-  shootGunPosition: {fileID: 289837580}
-  choooseFireBallSO: {fileID: 11400000, guid: f5992d29aa9f9804c92e00c4721120a7, type: 2}
-  chooseShootGunSO: {fileID: 11400000, guid: c3ced3317910eeb439dcca27e827fe1a, type: 2}
-  weapons: []
 --- !u!1 &678501806
 GameObject:
   m_ObjectHideFlags: 0
@@ -1135,7 +1172,7 @@ GameObject:
   - component: {fileID: 712366147}
   - component: {fileID: 712366148}
   m_Layer: 7
-  m_Name: FireBallOrbit
+  m_Name: Weapon_Spin
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1169,8 +1206,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ef4e28e5f48d35c4391b8ebd3f276d04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _entityData: {fileID: 11400000, guid: 120c88ae2b41c1e42a5d9ba6db995a23, type: 2}
-  fireBallHolder: {fileID: 1685806472}
+  _entityData: {fileID: 0}
+  _registryId: Weapon_Spin
+  weaponTags: []
+  SpinWeaponPosition: {fileID: 1685806472}
 --- !u!1 &728996200
 GameObject:
   m_ObjectHideFlags: 0
@@ -1736,7 +1775,7 @@ GameObject:
   - component: {fileID: 1349178816}
   - component: {fileID: 1349178818}
   m_Layer: 7
-  m_Name: GunPosition
+  m_Name: GunWeaponPosition
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -50212,63 +50251,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1001 &1493523915
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 4541288016388620355, guid: 81a2c5cd86112704aad18ab5f2f17d52, type: 3}
-      propertyPath: m_Name
-      value: Start
-      objectReference: {fileID: 0}
-    - target: {fileID: 6564168121584727720, guid: 81a2c5cd86112704aad18ab5f2f17d52, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0.44658613
-      objectReference: {fileID: 0}
-    - target: {fileID: 6564168121584727720, guid: 81a2c5cd86112704aad18ab5f2f17d52, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 1.881554
-      objectReference: {fileID: 0}
-    - target: {fileID: 6564168121584727720, guid: 81a2c5cd86112704aad18ab5f2f17d52, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0.03422381
-      objectReference: {fileID: 0}
-    - target: {fileID: 6564168121584727720, guid: 81a2c5cd86112704aad18ab5f2f17d52, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6564168121584727720, guid: 81a2c5cd86112704aad18ab5f2f17d52, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6564168121584727720, guid: 81a2c5cd86112704aad18ab5f2f17d52, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6564168121584727720, guid: 81a2c5cd86112704aad18ab5f2f17d52, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6564168121584727720, guid: 81a2c5cd86112704aad18ab5f2f17d52, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6564168121584727720, guid: 81a2c5cd86112704aad18ab5f2f17d52, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6564168121584727720, guid: 81a2c5cd86112704aad18ab5f2f17d52, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 81a2c5cd86112704aad18ab5f2f17d52, type: 3}
 --- !u!1 &1533214930
 GameObject:
   m_ObjectHideFlags: 0
@@ -50415,7 +50397,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1685806472}
   m_Layer: 7
-  m_Name: FireBallPosition
+  m_Name: SpinWeaponPosition
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -50953,6 +50935,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 4682c9bce0f66184f8aa5baf91e9b483, type: 2}
   defaultTowerSO: {fileID: 11400000, guid: 3d5ed6c766d123b49a8b5c0844e57ba9, type: 2}
   towerHighlightMaterial: {fileID: 2100000, guid: 8b769243dfd64ca46b4cfc179e827c8e, type: 2}
+  entityDataRegistry: {fileID: 11400000, guid: 2ac79bbf92264a742b977a776e7dbd4e, type: 2}
 --- !u!4 &1952431547
 Transform:
   m_ObjectHideFlags: 0
@@ -51398,10 +51381,11 @@ SceneRoots:
   - {fileID: 482714190}
   - {fileID: 1865473003}
   - {fileID: 1922692382}
-  - {fileID: 891563381}
   - {fileID: 1952431547}
   - {fileID: 771521285}
   - {fileID: 1371962565}
+  - {fileID: 496905268}
+  - {fileID: 891563381}
   - {fileID: 728996201}
   - {fileID: 1352728602}
   - {fileID: 894867105}
@@ -51410,4 +51394,3 @@ SceneRoots:
   - {fileID: 949318565}
   - {fileID: 1945642782}
   - {fileID: 928288201}
-  - {fileID: 1493523915}

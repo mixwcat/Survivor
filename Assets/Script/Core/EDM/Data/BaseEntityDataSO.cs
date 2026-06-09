@@ -12,7 +12,7 @@ public abstract class BaseEntityDataSO : ScriptableObject
 
     [Header("共用基础属性")]
     public float MaxHealth = 100f;
-    public float MoveSpeed = 5f;
+    public float MoveSpeed = 0f;
     public float Damage = 10f;
 
     /// <summary>

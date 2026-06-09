@@ -38,20 +38,6 @@ public class BaseHealthController : MonoBehaviour
     }
 
     /// <summary>
-    /// 当实体的 StatModel 中任意数值变化时触发
-    /// 子类可 override 处理特定数值变更（如 MaxHealth 变化时同步调整血量）
-    /// </summary>
-    protected virtual void OnAnyStatChanged(StatType type)
-    {
-        if (type == StatType.BaseMaxHealth)
-        {
-            // 最大血量增加时，确保当前血量不超过最大值
-            if (CurrentHealth > MaxHealth)
-                CurrentHealth = MaxHealth;
-        }
-    }
-
-    /// <summary>
     /// 受到伤害
     /// </summary>
     public virtual void TakeDamage(float damage)
@@ -87,5 +73,19 @@ public class BaseHealthController : MonoBehaviour
     protected virtual void Die()
     {
         Destroy(gameObject);
+    }
+
+    /// <summary>
+    /// 当实体的 StatModel 中任意数值变化时触发
+    /// 子类可 override 处理特定数值变更（如 MaxHealth 变化时同步调整血量）
+    /// </summary>
+    protected virtual void OnAnyStatChanged(StatType type)
+    {
+        if (type == StatType.BaseMaxHealth)
+        {
+            // 最大血量增加时，确保当前血量不超过最大值
+            if (CurrentHealth > MaxHealth)
+                CurrentHealth = MaxHealth;
+        }
     }
 }

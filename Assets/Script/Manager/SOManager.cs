@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class SOManager : MonoBehaviour
@@ -27,33 +28,71 @@ public class SOManager : MonoBehaviour
     [Header("材质")]
     public Material towerHighlightMaterial;
 
+    [Header("实体数据注册表")]
+    [Tooltip("统一配置所有 Entity → DataSO 映射，EntityBehaviour 通过 _registryId 自动查找")]
+    public EntityDataRegistry entityDataRegistry;
+
 
     /// <summary>
-    /// 随机获取指定数量的升级SO
+    /// 收集当前已激活武器的所有标签
     /// </summary>
-    /// <param name="count"></param>
-    /// <returns></returns>
+    private HashSet<string> GetActiveWeaponTags()
+    {
+        var tags = new HashSet<string>();
+        if (WeaponManager.Instance == null) return tags;
+
+        foreach (var weapon in WeaponManager.Instance.weapons)
+        {
+            if (weapon == null) continue;
+            foreach (var tag in weapon.weaponTags)
+            {
+                tags.Add(tag);
+            }
+        }
+        return tags;
+    }
+
+    /// <summary>
+    /// 过滤与当前武器标签匹配的升级SO
+    /// 支持 Universal 标签（对所有武器生效）
+    /// </summary>
+    private List<LevelUpSO> FilterUpgradesByTags(List<LevelUpSO> sourceList)
+    {
+        var weaponTags = GetActiveWeaponTags();
+        if (weaponTags.Count == 0)
+            return new List<LevelUpSO>(sourceList);
+
+        return sourceList.Where(so =>
+            so.targetTags == null ||
+            so.targetTags.Count == 0 ||
+            so.targetTags.Contains("Universal") ||
+            so.targetTags.Any(tag => weaponTags.Contains(tag))
+        ).ToList();
+    }
+
+    /// <summary>
+    /// 随机获取指定数量的玩家升级SO
+    /// 根据当前已激活武器的标签过滤专属升级
+    /// </summary>
     public LevelUpSO[] GetRandomPlayerLevelUpSOs(int count)
     {
         List<LevelUpSO> selectedSOs = new List<LevelUpSO>();
-        List<LevelUpSO> copyList = new List<LevelUpSO>(commonLevelUpSOs);
 
-        // 判断当前武器类型，选择对应的升级SO列表
-        if (WeaponManager.Instance.weapons.Count == 0)
+        // 合并通用升级和武器专属升级
+        List<LevelUpSO> copyList = new List<LevelUpSO>(commonLevelUpSOs);
+        copyList.AddRange(fireBallLevelUpSOs);
+        copyList.AddRange(shootGunLevelUpSOs);
+
+        // 按标签过滤
+        copyList = FilterUpgradesByTags(copyList);
+
+        if (copyList.Count == 0 || WeaponManager.Instance.weapons.Count == 0)
         {
             for (int i = 0; i < count; i++)
             {
                 selectedSOs.Add(defaultPlayerSO);
             }
             return selectedSOs.ToArray();
-        }
-        if (WeaponManager.Instance.weapons[0] is SpinWeapon)
-        {
-            copyList.AddRange(fireBallLevelUpSOs);
-        }
-        else if (WeaponManager.Instance.weapons[0] is GunWeapon)
-        {
-            copyList.AddRange(shootGunLevelUpSOs);
         }
 
         // 随机选择指定数量的升级SO
@@ -75,8 +114,6 @@ public class SOManager : MonoBehaviour
     /// <summary>
     /// 随机获取指定数量的塔升级SO
     /// </summary>
-    /// <param name="count"></param>
-    /// <returns></returns>
     public LevelUpSO[] GetRandomTowerLevelUpSOs(int count, BaseTower towerType)
     {
         List<LevelUpSO> selectedSOs = new List<LevelUpSO>();
@@ -113,7 +150,6 @@ public class SOManager : MonoBehaviour
     /// <summary>
     /// 存储玩家未使用的升级SO
     /// </summary>
-    /// <param name="so"></param>
     public void StorePreferSOs(LevelUpSO[] so)
     {
         preferPlayerSOs = so;
