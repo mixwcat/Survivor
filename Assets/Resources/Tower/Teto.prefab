@@ -371,6 +371,7 @@ MonoBehaviour:
   _entityData: {fileID: 11400000, guid: 1b80c7ade015d0e4fa60aba664043303, type: 2}
   segments: 50
   detectionCollider: {fileID: 2087132411544136691}
+  highlightMaterial: {fileID: 2100000, guid: 8b769243dfd64ca46b4cfc179e827c8e, type: 2}
 --- !u!50 &6012883537708947247
 Rigidbody2D:
   serializedVersion: 5

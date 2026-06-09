@@ -205,6 +205,7 @@ MonoBehaviour:
   _entityData: {fileID: 11400000, guid: b983f2a93f3cc8045b141b259bbfcf00, type: 2}
   segments: 10
   detectionCollider: {fileID: 321512312491038469}
+  highlightMaterial: {fileID: 2100000, guid: 8b769243dfd64ca46b4cfc179e827c8e, type: 2}
 --- !u!114 &7004391404785752443
 MonoBehaviour:
   m_ObjectHideFlags: 0

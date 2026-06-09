@@ -15,6 +15,12 @@ public class BaseTower : EntityBehaviour
     private LineRenderer _lineRenderer;
     public CircleCollider2D detectionCollider;
 
+    [Header("高亮材质")]
+    [Tooltip("为空则使用 SOManager 中的统一配置")]
+    public Material highlightMaterial;
+    private SpriteRenderer[] _spriteRenderers;
+    private Material[] _originalMaterials;
+
 
     protected override void Awake()
     {
@@ -29,6 +35,20 @@ public class BaseTower : EntityBehaviour
         _lineRenderer.endColor = Color.white;
 
         DrawCircle();
+
+        // 缓存所有 SpriteRenderer 的原始材质
+        _spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
+        _originalMaterials = new Material[_spriteRenderers.Length];
+        for (int i = 0; i < _spriteRenderers.Length; i++)
+        {
+            _originalMaterials[i] = _spriteRenderers[i].material;
+        }
+
+        // 如果没有单独配置高亮材质，尝试从 SOManager 获取统一配置
+        if (highlightMaterial == null && SOManager.Instance != null)
+        {
+            highlightMaterial = SOManager.Instance.towerHighlightMaterial;
+        }
     }
 
     protected virtual void Start()
@@ -37,6 +57,16 @@ public class BaseTower : EntityBehaviour
 
         if (StatModel != null)
             StatModel.OnStatChanged += OnAnyStatChanged;
+    }
+
+    void OnEnable()
+    {
+        TowerManager.Instance.RegisterTower(this);
+    }
+
+    void OnDisable()
+    {
+        TowerManager.Instance.UnregisterTower(this);
     }
 
     protected virtual void OnDestroy()
@@ -68,6 +98,8 @@ public class BaseTower : EntityBehaviour
         }
     }
 
+
+    #region 绘制攻击范围
     protected void SetDefaultAlpha()
     {
         _lineRenderer.startColor = new Color(1f, 1f, 1f, 1f);
@@ -90,7 +122,9 @@ public class BaseTower : EntityBehaviour
             angle += 2 * Mathf.PI / segments;
         }
     }
+    #endregion
 
+    #region 索敌逻辑
     /// <summary>
     /// 寻找目标
     /// </summary>
@@ -117,14 +151,26 @@ public class BaseTower : EntityBehaviour
         if (other.CompareTag("Enemy"))
             enemyInRange.Remove(other.GetComponent<EnemyController>());
     }
+    #endregion
 
-    void OnEnable()
+
+
+    #region 高亮显示
+
+    /// <summary>
+    /// 设置高亮状态：true 切换为高亮材质，false 恢复原始材质
+    /// </summary>
+    public void SetHighlight(bool active)
     {
-        TowerManager.Instance.RegisterTower(this);
+        if (_spriteRenderers == null || _spriteRenderers.Length == 0) return;
+        if (active && highlightMaterial == null) return;
+
+        for (int i = 0; i < _spriteRenderers.Length; i++)
+        {
+            if (_spriteRenderers[i] == null) continue;
+            _spriteRenderers[i].material = active ? highlightMaterial : _originalMaterials[i];
+        }
     }
 
-    void OnDisable()
-    {
-        TowerManager.Instance.UnregisterTower(this);
-    }
+    #endregion
 }

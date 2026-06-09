@@ -24,6 +24,9 @@ public class SOManager : MonoBehaviour
     public List<LevelUpSO> rinLevelUpSOs = new List<LevelUpSO>();
     public LevelUpSO defaultTowerSO;
 
+    [Header("材质")]
+    public Material towerHighlightMaterial;
+
 
     /// <summary>
     /// 随机获取指定数量的升级SO

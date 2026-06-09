@@ -9,33 +9,45 @@ public class DetectPlayer : MonoBehaviour, IInteractable
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
+        if (other.CompareTag("Player") && other.TryGetComponent<PlayerInteraction>(out var interaction))
         {
-            ShowInteractTips(true);
-            other.GetComponent<PlayerController>().currentInteractable = this;
+            interaction.RegisterInteractable(this);
         }
     }
 
     void OnTriggerExit2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
+        if (other.CompareTag("Player") && other.TryGetComponent<PlayerInteraction>(out var interaction))
         {
-            var player = other.GetComponent<PlayerController>();
-            if ((object)player.currentInteractable == this) 
-            {
-                ShowInteractTips(false);
-                player.currentInteractable = null; 
-            }
+            interaction.UnregisterInteractable(this);
         }
     }
 
 
     /// <summary>
-    /// 实现接口
+    /// 实现接口 — 交互行为
     /// </summary>
     public void Interact()
     {
         UIManager.Instance.ShowPanel<TowerLevelUpPanel>().SetTowerType(GetComponentInParent<BaseTower>());
+    }
+
+    /// <summary>
+    /// 实现接口 — 成为当前交互目标时显示提示+高亮
+    /// </summary>
+    public void OnSelected()
+    {
+        ShowInteractTips(true);
+        GetComponentInParent<BaseTower>()?.SetHighlight(true);
+    }
+
+    /// <summary>
+    /// 实现接口 — 不再是当前交互目标时隐藏提示+取消高亮
+    /// </summary>
+    public void OnDeselected()
+    {
+        ShowInteractTips(false);
+        GetComponentInParent<BaseTower>()?.SetHighlight(false);
     }
 
 

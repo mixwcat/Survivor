@@ -3,6 +3,7 @@ using UnityEngine;
 /// <summary>
 /// 玩家控制器
 /// 继承 EntityBehaviour，所有数值从 StatModel 读取
+/// 负责：移动控制、输入系统初始化
 /// </summary>
 public class PlayerController : EntityBehaviour
 {
@@ -12,7 +13,6 @@ public class PlayerController : EntityBehaviour
     [Header("输入系统")]
     private IInputHandle _inputHandle;
     private Vector2 inputVector;
-    public IInteractable currentInteractable;
 
     protected override void Awake()
     {
@@ -46,34 +46,16 @@ public class PlayerController : EntityBehaviour
 
         inputVector = _inputHandle.MoveInput;
         float speed = GetStat(StatType.BaseMoveSpeed);
-        rb.linearVelocity = new Vector2(inputVector.x, inputVector.y).normalized * speed;
-    }
-
-    private void InteractWithObject()
-    {
-        if (currentInteractable != null)
-        {
-            currentInteractable.Interact();
-        }
+        rb.linearVelocity = inputVector.normalized * speed;
     }
 
     private void OnEnable()
     {
         PlayerManager.Instance.FindPlayer(this);
-
-        if (_inputHandle != null)
-        {
-            _inputHandle.OnInteract += InteractWithObject;
-        }
     }
 
     private void OnDisable()
     {
         PlayerManager.Instance.MissPlayer();
-
-        if (_inputHandle != null)
-        {
-            _inputHandle.OnInteract -= InteractWithObject;
-        }
     }
 }
