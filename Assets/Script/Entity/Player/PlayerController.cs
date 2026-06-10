@@ -11,15 +11,26 @@ public class PlayerController : EntityBehaviour
     public Rigidbody2D rb;
 
     [Header("输入系统")]
+    [SerializeField]
+    [Tooltip("输入标识：local=本地，network_X=远程玩家（联机用）")]
+    private string _inputHandleId = "local";
     private IInputHandle _inputHandle;
     private Vector2 inputVector;
+
+    [Header("经验系统")]
+    [SerializeField]
+    [Tooltip("玩家自身的经验控制器；为空时回退到全局 Service")]
+    private ExperienceLevController _experienceController;
+
+    /// <summary>玩家经验控制器（优先自身，回退全局）</summary>
+    public IExperienceController ExperienceController => _experienceController ?? ExperienceLevController.Service;
 
     protected override void Awake()
     {
         base.Awake();
 
-        // 通过工厂创建平台对应的输入处理器
-        _inputHandle = InputHandleFactory.GetLocalInput();
+        // 通过工厂按 ID 获取输入处理器
+        _inputHandle = InputHandleFactory.GetInput(_inputHandleId);
 
         if (_inputHandle == null)
         {
@@ -51,11 +62,11 @@ public class PlayerController : EntityBehaviour
 
     private void OnEnable()
     {
-        PlayerManager.Instance.FindPlayer(this);
+        PlayerManager.Service?.Register(this);
     }
 
     private void OnDisable()
     {
-        PlayerManager.Instance.MissPlayer();
+        PlayerManager.Service?.Unregister(this);
     }
 }

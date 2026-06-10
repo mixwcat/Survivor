@@ -39,14 +39,14 @@ public class GameSettingPanel : BasePanel
         {
             UIManager.Instance.HidePanel<GameSettingPanel>();
             UIManager.Instance.HidePanel<GamePanel>();
-            GameLevelManager.Instance.ResumeGame();
+            GameLevelManager.Service.ResumeGame();
 
             SceneManager.LoadScene("Menu");
         });
         btnRestart.onClick.AddListener(() =>
         {
             UIManager.Instance.HidePanel<GameSettingPanel>();
-            GameLevelManager.Instance.ResumeGame();
+            GameLevelManager.Service.ResumeGame();
 
             SceneManager.LoadScene("Main");
         });
@@ -54,13 +54,13 @@ public class GameSettingPanel : BasePanel
         {
             UIManager.Instance.HidePanel<GameSettingPanel>();
 
-            GameLevelManager.Instance.ResumeGame();
+            GameLevelManager.Service.ResumeGame();
         });
         btnClose.onClick.AddListener(() =>
         {
             UIManager.Instance.HidePanel<GameSettingPanel>();
 
-            GameLevelManager.Instance.ResumeGame();
+            GameLevelManager.Service.ResumeGame();
         });
     }
 
@@ -71,6 +71,6 @@ public class GameSettingPanel : BasePanel
         sliderBKM.value = BKMusic.Instance.audioSource.volume;
         sliderSE.value = BKMusic.Instance.soundValue;
 
-        GameLevelManager.Instance.PauseGame();
+        GameLevelManager.Service.PauseGame();
     }
 }

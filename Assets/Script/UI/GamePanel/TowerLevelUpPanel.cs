@@ -23,11 +23,11 @@ public class TowerLevelUpPanel : BasePanel
     public override void Init()
     {
         GetRandomSOs();
-        GameLevelManager.Instance.PauseGame();
+        GameLevelManager.Service.PauseGame();
 
         btn1.onClick.AddListener(() =>
         {
-            if (ExperienceLevController.Instance.CanUseLevelPoint(levelUpSOs[0].cost))
+            if (ExperienceLevController.Service.CanUseLevelPoint(levelUpSOs[0].cost))
             {
                 levelUpSOs[0].ApplyTo(_towerType);
                 GetRandomSOs();
@@ -36,7 +36,7 @@ public class TowerLevelUpPanel : BasePanel
         });
         btn2.onClick.AddListener(() =>
         {
-            if (ExperienceLevController.Instance.CanUseLevelPoint(levelUpSOs[1].cost))
+            if (ExperienceLevController.Service.CanUseLevelPoint(levelUpSOs[1].cost))
             {
                 levelUpSOs[1].ApplyTo(_towerType);
                 GetRandomSOs();
@@ -45,7 +45,7 @@ public class TowerLevelUpPanel : BasePanel
         });
         btn3.onClick.AddListener(() =>
         {
-            if (ExperienceLevController.Instance.CanUseLevelPoint(levelUpSOs[2].cost))
+            if (ExperienceLevController.Service.CanUseLevelPoint(levelUpSOs[2].cost))
             {
                 levelUpSOs[2].ApplyTo(_towerType);
                 GetRandomSOs();
@@ -55,7 +55,7 @@ public class TowerLevelUpPanel : BasePanel
         btnExit.onClick.AddListener(() =>
         {
             UIManager.Instance.HidePanel<TowerLevelUpPanel>();
-            GameLevelManager.Instance.ResumeGame();
+            GameLevelManager.Service.ResumeGame();
         });
     }
 
@@ -81,7 +81,7 @@ public class TowerLevelUpPanel : BasePanel
     public override void EscLogic()
     {
         UIManager.Instance.HidePanel<TowerLevelUpPanel>();
-        GameLevelManager.Instance.ResumeGame();
+        GameLevelManager.Service.ResumeGame();
     }
 
     public void SetTowerType(BaseTower tower)

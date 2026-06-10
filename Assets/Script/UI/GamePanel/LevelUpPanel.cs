@@ -23,14 +23,14 @@ public class LevelUpPanel : BasePanel
 
     public override void Init()
     {
-        _player = PlayerManager.Instance.player;
+        _player = PlayerManager.Service.LocalPlayer;
         InitLevelUpSOs();
         UpdateOptionsUI();
-        GameLevelManager.Instance.PauseGame();
+        GameLevelManager.Service.PauseGame();
 
         btn1.onClick.AddListener(() =>
         {
-            if (ExperienceLevController.Instance.CanUseLevelPoint(levelUpSOs[0].cost))
+            if (ExperienceLevController.Service.CanUseLevelPoint(levelUpSOs[0].cost))
             {
                 levelUpSOs[0].ApplyTo(_player);
                 GetRandomSOs();
@@ -40,7 +40,7 @@ public class LevelUpPanel : BasePanel
         });
         btn2.onClick.AddListener(() =>
         {
-            if (ExperienceLevController.Instance.CanUseLevelPoint(levelUpSOs[1].cost))
+            if (ExperienceLevController.Service.CanUseLevelPoint(levelUpSOs[1].cost))
             {
                 levelUpSOs[1].ApplyTo(_player);
                 GetRandomSOs();
@@ -50,7 +50,7 @@ public class LevelUpPanel : BasePanel
         });
         btn3.onClick.AddListener(() =>
         {
-            if (ExperienceLevController.Instance.CanUseLevelPoint(levelUpSOs[2].cost))
+            if (ExperienceLevController.Service.CanUseLevelPoint(levelUpSOs[2].cost))
             {
                 levelUpSOs[2].ApplyTo(_player);
                 GetRandomSOs();
@@ -60,7 +60,7 @@ public class LevelUpPanel : BasePanel
         });
         btnClose.onClick.AddListener(() =>
         {
-            GameLevelManager.Instance.ResumeGame();
+            GameLevelManager.Service.ResumeGame();
             UIManager.Instance.HidePanel<LevelUpPanel>();
         });
     }
@@ -98,7 +98,7 @@ public class LevelUpPanel : BasePanel
     public override void EscLogic()
     {
         base.EscLogic();
-        GameLevelManager.Instance.ResumeGame();
+        GameLevelManager.Service.ResumeGame();
         UIManager.Instance.HidePanel<LevelUpPanel>();
     }
 }

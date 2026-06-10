@@ -8,7 +8,7 @@ public class GameSceneManager : MonoBehaviour
 
     void Awake()
     {
-        _inputHandle = InputHandleFactory.GetLocalInput();
+        _inputHandle = InputHandleFactory.GetInput("local");
 
         if (_inputHandle == null)
         {

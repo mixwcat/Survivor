@@ -1,17 +1,78 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// 输入处理工厂类
 /// 根据平台创建对应的 IInputHandle 实例
 /// 所有平台判断逻辑集中在此处，业务代码无需关心平台差异
+///
+/// 联机扩展：通过 inputId 区分不同玩家的输入源
+///   - "local"     → 本地输入（当前设备）
+///   - "network_X" → 远程玩家 X 的网络同步输入（未来实现）
+///   - "ai_X"      → AI 玩家输入（未来实现）
 /// </summary>
 public static class InputHandleFactory
 {
+    /// <summary>已创建的输入句柄缓存，避免重复创建</summary>
+    private static readonly Dictionary<string, IInputHandle> _inputCache = new();
+
     /// <summary>
-    /// 创建本地输入处理器（根据编译平台自动选择）
+    /// 按输入 ID 获取输入处理器
     /// </summary>
-    /// <returns>平台对应的 IInputHandle 实例</returns>
+    /// <param name="inputId">输入标识："local" 为本地，其他为远程/AI</param>
+    public static IInputHandle GetInput(string inputId)
+    {
+        if (_inputCache.TryGetValue(inputId, out var cached))
+            return cached;
+
+        IInputHandle handle = null;
+
+        if (inputId == "local")
+        {
+            handle = CreateLocalInput();
+        }
+        else if (inputId.StartsWith("network_"))
+        {
+            // 未来：联机模式下创建 NetworkInputHandle
+            // handle = new NetworkInputHandle(inputId);
+            Debug.LogWarning($"Network input '{inputId}' not yet implemented. Falling back to local.");
+            handle = CreateLocalInput();
+        }
+        else if (inputId.StartsWith("ai_"))
+        {
+            // 未来：AI 玩家输入
+            // handle = new AIInputHandle(inputId);
+            Debug.LogWarning($"AI input '{inputId}' not yet implemented.");
+        }
+
+        if (handle != null)
+            _inputCache[inputId] = handle;
+
+        return handle;
+    }
+
+    /// <summary>
+    /// 创建本地输入处理器（兼容旧代码，内部调用 GetInput("local")）
+    /// </summary>
     public static IInputHandle GetLocalInput()
+    {
+        return GetInput("local");
+    }
+
+    /// <summary>释放指定输入句柄的缓存</summary>
+    public static void ReleaseInput(string inputId)
+    {
+        _inputCache.Remove(inputId);
+    }
+
+    /// <summary>清空所有输入缓存</summary>
+    public static void ClearCache()
+    {
+        _inputCache.Clear();
+    }
+
+    /// <summary>创建本地平台对应的输入实现</summary>
+    private static IInputHandle CreateLocalInput()
     {
 #if UNITY_STANDALONE_WIN
         // Windows 平台：使用 InputReader（新版 Input System）
@@ -43,22 +104,4 @@ public static class InputHandleFactory
         return null;
 #endif
     }
-
-    // 未来扩展点：联机模式输入（暂不实现）
-    // public static IInputHandle GetNetworkInput(NetworkConnection connection)
-    // {
-    //     return new NetworkInputHandle(connection);
-    // }
-
-    // 未来扩展点：AI 输入（暂不实现）
-    // public static IInputHandle GetAIInput(AIController aiController)
-    // {
-    //     return new AIInputHandle(aiController);
-    // }
-
-    // 未来扩展点：回放输入（暂不实现）
-    // public static IInputHandle GetReplayInput(ReplayData replayData)
-    // {
-    //     return new ReplayInputHandle(replayData);
-    // }
 }

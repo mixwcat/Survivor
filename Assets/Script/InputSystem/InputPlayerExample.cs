@@ -12,7 +12,7 @@ public class PlayerExample : MonoBehaviour
 
     protected void Awake()
     {
-        _inputHandle = InputHandleFactory.GetLocalInput();
+        _inputHandle = InputHandleFactory.GetInput("local");
 
         if (_inputHandle == null)
         {

@@ -7,7 +7,7 @@ public class ExpSpriteController : MonoBehaviour
 
     private void Start()
     {
-        player = PlayerManager.Instance.player;
+        player = PlayerManager.Service.LocalPlayer;
         Invoke(nameof(DestorySelf), 20f);
     }
 
@@ -33,7 +33,17 @@ public class ExpSpriteController : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            ExperienceLevController.Instance.AddExperience(1);
+            // 优先给碰撞到的玩家自身加经验；联机兼容
+            var player = other.GetComponent<PlayerController>();
+            if (player != null && player.ExperienceController != null)
+            {
+                player.ExperienceController.AddExperience(1);
+            }
+            else
+            {
+                ExperienceLevController.Service.AddExperience(1);
+            }
+
             ExpSpritePool.Instance.ReturnToPool(this);
             BKMusic.Instance.PlaySound(ResourceEnum.PickExp);
         }

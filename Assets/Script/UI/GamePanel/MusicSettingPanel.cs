@@ -35,8 +35,8 @@ public class MusicSettingPanel : BasePanel
         {
             UIManager.Instance.HidePanel<MusicSettingPanel>();
 
-            if (GameLevelManager.Instance != null)
-                GameLevelManager.Instance.ResumeGame();
+            if (GameLevelManager.Service != null)
+                GameLevelManager.Service.ResumeGame();
         });
     }
 
@@ -47,7 +47,7 @@ public class MusicSettingPanel : BasePanel
         sliderBKM.value = BKMusic.Instance.audioSource.volume;
         sliderSE.value = BKMusic.Instance.soundValue;
 
-        if (GameLevelManager.Instance != null)
-            GameLevelManager.Instance.PauseGame();
+        if (GameLevelManager.Service != null)
+            GameLevelManager.Service.PauseGame();
     }
 }

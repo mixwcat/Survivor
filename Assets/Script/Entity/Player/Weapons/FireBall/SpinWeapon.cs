@@ -54,7 +54,7 @@ public class SpinWeapon : BaseWeapon
     /// </summary>
     IEnumerator GenerateSpinWeapon()
     {
-        while (PlayerManager.Instance.player != null)
+        while (PlayerManager.Service.LocalPlayer != null)
         {
             float interval = GetAttackInterval();
             float lifeTime = GetStat(StatType.SpinWeaponLifeTime);

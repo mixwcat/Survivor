@@ -3,6 +3,9 @@ using UnityEngine;
 
 public class PlayerAnimationController : MonoBehaviour
 {
+    [SerializeField]
+    [Tooltip("输入标识：local=本地，network_X=远程玩家（联机用）")]
+    private string _inputHandleId = "local";
     private IInputHandle _inputHandle;
     private Animator animator;
     private AudioSource moveAudioSource;
@@ -19,7 +22,7 @@ public class PlayerAnimationController : MonoBehaviour
         animator = GetComponentInChildren<Animator>();
         moveAudioSource = GetComponent<AudioSource>();
 
-        _inputHandle = InputHandleFactory.GetLocalInput();
+        _inputHandle = InputHandleFactory.GetInput(_inputHandleId);
 
         if (_inputHandle == null)
         {
@@ -68,7 +71,7 @@ public class PlayerAnimationController : MonoBehaviour
 
     IEnumerator PlayMoveSound()
     {
-        while (PlayerManager.Instance.player != null)
+        while (PlayerManager.Service.LocalPlayer != null)
         {
             if (isMoving)
             {

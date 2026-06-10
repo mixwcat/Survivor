@@ -8,7 +8,7 @@ public class CameraController : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        playerTransform = PlayerManager.Instance.player.transform;
+        playerTransform = PlayerManager.Service.LocalPlayer?.transform;
     }
 
     void FixedUpdate()

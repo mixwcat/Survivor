@@ -367,6 +367,7 @@ GameObject:
   - component: {fileID: 209286871}
   - component: {fileID: 209286872}
   - component: {fileID: 209286873}
+  - component: {fileID: 209286874}
   m_Layer: 7
   m_Name: Player
   m_TagString: Player
@@ -407,6 +408,8 @@ MonoBehaviour:
   _entityData: {fileID: 11400000, guid: 90d8d153933596a4a9903493c6802f2c, type: 2}
   _registryId: Player
   rb: {fileID: 0}
+  _inputHandleId: local
+  _experienceController: {fileID: 0}
 --- !u!114 &209286870
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -495,6 +498,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 592665f7563eee349899b4b2f42023e9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _inputHandleId: local
+--- !u!114 &209286874
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 209286865}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48cea76cf14ec3b43997bd2751ef51b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentLevel: 1
+  maxLevel: 200
+  expTable: 01000000
+  currentExp: 0
+  levelPoint: 10
 --- !u!1 &254276042
 GameObject:
   m_ObjectHideFlags: 0
@@ -635,6 +656,7 @@ MonoBehaviour:
   _registryId: Weapon_Gun
   weaponTags: []
   firePoint: {fileID: 1349178816}
+  _inputHandleId: local
 --- !u!1 &482714189
 GameObject:
   m_ObjectHideFlags: 0
@@ -1608,6 +1630,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4c1c0ac3748c2be4b9f182421796ab41, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _inputHandleId: local
   soundInterval: 0.3
 --- !u!95 &937134209
 Animator:
@@ -50582,55 +50605,6 @@ MonoBehaviour:
     MaxWindowSize: 0
     Padding: 0
   m_LegacyMaxWindowSize: -2
---- !u!1 &1856292164
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1856292166}
-  - component: {fileID: 1856292165}
-  m_Layer: 0
-  m_Name: ExperienceLevController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1856292165
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1856292164}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48cea76cf14ec3b43997bd2751ef51b0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  currentLevel: 1
-  maxLevel: 200
-  expTable: 01000000
-  currentExp: 0
-  levelPoint: 10
---- !u!4 &1856292166
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1856292164}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.9555689, y: -0.17021903, z: 0.08261675}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1865473001
 GameObject:
   m_ObjectHideFlags: 0
@@ -50779,9 +50753,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a356d5be7e764844ea7b215f55e1e9dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  levelTime: 0
-  isGameActive: 1
-  currentWave: 0
+  _levelTime: 0
+  _isGameActive: 1
+  _currentWave: 0
+  _isGameOver: 0
 --- !u!4 &1922692382
 Transform:
   m_ObjectHideFlags: 0
@@ -51389,7 +51364,6 @@ SceneRoots:
   - {fileID: 728996201}
   - {fileID: 1352728602}
   - {fileID: 894867105}
-  - {fileID: 1856292166}
   - {fileID: 48095921}
   - {fileID: 949318565}
   - {fileID: 1945642782}

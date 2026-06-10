@@ -7,6 +7,9 @@ using UnityEngine;
 /// </summary>
 public class PlayerInteraction : MonoBehaviour
 {
+    [SerializeField]
+    [Tooltip("输入标识：local=本地，network_X=远程玩家（联机用）")]
+    private string _inputHandleId = "local";
     private IInputHandle _inputHandle;
 
     private IInteractable _currentInteractable;
@@ -19,7 +22,7 @@ public class PlayerInteraction : MonoBehaviour
 
     void Awake()
     {
-        _inputHandle = InputHandleFactory.GetLocalInput();
+        _inputHandle = InputHandleFactory.GetInput(_inputHandleId);
 
         if (_inputHandle == null)
         {

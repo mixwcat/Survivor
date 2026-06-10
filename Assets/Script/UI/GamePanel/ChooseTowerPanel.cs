@@ -22,42 +22,42 @@ public class ChooseTowerPanel : BasePanel
     public override void Init()
     {
         UpdateUI();
-        GameLevelManager.Instance.PauseGame();
+        GameLevelManager.Service.PauseGame();
 
         button1.onClick.AddListener(() =>
         {
-            if (ExperienceLevController.Instance.CanUseLevelPoint(towerSO1.expConsumption))
+            if (ExperienceLevController.Service.CanUseLevelPoint(towerSO1.expConsumption))
             {
                 InstantiateTowerPlacementSprite(towerSO1);
                 UIManager.Instance.HidePanel<ChooseTowerPanel>();
-                GameLevelManager.Instance.ResumeGame();
+                GameLevelManager.Service.ResumeGame();
                 BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
             }
         });
         button2.onClick.AddListener(() =>
         {
-            if (ExperienceLevController.Instance.CanUseLevelPoint(towerSO2.expConsumption))
+            if (ExperienceLevController.Service.CanUseLevelPoint(towerSO2.expConsumption))
             {
                 InstantiateTowerPlacementSprite(towerSO2);
                 UIManager.Instance.HidePanel<ChooseTowerPanel>();
-                GameLevelManager.Instance.ResumeGame();
+                GameLevelManager.Service.ResumeGame();
                 BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
             }
         });
         button3.onClick.AddListener(() =>
         {
-            if (ExperienceLevController.Instance.CanUseLevelPoint(towerSO3.expConsumption))
+            if (ExperienceLevController.Service.CanUseLevelPoint(towerSO3.expConsumption))
             {
                 InstantiateTowerPlacementSprite(towerSO3);
                 UIManager.Instance.HidePanel<ChooseTowerPanel>();
-                GameLevelManager.Instance.ResumeGame();
+                GameLevelManager.Service.ResumeGame();
                 BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
             }
         });
         btnClose.onClick.AddListener(() =>
         {
             UIManager.Instance.HidePanel<ChooseTowerPanel>();
-            GameLevelManager.Instance.ResumeGame();
+            GameLevelManager.Service.ResumeGame();
         });
 
 #if UNITY_ANDROID
@@ -83,7 +83,7 @@ public class ChooseTowerPanel : BasePanel
     {
         base.EscLogic();
         UIManager.Instance.HidePanel<ChooseTowerPanel>();
-        GameLevelManager.Instance.ResumeGame();
+        GameLevelManager.Service.ResumeGame();
     }
 
     private void InstantiateTowerPlacementSprite(TowerInfoSO towerSO)

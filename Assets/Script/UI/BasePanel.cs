@@ -23,7 +23,7 @@ public abstract class BasePanel : MonoBehaviour
 
         canvasGroup.blocksRaycasts = true;
 
-        _inputHandle = InputHandleFactory.GetLocalInput();
+        _inputHandle = InputHandleFactory.GetInput("local");
 
         if (_inputHandle == null)
         {

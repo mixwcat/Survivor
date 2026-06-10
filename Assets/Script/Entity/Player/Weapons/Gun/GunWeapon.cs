@@ -16,11 +16,14 @@ public class GunWeapon : BaseWeapon
     public Transform firePoint;
 
     [Header("输入系统")]
+    [SerializeField]
+    [Tooltip("输入标识：local=本地，network_X=远程玩家（联机用）")]
+    private string _inputHandleId = "local";
     private IInputHandle _inputHandle;
 
     private void Start()
     {
-        _inputHandle = InputHandleFactory.GetLocalInput();
+        _inputHandle = InputHandleFactory.GetInput(_inputHandleId);
 
         if (_inputHandle == null)
         {
@@ -70,7 +73,7 @@ public class GunWeapon : BaseWeapon
     /// </summary>
     IEnumerator GenerateBullet()
     {
-        while (PlayerManager.Instance.player != null)
+        while (PlayerManager.Service.LocalPlayer != null)
         {
             float interval = GetAttackInterval();      // 从玩家读取（受升级影响）
             int damage = (int)GetBaseDamage();           // 从玩家读取（受升级影响）

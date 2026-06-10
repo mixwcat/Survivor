@@ -29,9 +29,9 @@ public class EnemyController : EntityBehaviour
     /// </summary>
     private void EnhanceWithWave()
     {
-        int wave = GameLevelManager.Instance.currentWave;
-        StatModel.AddModifier(new StatModifier(StatType.BaseMaxHealth, wave * 5, EModifierType.Add, GameLevelManager.Instance));
-        StatModel.AddModifier(new StatModifier(StatType.BaseDamage, wave * 0.5f, EModifierType.Add, GameLevelManager.Instance));
+        int wave = GameLevelManager.Service.CurrentWave;
+        StatModel.AddModifier(new StatModifier(StatType.BaseMaxHealth, wave * 5, EModifierType.Add, GameLevelManager.Service));
+        StatModel.AddModifier(new StatModifier(StatType.BaseDamage, wave * 0.5f, EModifierType.Add, GameLevelManager.Service));
     }
 
     void FixedUpdate()
@@ -57,17 +57,32 @@ public class EnemyController : EntityBehaviour
 
     private Transform FindTarget()
     {
-        if (PlayerManager.Instance.player != null)
+        var pm = PlayerManager.Service;
+        if (pm == null) return null;
+
+        // 联机兼容：从所有玩家中找最近的
+        PlayerController nearestPlayer = null;
+        float nearestDist = float.MaxValue;
+        foreach (var player in pm.AllPlayers)
         {
-            Transform targetTrans = PlayerManager.Instance.player.transform;
-            foreach (var tower in TowerManager.Instance.towers)
+            if (player == null) continue;
+            float dist = Vector3.Distance(transform.position, player.transform.position);
+            if (dist < nearestDist)
             {
-                if (tower == null) continue;
-                targetTrans = Vector3.Distance(transform.position, tower.transform.position) < Vector3.Distance(transform.position, targetTrans.position) ? tower.transform : targetTrans;
+                nearestDist = dist;
+                nearestPlayer = player;
             }
-            return targetTrans;
         }
-        return null;
+
+        if (nearestPlayer == null) return null;
+
+        Transform targetTrans = nearestPlayer.transform;
+        foreach (var tower in TowerManager.Instance.towers)
+        {
+            if (tower == null) continue;
+            targetTrans = Vector3.Distance(transform.position, tower.transform.position) < Vector3.Distance(transform.position, targetTrans.position) ? tower.transform : targetTrans;
+        }
+        return targetTrans;
     }
 
     private void TowardsTarget()
@@ -89,13 +104,13 @@ public class EnemyController : EntityBehaviour
 
     void OnEnable()
     {
-        GameLevelManager.Instance.RegisterEnemy(this);
+        GameLevelManager.Service.RegisterEnemy(this);
     }
 
     void OnDisable()
     {
         if (_isQuitting || !gameObject.scene.isLoaded) return;
-        GameLevelManager.Instance.UnregisterEnemy(this);
+        GameLevelManager.Service.UnregisterEnemy(this);
         if (ExpSpritePool.Instance != null)
             ExpSpritePool.Instance.SpawnExpSprite(transform);
     }

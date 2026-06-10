@@ -11,7 +11,7 @@ public class PausePanel : BasePanel
     public override void Init()
     {
         GetGameTime();
-        GameLevelManager.Instance.PauseGame();
+        GameLevelManager.Service.PauseGame();
 
         menuButton.onClick.AddListener(() =>
         {
@@ -22,7 +22,7 @@ public class PausePanel : BasePanel
         resumeButton.onClick.AddListener(() =>
         {
             UIManager.Instance.HidePanel<PausePanel>();
-            GameLevelManager.Instance.ResumeGame();
+            GameLevelManager.Service.ResumeGame();
         });
         restartButton.onClick.AddListener(() =>
         {
@@ -34,7 +34,7 @@ public class PausePanel : BasePanel
 
     private void GetGameTime()
     {
-        float time = GameLevelManager.Instance.levelTime;
+        float time = GameLevelManager.Service.LevelTime;
         int minutes = Mathf.FloorToInt(time / 60f);
         int seconds = Mathf.FloorToInt(time % 60f);
         gameTimeText.text = string.Format("存活时间为: {0:00}:{1:00}", minutes, seconds);
@@ -43,6 +43,6 @@ public class PausePanel : BasePanel
     public override void EscLogic()
     {
         UIManager.Instance.HidePanel<PausePanel>();
-        GameLevelManager.Instance.ResumeGame();
+        GameLevelManager.Service.ResumeGame();
     }
 }

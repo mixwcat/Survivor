@@ -10,7 +10,7 @@ public class ChooseWeaponPanel : BasePanel
 
     public override void Init()
     {
-        GameLevelManager.Instance.PauseGame();
+        GameLevelManager.Service.PauseGame();
 
         // 获取未激活的武器槽（可供选择的武器）
         var inactiveSlots = WeaponManager.Instance.weaponSlots;
@@ -34,7 +34,7 @@ public class ChooseWeaponPanel : BasePanel
     {
         slot.weaponSelectSO.RaiseSelectEvent();
         UIManager.Instance.HidePanel<ChooseWeaponPanel>();
-        GameLevelManager.Instance.ResumeGame();
+        GameLevelManager.Service.ResumeGame();
         BKMusic.Instance.PlaySound(ResourceEnum.ChooseWeapon);
         BKMusic.Instance.audioSource.mute = false;
 

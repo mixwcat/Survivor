@@ -32,7 +32,7 @@ public class EnemySpawner : MonoBehaviour
     /// <returns></returns>
     private IEnumerator SpawnEnemyCoroutine()
     {
-        while (PlayerManager.Instance.player != null)
+        while (PlayerManager.Service.LocalPlayer != null)
         {
             while (waveGoingOn)
             {
@@ -49,7 +49,7 @@ public class EnemySpawner : MonoBehaviour
             }
 
             // 等待所有敌人被消灭
-            while (GameLevelManager.Instance.GetEnemyCount() != 0)
+            while (GameLevelManager.Service.GetEnemyCount() != 0)
             {
                 yield return new WaitForSeconds(1f);
             }
@@ -62,7 +62,7 @@ public class EnemySpawner : MonoBehaviour
 
             // 重置信息
             currentWaveIndex++;
-            GameLevelManager.Instance.currentWave = currentWaveIndex + 1;
+            GameLevelManager.Service.CurrentWave = currentWaveIndex + 1;
             waveGoingOn = true;
             if (currentWaveIndex < waves.Count)
             {
@@ -82,7 +82,7 @@ public class EnemySpawner : MonoBehaviour
     private void SpawnEnemy()
     {
         // 控制最大敌人数量
-        if (GameLevelManager.Instance.GetEnemyCount() >= maxEnemies || PlayerManager.Instance.player == null)
+        if (GameLevelManager.Service.GetEnemyCount() >= maxEnemies || PlayerManager.Service.LocalPlayer == null)
             return;
 
 
@@ -97,7 +97,7 @@ public class EnemySpawner : MonoBehaviour
     /// <returns></returns>
     private Vector3 SelectSpawnPoint()
     {
-        Vector3 selectedPoint = PlayerManager.Instance.player.transform.position;
+        Vector3 selectedPoint = PlayerManager.Service.LocalPlayer.transform.position;
         if (Random.Range(0, 2) == 0)
         {
             // 上下生成

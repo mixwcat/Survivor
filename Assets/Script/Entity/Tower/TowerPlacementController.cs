@@ -22,7 +22,7 @@ public class TowerPlacementController : MonoBehaviour
 
     private Vector3 _lastTouchWorldPos = Vector3.zero;
 
-    public void Init(TowerInfoSO towerSO)
+    public void Init(TowerInfoSO towerSO, IInputHandle inputHandle = null)
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
         spriteRenderer.sprite = towerSO.towerPrefab.GetComponent<SpriteRenderer>().sprite;
@@ -33,11 +33,9 @@ public class TowerPlacementController : MonoBehaviour
         {
             attackRange = towerData.AttackRange;
         }
-    }
 
-    private void Start()
-    {
-        _inputHandle = InputHandleFactory.GetLocalInput();
+        // 支持外部注入输入源（联机模式下服务器可能传入虚拟输入）
+        _inputHandle = inputHandle ?? InputHandleFactory.GetInput("local");
 
         if (_inputHandle == null)
         {
@@ -119,7 +117,7 @@ public class TowerPlacementController : MonoBehaviour
     {
         if (!canPlace) return;
 
-        ExperienceLevController.Instance.CanUseLevelPoint(currentTowerSO.expConsumption);
+        ExperienceLevController.Service.CanUseLevelPoint(currentTowerSO.expConsumption);
         Instantiate(currentTowerSO.towerPrefab, transform.position, Quaternion.identity);
 
 #if UNITY_ANDROID
