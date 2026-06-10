@@ -195,3 +195,9 @@ crashlytics-build.properties
 # Claude Code workspace
 # Claude Code 工作区文件
 .claude/
+
+# OpenCode config (local-only, not tracked)
+opencode.json
+
+# BFG Repo-Cleaner reports
+.bfg-report/
