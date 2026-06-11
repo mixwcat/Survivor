@@ -21,8 +21,8 @@ public abstract class BaseEntityDataSO : ScriptableObject
     /// </summary>
     public virtual void FillStatModel(EntityStatModel model)
     {
-        model.SetBaseValue(StatType.BaseMaxHealth, MaxHealth);
-        model.SetBaseValue(StatType.BaseMoveSpeed, MoveSpeed);
-        model.SetBaseValue(StatType.BaseDamage, Damage);
+        model.SetBaseValue(StatType.MaxHealth, MaxHealth);
+        model.SetBaseValue(StatType.MoveSpeed, MoveSpeed);
+        model.SetBaseValue(StatType.Damage, Damage);
     }
 }

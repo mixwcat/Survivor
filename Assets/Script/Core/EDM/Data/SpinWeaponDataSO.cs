@@ -19,7 +19,7 @@ public class SpinWeaponDataSO : WeaponDataSO
         model.SetBaseValue(StatType.SpinWeaponRotationSpeed, RotationSpeed);
         model.SetBaseValue(StatType.SpinWeaponSize, Size);
         model.SetBaseValue(StatType.SpinWeaponLifeTime, LifeTime);
-        model.SetBaseValue(StatType.BaseDamage, Damage);
+        model.SetBaseValue(StatType.Damage, Damage);
         model.SetBaseValue(StatType.HitPushForce, HitPushForce);
     }
 }

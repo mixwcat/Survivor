@@ -8,7 +8,6 @@ using UnityEngine;
 [System.Serializable]
 public class WeaponSlot
 {
-    public string weaponId;           // 标识，如 "FireBall", "Gun"
     public GameObject weaponRoot;     // 挂载点（初始 inactive）
     public WeaponSelectSO weaponSelectSO;  // 选择时触发的 SO
 }
@@ -87,13 +86,5 @@ public class WeaponManager : MonoBehaviour
             }
         }
         return null;
-    }
-
-    /// <summary>
-    /// 根据 weaponId 查找武器槽配置
-    /// </summary>
-    public WeaponSlot GetWeaponSlot(string weaponId)
-    {
-        return weaponSlots.Find(s => s.weaponId == weaponId);
     }
 }

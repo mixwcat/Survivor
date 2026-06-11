@@ -13,10 +13,10 @@ public class BaseHealthController : MonoBehaviour
     public float CurrentHealth { get; protected set; }
 
     /// <summary>最大血量（从 StatModel 实时读取）</summary>
-    public float MaxHealth => _entity != null ? _entity.GetStat(StatType.BaseMaxHealth) : 100f;
+    public float MaxHealth => _entity != null ? _entity.GetStat(StatType.MaxHealth) : 100f;
 
     /// <summary>攻击力（从 StatModel 实时读取，敌人使用）</summary>
-    public float Damage => _entity != null ? _entity.GetStat(StatType.BaseDamage) : 0f;
+    public float Damage => _entity != null ? _entity.GetStat(StatType.Damage) : 0f;
 
     protected virtual void Awake()
     {
@@ -81,7 +81,7 @@ public class BaseHealthController : MonoBehaviour
     /// </summary>
     protected virtual void OnAnyStatChanged(StatType type)
     {
-        if (type == StatType.BaseMaxHealth)
+        if (type == StatType.MaxHealth)
         {
             // 最大血量增加时，确保当前血量不超过最大值
             if (CurrentHealth > MaxHealth)

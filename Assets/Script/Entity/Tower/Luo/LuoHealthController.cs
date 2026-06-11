@@ -27,7 +27,7 @@ public class LuoHealthController : BaseHealthController
     protected override void OnAnyStatChanged(StatType type)
     {
         base.OnAnyStatChanged(type);
-        if (type == StatType.BaseMaxHealth)
+        if (type == StatType.MaxHealth)
         {
             _towerHealthPanel.UpdateHealthUI();
         }

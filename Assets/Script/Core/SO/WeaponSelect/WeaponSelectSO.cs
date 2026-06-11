@@ -13,10 +13,6 @@ public class WeaponSelectSO : ScriptableObject
     public string displayName;
     public Sprite displaySprite;
 
-    [Header("武器标识")]
-    [Tooltip("对应 WeaponSlot.weaponId，如 FireBall / Gun")]
-    public string weaponId;
-
     /// <summary>
     /// 选择事件 —— WeaponManager 订阅此事件来激活对应武器
     /// </summary>

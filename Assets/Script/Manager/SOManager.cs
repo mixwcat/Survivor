@@ -1,5 +1,5 @@
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public class SOManager : MonoBehaviour
@@ -7,155 +7,129 @@ public class SOManager : MonoBehaviour
     [Header("单例模式")]
     private static SOManager instance;
     public static SOManager Instance => instance;
-    private void Awake()
-    {
-        instance = this;
-    }
 
-    [Header("人物SO列表")]
-    public List<LevelUpSO> fireBallLevelUpSOs = new List<LevelUpSO>();
-    public List<LevelUpSO> shootGunLevelUpSOs = new List<LevelUpSO>();
-    public List<LevelUpSO> commonLevelUpSOs = new List<LevelUpSO>();
-    public LevelUpSO defaultPlayerSO;
-    private LevelUpSO[] preferPlayerSOs = new LevelUpSO[3];
+    [Header("实体配置注册表")]
+    [Tooltip("统一管理所有 EntityType → EntitySO 映射，EntityBehaviour 通过 entityType 自动获取")]
+    public List<EntitySOEntry> entitySOList = new();
+    private Dictionary<EntityType, BaseEntitySO> _entitySOCache;
 
-    [Header("塔SO列表")]
-    public List<LevelUpSO> tetoLevelUpSOs = new List<LevelUpSO>();
-    public List<LevelUpSO> luoLevelUpSOs = new List<LevelUpSO>();
-    public List<LevelUpSO> rinLevelUpSOs = new List<LevelUpSO>();
-    public LevelUpSO defaultTowerSO;
+    [Header("升级")]
+    public UpgradeCatalogSO upgradeCatalog;
+    private UpgradeSelector _upgradeSelector;
+    private LevelUpSO[] _preferPlayerSOs = new LevelUpSO[3];
 
     [Header("材质")]
     public Material towerHighlightMaterial;
 
-    [Header("实体数据注册表")]
-    [Tooltip("统一配置所有 Entity → DataSO 映射，EntityBehaviour 通过 _registryId 自动查找")]
-    public EntityDataRegistry entityDataRegistry;
 
-
-    /// <summary>
-    /// 收集当前已激活武器的所有标签
-    /// </summary>
-    private HashSet<string> GetActiveWeaponTags()
+    private void Awake()
     {
-        var tags = new HashSet<string>();
-        if (WeaponManager.Instance == null) return tags;
-
-        foreach (var weapon in WeaponManager.Instance.weapons)
-        {
-            if (weapon == null) continue;
-            foreach (var tag in weapon.weaponTags)
-            {
-                tags.Add(tag);
-            }
-        }
-        return tags;
+        instance = this;
+        if (upgradeCatalog != null)
+            _upgradeSelector = new UpgradeSelector(upgradeCatalog);
     }
 
     /// <summary>
-    /// 过滤与当前武器标签匹配的升级SO
-    /// 支持 Universal 标签（对所有武器生效）
+    /// 根据 EntityType 获取对应的 EntitySO
+    /// 首次调用时构建 Dictionary 缓存，后续为 O(1) 查找
     /// </summary>
-    private List<LevelUpSO> FilterUpgradesByTags(List<LevelUpSO> sourceList)
+    public BaseEntitySO GetEntitySO(EntityType entityType)
     {
-        var weaponTags = GetActiveWeaponTags();
-        if (weaponTags.Count == 0)
-            return new List<LevelUpSO>(sourceList);
+        if (_entitySOCache == null)
+            BuildEntitySOCache();
 
-        return sourceList.Where(so =>
-            so.targetTags == null ||
-            so.targetTags.Count == 0 ||
-            so.targetTags.Contains("Universal") ||
-            so.targetTags.Any(tag => weaponTags.Contains(tag))
-        ).ToList();
+        _entitySOCache.TryGetValue(entityType, out var so);
+        return so;
+    }
+
+    /// <summary>
+    /// 将 List<EntitySOEntry> 转换为 Dictionary 缓存
+    /// </summary>
+    private void BuildEntitySOCache()
+    {
+        _entitySOCache = new Dictionary<EntityType, BaseEntitySO>();
+        if (entitySOList == null) return;
+
+        foreach (var entry in entitySOList)
+        {
+            if (entry.entitySO == null) continue;
+            _entitySOCache[entry.entityType] = entry.entitySO;
+        }
     }
 
     /// <summary>
     /// 随机获取指定数量的玩家升级SO
-    /// 根据当前已激活武器的标签过滤专属升级
+    /// 来源包括：玩家通用配置 + 当前已激活武器的 WeaponEntitySO
     /// </summary>
     public LevelUpSO[] GetRandomPlayerLevelUpSOs(int count)
     {
-        List<LevelUpSO> selectedSOs = new List<LevelUpSO>();
-
-        // 合并通用升级和武器专属升级
-        List<LevelUpSO> copyList = new List<LevelUpSO>(commonLevelUpSOs);
-        copyList.AddRange(fireBallLevelUpSOs);
-        copyList.AddRange(shootGunLevelUpSOs);
-
-        // 按标签过滤
-        copyList = FilterUpgradesByTags(copyList);
-
-        if (copyList.Count == 0 || WeaponManager.Instance.weapons.Count == 0)
+        if (_upgradeSelector == null || upgradeCatalog == null)
         {
+            var fallback = new LevelUpSO[count];
             for (int i = 0; i < count; i++)
-            {
-                selectedSOs.Add(defaultPlayerSO);
-            }
-            return selectedSOs.ToArray();
+                fallback[i] = upgradeCatalog?.defaultPlayerUpgrade;
+            Debug.LogWarning("UpgradeSelector or UpgradeCatalog is null, returning fallback player upgrades.");
+            return fallback;
         }
 
-        // 随机选择指定数量的升级SO
-        for (int i = 0; i < count; i++)
+        var sources = new List<BaseEntitySO>();
+
+        // 玩家通用升级来源
+        if (upgradeCatalog.playerUpgradeSource != null)
+            sources.Add(upgradeCatalog.playerUpgradeSource);
+
+        // 已激活武器来源：从武器实例的 entityType 反查 WeaponEntitySO
+        if (WeaponManager.Instance != null)
         {
-            if (copyList.Count == 0)
+            foreach (var weapon in WeaponManager.Instance.weapons)
             {
-                selectedSOs.Add(defaultPlayerSO);
-                break;
+                if (weapon?.EntityConfig is WeaponEntitySO weaponSO)
+                    sources.Add(weaponSO);
             }
-            int index = Random.Range(0, copyList.Count);
-            selectedSOs.Add(copyList[index]);
-            copyList.RemoveAt(index);
         }
-        return selectedSOs.ToArray();
-    }
 
+        return _upgradeSelector.GetRandomPlayerUpgrades(sources, count);
+    }
 
     /// <summary>
     /// 随机获取指定数量的塔升级SO
     /// </summary>
     public LevelUpSO[] GetRandomTowerLevelUpSOs(int count, BaseTower towerType)
     {
-        List<LevelUpSO> selectedSOs = new List<LevelUpSO>();
-        List<LevelUpSO> copyList = new List<LevelUpSO>();
-        switch (towerType)
+        if (_upgradeSelector == null || upgradeCatalog == null)
         {
-            case Teto:
-                copyList.AddRange(tetoLevelUpSOs);
-                break;
-            case Luo:
-                copyList.AddRange(luoLevelUpSOs);
-                break;
-            case Rin:
-                copyList.AddRange(rinLevelUpSOs);
-                break;
+            var fallback = new LevelUpSO[count];
+            for (int i = 0; i < count; i++)
+                fallback[i] = upgradeCatalog?.defaultTowerUpgrade;
+            return fallback;
         }
 
-
-        // 随机选择指定数量的升级SO
-        for (int i = 0; i < count; i++)
-        {
-            if (copyList.Count == 0)
-            {
-                copyList.Add(defaultTowerSO);
-            }
-            int index = Random.Range(0, copyList.Count);
-            selectedSOs.Add(copyList[index]);
-            copyList.RemoveAt(index);
-        }
-        return selectedSOs.ToArray();
+        return _upgradeSelector.GetRandomTowerUpgrades(towerType?.EntityConfig, count);
     }
-
 
     /// <summary>
     /// 存储玩家未使用的升级SO
     /// </summary>
     public void StorePreferSOs(LevelUpSO[] so)
     {
-        preferPlayerSOs = so;
+        _preferPlayerSOs = so;
     }
+
     public LevelUpSO[] GetPreferSOs()
     {
-        return preferPlayerSOs;
+        return _preferPlayerSOs;
     }
+}
+
+/// <summary>
+/// EntitySO 注册表条目
+/// </summary>
+[Serializable]
+public class EntitySOEntry
+{
+    [Tooltip("实体类型枚举")]
+    public EntityType entityType;
+
+    [Tooltip("对应的 EntitySO asset")]
+    public BaseEntitySO entitySO;
 }

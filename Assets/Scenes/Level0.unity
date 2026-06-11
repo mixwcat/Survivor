@@ -119,50 +119,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &48095919
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 48095921}
-  - component: {fileID: 48095920}
-  m_Layer: 0
-  m_Name: MouseHandleController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &48095920
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 48095919}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 13c060465a31d04438ec5e70a6cb3241, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!4 &48095921
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 48095919}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &77202412
 GameObject:
   m_ObjectHideFlags: 0
@@ -405,9 +361,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bd0125b23f7e19444a96346c84b059a9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _entityData: {fileID: 11400000, guid: 90d8d153933596a4a9903493c6802f2c, type: 2}
-  _registryId: Player
-  rb: {fileID: 0}
+  entityType: 0
   _inputHandleId: local
   _experienceController: {fileID: 0}
 --- !u!114 &209286870
@@ -652,9 +606,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35f7800f47321d745b66876db1d1ec01, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _entityData: {fileID: 11400000, guid: 72005679ad543b041ad650ef560773e0, type: 2}
-  _registryId: Weapon_Gun
-  weaponTags: []
+  entityType: 0
   firePoint: {fileID: 1349178816}
   _inputHandleId: local
 --- !u!1 &482714189
@@ -718,11 +670,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   weaponSlots:
-  - weaponId: Spin
-    weaponRoot: {fileID: 712366146}
+  - weaponRoot: {fileID: 712366146}
     weaponSelectSO: {fileID: 11400000, guid: 60932482e9947bd4a836789de9833de8, type: 2}
-  - weaponId: Gun
-    weaponRoot: {fileID: 289837580}
+  - weaponRoot: {fileID: 289837580}
     weaponSelectSO: {fileID: 11400000, guid: ab2492f69edbbc14b954a4fc13e5db62, type: 2}
   weapons: []
 --- !u!4 &496905268
@@ -1228,9 +1178,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ef4e28e5f48d35c4391b8ebd3f276d04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _entityData: {fileID: 0}
-  _registryId: Weapon_Spin
-  weaponTags: []
+  entityType: 0
   SpinWeaponPosition: {fileID: 1685806472}
 --- !u!1 &728996200
 GameObject:
@@ -50879,38 +50827,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bf768efe2888e04eac8f6366d98d4f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fireBallLevelUpSOs:
-  - {fileID: 11400000, guid: 38a9e34d07d3eeb499866adc265a8654, type: 2}
-  - {fileID: 11400000, guid: 7b450676e6ebe484b8072342e6127732, type: 2}
-  - {fileID: 11400000, guid: 676a252e3fcce404c9b9ee6eec28e507, type: 2}
-  shootGunLevelUpSOs:
-  - {fileID: 11400000, guid: 6be38f9e54702574b968a134daace57d, type: 2}
-  - {fileID: 11400000, guid: ad1b62fe5624b194b8f5c8640411f7a6, type: 2}
-  - {fileID: 11400000, guid: 27a9c904927665640b71a0d5d2bb69cd, type: 2}
-  commonLevelUpSOs:
-  - {fileID: 11400000, guid: 4388f125628534b4c852b6cd99263958, type: 2}
-  - {fileID: 11400000, guid: f3011556ba10f124e8d6d6f42724bcb6, type: 2}
-  - {fileID: 11400000, guid: d8de75c2a2bca39418aed35c891935b0, type: 2}
-  defaultPlayerSO: {fileID: 11400000, guid: f340b697574a1b441ae24830ef3dfa2d, type: 2}
-  tetoLevelUpSOs:
-  - {fileID: 11400000, guid: c440b9f436b86624ca717fba1c532fea, type: 2}
-  - {fileID: 11400000, guid: 8a3c8aa8d57788544b70569ad7a5b7e6, type: 2}
-  - {fileID: 11400000, guid: 7f20a989d3f739545b006bc977bcfafe, type: 2}
-  - {fileID: 11400000, guid: cff69d2bf8d04f745a2df901916b628e, type: 2}
-  - {fileID: 11400000, guid: b6c753a9dc6cd0949be7cb78e8abe8a4, type: 2}
-  luoLevelUpSOs:
-  - {fileID: 11400000, guid: d4a24a1516413fd43bbf9b3732ed0626, type: 2}
-  - {fileID: 11400000, guid: 2e138c229fba3664784156c2d505f3c5, type: 2}
-  - {fileID: 11400000, guid: 8b32530509965f245a3fbd810ce60c41, type: 2}
-  - {fileID: 11400000, guid: 095bea29e8236e244a4c8949766e638d, type: 2}
-  rinLevelUpSOs:
-  - {fileID: 11400000, guid: 87ef6031a94169f40b83527b5eaea17e, type: 2}
-  - {fileID: 11400000, guid: c9a74074cbec5264fb387a457ec4cd19, type: 2}
-  - {fileID: 11400000, guid: 259ed92b980cb244c87ecce32feb0020, type: 2}
-  - {fileID: 11400000, guid: 4682c9bce0f66184f8aa5baf91e9b483, type: 2}
-  defaultTowerSO: {fileID: 11400000, guid: 3d5ed6c766d123b49a8b5c0844e57ba9, type: 2}
+  entitySOList: []
+  upgradeCatalog: {fileID: 11400000, guid: 99c97903d5c75d043b1864a4b9d66218, type: 2}
   towerHighlightMaterial: {fileID: 2100000, guid: 8b769243dfd64ca46b4cfc179e827c8e, type: 2}
-  entityDataRegistry: {fileID: 11400000, guid: 2ac79bbf92264a742b977a776e7dbd4e, type: 2}
 --- !u!4 &1952431547
 Transform:
   m_ObjectHideFlags: 0
@@ -51364,7 +51283,6 @@ SceneRoots:
   - {fileID: 728996201}
   - {fileID: 1352728602}
   - {fileID: 894867105}
-  - {fileID: 48095921}
   - {fileID: 949318565}
   - {fileID: 1945642782}
   - {fileID: 928288201}

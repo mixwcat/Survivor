@@ -34,7 +34,7 @@ public class Teto : BaseTower
 
             DrawCircle();
 
-            int damage = (int)GetStat(StatType.BaseDamage);
+            int damage = (int)GetStat(StatType.Damage);
             int hitForce = (int)GetStat(StatType.TowerHitForce);
             float interval = GetStat(StatType.AttackInterval);
             float speed = GetStat(StatType.BulletSpeed);

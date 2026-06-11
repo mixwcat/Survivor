@@ -8,7 +8,7 @@ using UnityEngine;
 public class PlayerController : EntityBehaviour
 {
     [Header("组件")]
-    public Rigidbody2D rb;
+    private Rigidbody2D rb;
 
     [Header("输入系统")]
     [SerializeField]
@@ -56,7 +56,7 @@ public class PlayerController : EntityBehaviour
         if (_inputHandle == null) return;
 
         inputVector = _inputHandle.MoveInput;
-        float speed = GetStat(StatType.BaseMoveSpeed);
+        float speed = GetStat(StatType.MoveSpeed);
         rb.linearVelocity = inputVector.normalized * speed;
     }
 

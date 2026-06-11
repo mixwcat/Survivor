@@ -5,9 +5,9 @@
 public enum StatType
 {
     // === 通用 ===
-    BaseMaxHealth,
-    BaseMoveSpeed,
-    BaseDamage,
+    MaxHealth,
+    MoveSpeed,
+    Damage,
 
     // === 玩家 ===
     PlayerPickRange,

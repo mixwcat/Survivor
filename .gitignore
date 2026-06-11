@@ -188,10 +188,6 @@ crashlytics-build.properties
 # 保留 .meta 文件（Unity 必需）
 !*.meta
 
-# Exception: Keep small UI sprites if needed (uncomment if necessary)
-# 例外：如果需要保留小型 UI 图标（根据需要取消注释）
-# !Assets/UI/Icons/*.png
-
 # Claude Code workspace
 # Claude Code 工作区文件
 .claude/

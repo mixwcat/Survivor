@@ -9,10 +9,6 @@ using UnityEngine;
 /// </summary>
 public class BaseWeapon : EntityBehaviour
 {
-    [Header("武器标签")]
-    [Tooltip("用于 SOManager 升级池过滤，如 FireBall / Gun / Ranged / Melee")]
-    public List<string> weaponTags = new List<string>();
-
     protected override void Awake()
     {
         base.Awake();
@@ -43,7 +39,7 @@ public class BaseWeapon : EntityBehaviour
     /// </summary>
     protected float GetBaseDamage()
     {
-        return GetStat(StatType.BaseDamage);
+        return GetStat(StatType.Damage);
     }
 
     #endregion

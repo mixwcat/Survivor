@@ -11,7 +11,7 @@ public class BaseTower : EntityBehaviour
     protected List<EnemyController> enemyInRange = new List<EnemyController>();
 
     [Header("攻击范围显示")]
-    public int segments = 50;
+    public int segments = 20;
     private LineRenderer _lineRenderer;
     public CircleCollider2D detectionCollider;
 

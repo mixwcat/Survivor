@@ -3,32 +3,62 @@ using UnityEngine;
 /// <summary>
 /// 实体基类 MonoBehaviour
 /// - 持有 EntityStatModel 运行时数值容器
-/// - 从 BaseEntityDataSO 加载基础数值
+/// - 通过 EntityType enum 从 SOManager 统一获取 EntitySO，再读取 DataSO
 /// - 提供 GetStat / AddModifier 快捷访问
 /// </summary>
 public class EntityBehaviour : MonoBehaviour
 {
-    [Header("EDM 数值配置")]
-    [Tooltip("优先使用 Inspector 配置；为空时尝试从 EntityDataRegistry 自动查找")]
-    [SerializeField] protected BaseEntityDataSO _entityData;
+    [Header("实体类型")]
+    [Tooltip("对应 SOManager.entitySORegistry 中的 EntityType")]
+    [SerializeField] protected EntityType entityType;
 
-    [Tooltip("在 EntityDataRegistry 中注册的标识，如 Player / Enemy / Tower_Teto / Weapon_FireBall")]
-    [SerializeField] protected string _registryId;
+    private BaseEntitySO _entityConfig;
 
     public EntityStatModel StatModel { get; private set; }
-    public BaseEntityDataSO EntityData => _entityData;
+
+    /// <summary>
+    /// 运行时从 SOManager 获取的 EntitySO
+    /// </summary>
+    public BaseEntitySO EntityConfig
+    {
+        get
+        {
+            if (_entityConfig == null)
+                _entityConfig = SOManager.Instance?.GetEntitySO(entityType);
+            return _entityConfig;
+        }
+    }
+
+    public BaseEntityDataSO EntityData => EntityConfig?.dataRef;
 
     protected virtual void Awake()
     {
+        InitStatModel();
+    }
+
+    void Start()
+    {
+        // 防止 SOManager 还未完成 Awake 导致初始化失败，在 Start 中重试一次
+        if (StatModel == null || EntityConfig == null)
+            InitStatModel();
+    }
+
+    private void InitStatModel()
+    {
+        if (StatModel != null) return;
+
         StatModel = new EntityStatModel();
+        _entityConfig = SOManager.Instance?.GetEntitySO(entityType);
+        _entityConfig?.dataRef?.FillStatModel(StatModel);
 
-        // 如果 Inspector 没配 _entityData，尝试从 Registry 自动查找
-        if (_entityData == null && !string.IsNullOrEmpty(_registryId))
+        if (_entityConfig == null)
         {
-            _entityData = SOManager.Instance?.entityDataRegistry?.GetData(_registryId);
+            Debug.LogWarning(gameObject.name + " 缺少 EntitySO ，无法初始化 StatModel");
         }
-
-        _entityData?.FillStatModel(StatModel);
+        else if (_entityConfig.dataRef == null)
+        {
+            Debug.LogWarning(gameObject.name + " 缺少 DataSO，无法初始化 StatModel");
+        }
     }
 
     /// <summary>
@@ -39,39 +69,29 @@ public class EntityBehaviour : MonoBehaviour
         if (StatModel == null)
         {
             Debug.LogWarning(gameObject.name + " 缺少 StatModel，返回默认值 1");
-            return 1f; // 返回默认值，避免崩溃
+            return 1f;
         }
-        else if (_entityData == null)
+        else if (EntityConfig?.dataRef == null)
         {
-            Debug.LogWarning(gameObject.name + " 缺少 EntityData，无法获取 " + type + "，返回默认值 1");
-            return 1f; // 返回默认值，避免崩溃
+            Debug.LogWarning(gameObject.name + " 缺少 DataSO，无法获取 " + type + "，返回默认值 1");
+            return 1f;
         }
         else if (!StatModel.HasStat(type))
         {
             Debug.LogWarning(gameObject.name + " 缺少Type： " + type + "，返回默认值 1");
-            return 1f; // 返回默认值，避免崩溃
+            return 1f;
         }
         return StatModel.GetStat(type);
     }
 
     /// <summary>
-    /// 运行时替换 DataSO（用于动态配置）
+    /// 运行时替换实体类型（用于动态配置）
     /// </summary>
-    public void SetEntityData(BaseEntityDataSO data)
+    public void SetEntityType(EntityType type)
     {
-        _entityData = data;
-        StatModel = new EntityStatModel();
-        _entityData?.FillStatModel(StatModel);
+        entityType = type;
+        _entityConfig = null;
+        StatModel = null;
+        InitStatModel();
     }
-
-    /// <summary>
-    /// 编辑器模式下自动填充 Registry Id（可选）
-    /// </summary>
-#if UNITY_EDITOR
-    void OnValidate()
-    {
-        if (string.IsNullOrEmpty(_registryId))
-            _registryId = gameObject.name;
-    }
-#endif
 }

@@ -54,14 +54,18 @@ EntityBehaviour (MonoBehaviour base class for all gameplay entities)
 1. `BaseEntityDataSO` (abstract ScriptableObject) declares stat base values.
    - **DataSO 已按实体类型拆分为子类**：`PlayerDataSO` / `EnemyDataSO` / `TowerDataSO` / `LuoTowerDataSO` / `WeaponDataSO`（抽象基类） / `SpinWeaponDataSO` / `GunWeaponDataSO`
    - 每种武器/塔独立子类，新增类型只需新建子类，零修改现有代码
-2. `EntityBehaviour.Awake()` calls `_entityData.FillStatModel(StatModel)` to populate runtime stats.
-3. `EntityStatModel.GetStat(type)` computes final value: `(base + ΣAdd) * (1 + ΣMultiply)`, or raw value if Override exists.
-4. `LevelUpSO.ApplyTo(entity)` adds `StatModifier` entries into the target's `StatModel` — **upgrades are entirely data-driven**, no code changes needed.
+2. `BaseEntitySO` (ScriptableObject) wraps a specific `EntityType`, a `BaseEntityDataSO dataRef`, and a list of `LevelUpSO upgrades`.
+3. `EntityBehaviour` stores an `EntityType` enum and resolves its `BaseEntitySO` via `SOManager.Instance.GetEntitySO(entityType)` at runtime.
+4. `EntityBehaviour.Awake()` calls `EntityConfig.dataRef.FillStatModel(StatModel)` to populate runtime stats.
+5. `EntityStatModel.GetStat(type)` computes final value: `(base + ΣAdd) * (1 + ΣMultiply)`, or raw value if Override exists.
+6. `LevelUpSO.ApplyTo(entity)` adds `StatModifier` entries into the target's `StatModel` — **upgrades are entirely data-driven**, no code changes needed.
 
-**EntityDataRegistry** — 集中式 DataSO 配置（解决 Inspector 分散拖拽问题）：
-- `EntityDataRegistry` SO 统一存放所有 `entityId → DataSO` 映射
-- `EntityBehaviour` 支持通过 `_registryId` 字段自动从 Registry 查找 DataSO
-- 所有 DataSO 配置集中在一个 asset 中管理，无需在多个 Prefab/Scene 中逐个拖拽
+**EntitySO Registry** — 集中式 EntitySO 配置（解决 Inspector 分散拖拽问题）：
+- `SOManager.entitySOList` 统一存放所有 `EntityType → BaseEntitySO` 映射
+- `EntityBehaviour` 通过 `entityType` 字段自动从 SOManager 查找 EntitySO
+- 所有实体配置集中在 SOManager 一个 asset 中管理，无需在多个 Prefab/Scene 中逐个拖拽
+
+> 历史变更：`EntityDataRegistry`（string `_registryId` → DataSO）已被移除，统一由 `SOManager` + `EntityType` enum 管理。
 
 **Entity hierarchy**:
 - `EntityBehaviour` → `BaseTower` (towers: Teto/Rin/Luo)
@@ -76,13 +80,13 @@ All managers are **MonoBehaviour singletons** placed in scene (except `UIManager
 
 | Manager | Location | Purpose |
 |---|---|---|
-| `GameLevelManager` | `Assets/Script/Level/` | Game state, time tracking, pause/resume, enemy registry, game-over handling |
-| `PlayerManager` | `Assets/Script/Manager/` | Player reference cache, find/miss player |
+| `GameLevelManager` | `Assets/Script/Level/` | Game state, time tracking, pause/resume, enemy registry, game-over handling — 实现 `IGameLevelManager` + `Service` 静态属性 |
+| `PlayerManager` | `Assets/Script/Manager/` | Player reference cache, `AllPlayers` 列表 — 实现 `IPlayerManager` + `Service` 静态属性 |
 | `WeaponManager` | `Assets/Script/Manager/` | Weapon registry (`List<WeaponSlot>`), weapon lookup by type, weapon selection callbacks — 新增武器只需 Inspector 配置 `weaponSlots` |
 | `TowerManager` | `Assets/Script/Manager/` | Tower registry |
 | `UIManager` | `Assets/Script/UI/` | Panel lifecycle (Show/Hide/Get), loads panels from `Resources/UI/` |
 | `InputReaderManager` | `Assets/Script/Manager/` | Holds the `InputReader` SO reference |
-| `SOManager` | `Assets/Script/Manager/` | ScriptableObject reference hub + `EntityDataRegistry` holder + LevelUpSO pool (tag-based filtering) |
+| `SOManager` | `Assets/Script/Manager/` | ScriptableObject reference hub + `EntityType → BaseEntitySO` registry + upgrade source catalog |
 | `BKMusic` | `Assets/Script/Manager/` | Background music singleton |
 
 **UI System**: `BasePanel` (abstract base in `Assets/Script/UI/`) → concrete panels. Panels support fade-in/out via `CanvasGroup`. Loaded from `Resources/UI/<PanelName>` by `UIManager.ShowPanel<T>()`. Panels auto-subscribe to Escape key via `InputReader.EscapePressEvent`. Animations use `Time.unscaledDeltaTime` for pause-independent behavior.
@@ -141,20 +145,26 @@ public interface IInputHandle
 
 ### 工厂创建
 
-`InputHandleFactory.GetLocalInput()` 根据编译平台（`#if UNITY_STANDALONE_WIN` / `#elif UNITY_ANDROID`）自动创建对应实例：
-- Windows: `new PCInputHandle(InputReaderManager.Instance.inputReader)`
-- Android: `new MobileInputHandle(joysticks[0], joysticks[1])`
-- 未来扩展点：`CreateNetworkInput()` (联机模式)、`CreateAIInput()` (AI 玩家)
+`InputHandleFactory.GetInput(string inputId)` 根据编译平台自动创建并缓存实例，支持按 ID 释放：
+- Windows (`UNITY_STANDALONE_WIN`): `new PCInputHandle(InputReaderManager.Instance.inputReader)`
+- Android (`UNITY_ANDROID`): `new MobileInputHandle(joysticks[0], joysticks[1])`
+- 扩展点：`network_` / `ai_` 前缀预留（联机/AI 输入）
 
 ### 使用示例
 
 ```csharp
 // 所有业务代码统一使用
 private IInputHandle _inputHandle;
+private string _inputHandleId = "local_0";
 
 void Awake()
 {
-    _inputHandle = InputHandleFactory.GetLocalInput();
+    _inputHandle = InputHandleFactory.GetInput(_inputHandleId);
+}
+
+void OnDestroy()
+{
+    InputHandleFactory.ReleaseInput(_inputHandleId);
 }
 
 void FixedUpdate()
@@ -262,13 +272,19 @@ ChooseTowerPanel button click
 `LevelUpSO` (ScriptableObject in `Assets/Script/SO/`) defines upgrade options displayed in `LevelUpPanel` / `TowerLevelUpPanel`:
 - `statModifiers: List<StatModifierData>` — data-driven stat changes
 - `fullHeal` / `bonusHeal` — heal effects
-- `targetTags: List<string>` — for SOManager upgrade pool filtering (e.g. `"FireBall"`, `"Gun"`, `"Universal"`)
 - `ApplyTo(EntityBehaviour)` applies all modifiers to the target's `StatModel`
+
+**Player Upgrade Source Flow**:
+- `UpgradeCatalogSO.playerUpgradeSource` — common player upgrades (e.g., MaxHealth, MoveSpeed)
+- `UpgradeCatalogSO.weaponUpgradeSources` — all possible weapon upgrade sources
+- `SOManager.GetRandomPlayerLevelUpSOs()` builds the final source list at runtime:
+  1. Add `playerUpgradeSource`
+  2. For each active weapon in `WeaponManager.weapons`, look up its `WeaponEntitySO` via `weapon.EntityConfig`
+  3. Merge all `upgrades` from the sources and randomly pick `count` items
 
 **Weapon Selection Flow** (separated from LevelUpSO):
 - `WeaponSelectSO` (`Assets/Script/SO/`) — dedicated SO for weapon selection, decoupled from LevelUpSO:
   - `displayName` / `displaySprite` — UI display
-  - `weaponId` — matches `WeaponSlot.weaponId`
   - `OnSelect` event — WeaponManager subscribes to activate the weapon GameObject
 - `ChooseWeaponPanel` → reads inactive `WeaponSlot`s from `WeaponManager.weaponSlots` → on click, calls `WeaponSelectSO.RaiseSelectEvent()` → `WeaponManager` activates the weapon → weapon registers via `BaseWeapon.OnEnable()`
 
@@ -279,8 +295,9 @@ ChooseTowerPanel button click
 ```
 BaseWeapon (EntityBehaviour)
   ├── StatModel — 武器专属属性（火球旋转速度、子弹速度等）
+  ├── EntityType — 通过 SOManager 获取 WeaponEntitySO
   ├── GetAttackInterval() / GetBaseDamage() — 读取武器自己的 StatModel
-  └── weaponTags — 用于 SOManager 升级池过滤
+  └── EntityConfig.dataRef — 指向 WeaponDataSO
 
 SpinWeapon (BaseWeapon)
   ├── SpinWeaponController — 旋转投射物（淡入淡出、碰撞检测）
@@ -304,7 +321,6 @@ GunWeapon (BaseWeapon)
 [System.Serializable]
 public class WeaponSlot
 {
-    public string weaponId;           // e.g. "FireBall", "Gun"
     public GameObject weaponRoot;     // 挂载点（初始 inactive）
     public WeaponSelectSO weaponSelectSO;  // 选择时触发的 SO
 }
@@ -325,113 +341,48 @@ public List<WeaponSlot> weaponSlots;
 - **FindObjectOfType**: Always use `FindFirstObjectByType<T>()` (Unity 6+ API)
 - **Avoid Inspector configuration**: Prefer code-driven setup over Inspector drag-and-drop to prevent broken references. Use `GetComponent`, `Resources.Load`, `FindFirstObjectByType`, or singleton references instead of serialized fields whenever feasible.
 
-## 最新修改 (2026-06-10)
+## Architecture Principles
 
-### ServiceLocator 基础设施
-- 新建 `ServiceLocator.cs` — 全局服务注册表，`Register<T>` / `Get<T>` / `TryGet<T>` / `Unregister<T>`
-- 为所有 Manager 提供联机替换扩展点：单机注册本地实现，联机注册网络实现
+编码和设计决策遵循以下原则（按优先级排序）：
 
-### PlayerManager 接口化
-- 新建 `IPlayerManager` 接口：`LocalPlayer`、`AllPlayers`、`Register`/`Unregister`
-- `PlayerManager` 实现 `IPlayerManager`，新增 `AllPlayers` 列表支持多玩家
-- 新增 `Service` 静态属性（ServiceLocator 优先，Instance 回退）
-- `EnemyController.FindTarget()` 从单玩家改为遍历 `AllPlayers` 找最近目标（联机兼容）
+### 1. 先架构，后编码
+- 涉及多文件交互或模块边界的设计变更，**先讨论架构方案再动手实现**
+- 善用 `unity-architect` 技能做架构设计，`/zoom-out` 查看模块全貌
 
-### 输入系统扩展
-- `InputHandleFactory.GetInput(string inputId)` 替代 `GetLocalInput()`，支持按 ID 缓存和释放
-- 预留 `network_` / `ai_` 前缀扩展点
-- `PlayerController` / `GunWeapon` / `PlayerAnimationController` / `PlayerInteraction` 新增 `_inputHandleId` 字段
-- `TowerPlacementController.Init()` 支持外部注入 `IInputHandle`
+### 2. 接口化优先
+- 新增 Manager / Controller 时，**先定义接口，再实现**
+- 已有 Manager 逐步补全接口：`IPlayerManager`、`IGameLevelManager`、`IExperienceController` 为范例
+- 接口统一放在 `Assets/Script/Core/IInterface/` 下
 
-### GameLevelManager 接口化
-- 新建 `IGameLevelManager` 接口：关卡时间、波次、暂停、敌人注册、GameOver 事件
-- `GameLevelManager` 实现接口，新增 `Service` 静态属性
-- 新增 `OnGameOver`、`OnGameTimeUpdate` 事件，便于联机状态同步
-- 所有调用方 `GameLevelManager.Instance` → `GameLevelManager.Service`（12 个文件）
+### 3. 联机兼容作为默认假设
+- 所有新代码默认考虑多玩家场景
+- 获取玩家时不使用 `PlayerManager.Instance.LocalPlayer` 单点，优先遍历 `PlayerManager.Service.AllPlayers`
+- Manager 同时暴露 `Instance`（MonoBehaviour singleton）和 `Service`（ServiceLocator 优先，Instance 回退）
+- 输入使用 `InputHandleFactory.GetInput(inputId)` 替代 `GetLocalInput()`，支持多玩家输入隔离
 
-### 玩家经验模块接口化 + 职责拆分
-- 新建 `IExperienceController` 接口：`CurrentLevel`、`CurrentExp`、`AvailablePoints`、`ExpToNextLevel`、事件
-- `ExperienceLevController` 实现接口，新增 `Service` 静态属性
-- **`ProcessLevelUps()`**：`if` 改为 `while`，支持一次大量经验连续升级
-- **`CanUseLevelPoint`** → 职责拆分：核心方法只处理状态和触发事件，UI/音效通过 `SubscribeDefaultPresentation` 事件订阅处理
-- 提取 `SyncUI()` 统一刷新 `GamePanel`，消除分散在多个方法中的重复 UI 调用
-- `PlayerController` 新增 `_experienceController` 字段 + `ExperienceController` 属性（优先自身组件，回退全局 Service）
-- `ExpSpriteController` 碰撞时优先给碰撞到的玩家自身加经验（联机兼容）
+### 4. 职责拆分（核心逻辑 vs 表现层）
+- 核心状态变更（如升级、扣血）只处理数据和触发事件
+- UI 刷新、音效播放、粒子效果由订阅者处理，不硬编码在核心逻辑中
+- 范例：`ExperienceLevController` 只负责经验计算和升级判定，`GamePanel` 通过事件订阅刷新 UI
 
-### 关键文件
-```
-Assets/Script/Core/ServiceLocator.cs                          ← 新增
-Assets/Script/Core/IPlayerManager.cs                          ← 新增
-Assets/Script/Core/IGameLevelManager.cs                       ← 新增
-Assets/Script/Core/IInterface/IExperienceController.cs        ← 新增
-Assets/Script/Manager/PlayerManager.cs                        ← 实现 IPlayerManager + Service
-Assets/Script/Manager/GameLevelManager.cs                     ← 实现 IGameLevelManager + Service
-Assets/Script/Core/Level/ExperienceLevController.cs           ← 实现 IExperienceController + 职责拆分
-Assets/Script/Entity/Player/PlayerController.cs               ← _inputHandleId + ExperienceController
-Assets/Script/InputSystem/InputHandleFactory.cs               ← GetInput(string) + 缓存
-Assets/Script/Entity/Enemy/EnemyController.cs                 ← FindTarget 遍历 AllPlayers
-Assets/Script/Core/Level/ExpSpriteController.cs               ← 联机兼容加经验
-```
+### 5. EntitySO 子类化扩展 + 集中注册
+- 新增实体类型（武器、塔、敌人）时，**新建 `*EntitySO` 子类**，零修改现有代码
+- 专属字段放在子类中，通用字段（`entityType`、`dataRef`、`upgrades`）放在基类 `BaseEntitySO`
+- 通过 `SOManager.entitySOList` 集中配置 `EntityType → BaseEntitySO` 映射，避免 Inspector 分散拖拽
+- 数值配置仍通过 `BaseEntityDataSO` 子类独立管理，由 `BaseEntitySO.dataRef` 引用
 
-## 最新修改 (2026-06-09)
+## Changelog
 
-### 交互系统重构
-- `PlayerController` 只负责移动；**新增 `PlayerInteraction`** 组件独立管理交互
-- `IInteractable` 扩展 `OnSelected()` / `OnDeselected()` 回调，解决多塔同时显示提示的问题
-- `DetectPlayer` 不再直接操作玩家字段，改为调用 `PlayerInteraction.Register/Unregister`
+### 2026-06-11 实体配置系统重构
 
-### 防御塔高亮 (Shader)
-- `BaseTower.SetHighlight(bool)` 切换高亮材质，支持多 SpriteRenderer 复合结构
-- `SOManager.towerHighlightMaterial` 提供统一材质配置，也可在单个塔 Prefab 上覆盖
-- **新增 Shader**: `sg_HighLight2D.shadergraph`（Renderer2D 下的 Sprite Outline 发光效果）
-- **新增材质**: `mat_HightLight.mat`
+- **删除** `EntityDataRegistry` 与 `EntityDataRegistryEditor`
+- **新增** `EntityType` enum（`Player` / `Enemy` / `TowerTeto` / `TowerRin` / `TowerLuo` / `WeaponFireBall` / `WeaponGun`）
+- **新增** `BaseEntitySO` 统一配置入口：实体类型 + `dataRef`（数值 SO）+ `upgrades`（升级列表）
+- **新增** `TowerEntitySO` / `WeaponEntitySO` / `PlayerEntitySO` / `EnemyEntitySO` 子类，仅保留专属字段
+- **重构** `EntityBehaviour`：不再直接拖拽 `DataSO`，改为通过 `EntityType` 从 `SOManager` 的注册表获取 `EntitySO`
+- **重构** `SOManager`：新增 `entitySOList` 注册表 + `GetEntitySO(EntityType)` + Dictionary 运行时缓存；升级系统改为合并"玩家通用来源 + 已激活武器来源"
+- **简化** `UpgradeCatalogSO`：`playerUpgradeSource`（单个）+ `weaponUpgradeSources`（列表）
+- **删除** `WeaponSlot.weaponId` 与 `BaseWeapon.weaponTags`；武器升级通过 `EntityType` 反查 `WeaponEntitySO`
+- **删除** `TowerInfoSO` / `UpgradePoolSO`；塔配置统一使用 `TowerEntitySO`
 
-### 武器系统重构（DataSO 拆分 + 泛化 Manager + 职责解耦）
-
-**核心改动**:
-- `WeaponDataSO` 改为 abstract，专属字段拆分到子类：`SpinWeaponDataSO` / `GunWeaponDataSO`
-- 新增 `WeaponSelectSO` — 武器选择专用 SO，与 `LevelUpSO`（数值升级）彻底解耦
-- `WeaponManager` 泛化 — `List<WeaponSlot>` 替代硬编码字段，新增武器零代码修改
-- `ChooseWeaponPanel` 从 `WeaponManager.weaponSlots` 动态读取未激活武器
-- `SOManager` 升级池标签化 — `LevelUpSO.targetTags` + `BaseWeapon.weaponTags` 按标签过滤，消除 `is` 类型判断
-- `BaseHealthController` 增加 `BaseMaxHealth` 变化时的 CurrentHealth 补偿逻辑
-- `FireBallController` 改名为 `SpinWeaponController`，伤害通过 `Init()` 传入（不再硬编码）
-
-**DataSO 拆分**:
-```
-WeaponDataSO (abstract) — AttackInterval, projectilePrefab
-├── SpinWeaponDataSO — RotationSpeed, Size, LifeTime, HitPushForce
-└── GunWeaponDataSO — BulletSpeed, BulletHitForce
-```
-
-**EntityDataRegistry（统一配置表）**:
-- 新建 `EntityDataRegistry` SO — 集中存放所有 `entityId → DataSO` 映射
-- `EntityBehaviour` 支持 `_registryId` 自动从 Registry 查找 DataSO
-- 解决 DataSO 分散在多个 Prefab/Scene Inspector 中难以管理的问题
-
-### 关键文件
-```
-Assets/Script/Entity/Player/PlayerInteraction.cs            ← 新增
-Assets/Script/Entity/Player/PlayerController.cs             ← 简化（删除交互逻辑）
-Assets/Script/Core/IInteractable.cs                         ← 扩展接口
-Assets/Script/Entity/Tower/BaseTower.cs                     ← 新增 SetHighlight
-Assets/Script/Entity/Tower/DetectPlayer.cs                  ← 调用 SetHighlight
-
-// 武器系统重构
-Assets/Script/Core/EDM/Data/WeaponDataSO.cs                 ← 改为 abstract
-Assets/Script/Core/EDM/Data/SpinWeaponDataSO.cs             ← 新增
-Assets/Script/Core/EDM/Data/GunWeaponDataSO.cs              ← 新增
-Assets/Script/SO/WeaponSelectSO.cs                          ← 新增
-Assets/Script/Manager/WeaponManager.cs                      ← List<WeaponSlot> 泛化
-Assets/Script/Manager/SOManager.cs                          ← 标签过滤 + EntityDataRegistry
-Assets/Script/SO/EntityDataRegistry.cs                      ← 新增
-Assets/Script/Entity/Player/Weapons/BaseWeapon.cs           ← weaponTags + GetAttackInterval/GetBaseDamage
-Assets/Script/Entity/Player/Weapons/FireBall/SpinWeaponController.cs   ← 改名 + Init 传入 damage
-
-// 塔 DataSO 拆分
-Assets/Script/Core/EDM/Data/TowerDataSO.cs                  ← 删除 Luo 专属字段
-Assets/Script/Core/EDM/Data/LuoTowerDataSO.cs               ← 新增
-
-// EDM 核心
-Assets/Script/Core/EDM/EntityBehaviour.cs                   ← _registryId + Registry 自动查找
-```
+详细历史变更记录见 `CHANGELOG.md`。

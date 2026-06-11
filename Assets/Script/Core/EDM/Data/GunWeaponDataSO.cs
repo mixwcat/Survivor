@@ -16,6 +16,6 @@ public class GunWeaponDataSO : WeaponDataSO
         base.FillStatModel(model);
         model.SetBaseValue(StatType.BulletSpeed, BulletSpeed);
         model.SetBaseValue(StatType.BulletHitForce, BulletHitForce);
-        model.SetBaseValue(StatType.BaseDamage, Damage);
+        model.SetBaseValue(StatType.Damage, Damage);
     }
 }

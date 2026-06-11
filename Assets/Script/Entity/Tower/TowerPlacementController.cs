@@ -5,9 +5,10 @@ public class TowerPlacementController : MonoBehaviour
 {
     private List<Collider2D> invalidColliders = new List<Collider2D>();
     private bool canPlace = true;
-    private TowerInfoSO currentTowerSO;
+    private TowerEntitySO currentTowerSO;
     private SpriteRenderer spriteRenderer;
     private IInputHandle _inputHandle;
+    private int _placementCost;
 
     [Header("网格设置")]
     public float gridSize = 1f;
@@ -22,14 +23,14 @@ public class TowerPlacementController : MonoBehaviour
 
     private Vector3 _lastTouchWorldPos = Vector3.zero;
 
-    public void Init(TowerInfoSO towerSO, IInputHandle inputHandle = null)
+    public void Init(TowerEntitySO towerSO, int placementCost, IInputHandle inputHandle = null)
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
-        spriteRenderer.sprite = towerSO.towerPrefab.GetComponent<SpriteRenderer>().sprite;
+        spriteRenderer.sprite = towerSO.prefab.GetComponent<SpriteRenderer>().sprite;
         currentTowerSO = towerSO;
+        _placementCost = placementCost;
 
-        var baseTower = towerSO.towerPrefab.GetComponent<BaseTower>();
-        if (baseTower != null && baseTower.EntityData is TowerDataSO towerData)
+        if (towerSO.dataRef is TowerDataSO towerData)
         {
             attackRange = towerData.AttackRange;
         }
@@ -117,8 +118,8 @@ public class TowerPlacementController : MonoBehaviour
     {
         if (!canPlace) return;
 
-        ExperienceLevController.Service.CanUseLevelPoint(currentTowerSO.expConsumption);
-        Instantiate(currentTowerSO.towerPrefab, transform.position, Quaternion.identity);
+        ExperienceLevController.Service.CanUseLevelPoint(_placementCost);
+        Instantiate(currentTowerSO.prefab, transform.position, Quaternion.identity);
 
 #if UNITY_ANDROID
         UIManager.Instance.GetPanel<GamePanel>()?.SetTowerPlacementButtonsActive(false);

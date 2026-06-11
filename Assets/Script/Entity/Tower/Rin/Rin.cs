@@ -35,7 +35,7 @@ public class Rin : BaseTower
         BKMusic.Instance.PlaySound(ResourceEnum.RinAttack);
         DrawCircle();
 
-        float damage = GetStat(StatType.BaseDamage);
+        float damage = GetStat(StatType.Damage);
         for (int i = enemyInRange.Count - 1; i >= 0; i--)
         {
             if (enemyInRange[i] != null)
