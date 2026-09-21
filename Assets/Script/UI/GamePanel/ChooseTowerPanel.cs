@@ -1,16 +1,15 @@
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+
 public class ChooseTowerPanel : BasePanel
 {
+    public override bool CanHandleEscape => true;
+
     public TowerEntitySO towerSO1;
     public TowerEntitySO towerSO2;
     public TowerEntitySO towerSO3;
-
-    [Header("选择信息（名称/描述/图标/消耗）来自 LevelUpSO")]
-    public LevelUpSO towerSelectInfo1;
-    public LevelUpSO towerSelectInfo2;
-    public LevelUpSO towerSelectInfo3;
 
     public Button button1;
     public Button button2;
@@ -25,77 +24,100 @@ public class ChooseTowerPanel : BasePanel
     public TextMeshProUGUI txtDescription2;
     public TextMeshProUGUI txtDescription3;
     public Button btnClose;
+
     public override void Init()
     {
         UpdateUI();
         GameLevelManager.Service.PauseGame();
 
-        button1.onClick.AddListener(() =>
-        {
-            int cost = towerSelectInfo1 != null ? towerSelectInfo1.cost : 0;
-            if (ExperienceLevController.Service.CanUseLevelPoint(cost))
-            {
-                InstantiateTowerPlacementSprite(towerSO1, cost);
-                UIManager.Instance.HidePanel<ChooseTowerPanel>();
-                GameLevelManager.Service.ResumeGame();
-                BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
-            }
-        });
-        button2.onClick.AddListener(() =>
-        {
-            int cost = towerSelectInfo2 != null ? towerSelectInfo2.cost : 0;
-            if (ExperienceLevController.Service.CanUseLevelPoint(cost))
-            {
-                InstantiateTowerPlacementSprite(towerSO2, cost);
-                UIManager.Instance.HidePanel<ChooseTowerPanel>();
-                GameLevelManager.Service.ResumeGame();
-                BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
-            }
-        });
-        button3.onClick.AddListener(() =>
-        {
-            int cost = towerSelectInfo3 != null ? towerSelectInfo3.cost : 0;
-            if (ExperienceLevController.Service.CanUseLevelPoint(cost))
-            {
-                InstantiateTowerPlacementSprite(towerSO3, cost);
-                UIManager.Instance.HidePanel<ChooseTowerPanel>();
-                GameLevelManager.Service.ResumeGame();
-                BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
-            }
-        });
+        button1.onClick.AddListener(() => OnTowerSelected(towerSO1));
+        button2.onClick.AddListener(() => OnTowerSelected(towerSO2));
+        button3.onClick.AddListener(() => OnTowerSelected(towerSO3));
+
         btnClose.onClick.AddListener(() =>
         {
-            UIManager.Instance.HidePanel<ChooseTowerPanel>();
+            UIManager.Service.HidePanel<ChooseTowerPanel>();
             GameLevelManager.Service.ResumeGame();
         });
 
 #if UNITY_ANDROID
         // 移动端显示确认与取消按钮
-        UIManager.Instance.GetPanel<GamePanel>()?.SetTowerPlacementButtonsActive(true);
+        UIManager.Service.GetPanel<GamePanel>()?.SetTowerPlacementButtonsActive(true);
 #endif
     }
 
+    /// <summary>
+    /// 从 TowerEntitySO 读取名称/描述/图标，从 TowerDataSO 读取消耗。
+    /// </summary>
     private void UpdateUI()
     {
-        txtConsumption1.text = towerSelectInfo1 != null ? towerSelectInfo1.cost.ToString() : "0";
-        txtConsumption2.text = towerSelectInfo2 != null ? towerSelectInfo2.cost.ToString() : "0";
-        txtConsumption3.text = towerSelectInfo3 != null ? towerSelectInfo3.cost.ToString() : "0";
-        txtDescription1.text = towerSelectInfo1 != null ? towerSelectInfo1.levelUpText : "";
-        txtDescription2.text = towerSelectInfo2 != null ? towerSelectInfo2.levelUpText : "";
-        txtDescription3.text = towerSelectInfo3 != null ? towerSelectInfo3.levelUpText : "";
-        imgIcon1.sprite = towerSelectInfo1 != null ? towerSelectInfo1.levelUpSprite : null;
-        imgIcon2.sprite = towerSelectInfo2 != null ? towerSelectInfo2.levelUpSprite : null;
-        imgIcon3.sprite = towerSelectInfo3 != null ? towerSelectInfo3.levelUpSprite : null;
+        BindTowerInfo(towerSO1, imgIcon1, txtDescription1, txtConsumption1);
+        BindTowerInfo(towerSO2, imgIcon2, txtDescription2, txtConsumption2);
+        BindTowerInfo(towerSO3, imgIcon3, txtDescription3, txtConsumption3);
+    }
+
+    private void BindTowerInfo(TowerEntitySO towerSO, Image icon, TextMeshProUGUI description, TextMeshProUGUI consumption)
+    {
+        if (towerSO == null)
+        {
+            if (icon != null) icon.sprite = null;
+            if (description != null) description.text = "";
+            if (consumption != null) consumption.text = "0";
+            return;
+        }
+
+        if (icon != null) icon.sprite = towerSO.icon;
+
+        if (description != null)
+        {
+            string text = string.IsNullOrEmpty(towerSO.displayName) ? "" : towerSO.displayName;
+            if (!string.IsNullOrEmpty(towerSO.description))
+            {
+                if (!string.IsNullOrEmpty(text)) text += "\n";
+                text += towerSO.description;
+            }
+            description.text = text;
+        }
+
+        if (consumption != null)
+        {
+            int cost = GetTowerCost(towerSO);
+            consumption.text = cost.ToString();
+        }
+    }
+
+    private int GetTowerCost(TowerEntitySO towerSO)
+    {
+        if (towerSO?.dataRef is TowerDataSO towerData)
+        {
+            return towerData.Cost;
+        }
+        return 0;
+    }
+
+    private void OnTowerSelected(TowerEntitySO towerSO)
+    {
+        if (towerSO == null) return;
+
+        int cost = GetTowerCost(towerSO);
+        IExperienceController exp = PlayerManager.Service?.LocalPlayer?.ExperienceController;
+        if (exp != null && exp.CanUseLevelPoint(cost))
+        {
+            InstantiateTowerPlacementSprite(towerSO, cost);
+            UIManager.Service.HidePanel<ChooseTowerPanel>();
+            GameLevelManager.Service.ResumeGame();
+            AudioService.Service?.PlaySfx(ResourceEnum.OnMouseClickUI);
+        }
     }
 
     public override void EscLogic()
     {
         base.EscLogic();
-        UIManager.Instance.HidePanel<ChooseTowerPanel>();
+        UIManager.Service.HidePanel<ChooseTowerPanel>();
         GameLevelManager.Service.ResumeGame();
     }
 
-    private void InstantiateTowerPlacementSprite(TowerEntitySO towerSO, int placementCost)
+    private async void InstantiateTowerPlacementSprite(TowerEntitySO towerSO, int placementCost)
     {
         Vector3 spawnPosition;
 
@@ -108,7 +130,9 @@ public class ChooseTowerPanel : BasePanel
 #endif
         spawnPosition.z = 0;
 
-        GameObject placementObj = Instantiate(Resources.Load<GameObject>("Prefabs/SpriteToHandle"), spawnPosition, Quaternion.identity);
+        GameObject placementObj = await ServiceLocator.Get<IAssetService>().InstantiateAsync(AssetKeys.SpriteToHandle);
+        placementObj.transform.position = spawnPosition;
+        placementObj.transform.rotation = Quaternion.identity;
         placementObj.GetComponent<TowerPlacementController>().Init(towerSO, placementCost);
     }
 }

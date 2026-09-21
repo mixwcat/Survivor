@@ -4,6 +4,8 @@ using TMPro;
 
 public class LevelUpPanel : BasePanel
 {
+    public override bool CanHandleEscape => true;
+
     public Button btn1;
     public Button btn2;
     public Button btn3;
@@ -19,49 +21,51 @@ public class LevelUpPanel : BasePanel
     public TextMeshProUGUI txtConsumption3;
 
     private LevelUpSO[] levelUpSOs = new LevelUpSO[3];
-    private EntityBehaviour _player;
+    private PlayerController _player;
+    private IExperienceController _exp;
 
     public override void Init()
     {
-        _player = PlayerManager.Service.LocalPlayer;
+        _player = PlayerManager.Service?.LocalPlayer;
+        _exp = _player?.ExperienceController;
         InitLevelUpSOs();
         UpdateOptionsUI();
         GameLevelManager.Service.PauseGame();
 
         btn1.onClick.AddListener(() =>
         {
-            if (ExperienceLevController.Service.CanUseLevelPoint(levelUpSOs[0].cost))
+            if (_exp != null && _exp.CanUseLevelPoint(levelUpSOs[0].cost))
             {
                 levelUpSOs[0].ApplyTo(_player);
                 GetRandomSOs();
                 this.UpdateOptionsUI();
-                BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
+                AudioService.Service?.PlaySfx(ResourceEnum.OnMouseClickUI);
             }
         });
         btn2.onClick.AddListener(() =>
         {
-            if (ExperienceLevController.Service.CanUseLevelPoint(levelUpSOs[1].cost))
+            if (_exp != null && _exp.CanUseLevelPoint(levelUpSOs[1].cost))
             {
                 levelUpSOs[1].ApplyTo(_player);
                 GetRandomSOs();
                 this.UpdateOptionsUI();
-                BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
+                AudioService.Service?.PlaySfx(ResourceEnum.OnMouseClickUI);
             }
         });
         btn3.onClick.AddListener(() =>
         {
-            if (ExperienceLevController.Service.CanUseLevelPoint(levelUpSOs[2].cost))
+            if (_exp != null && _exp.CanUseLevelPoint(levelUpSOs[2].cost))
             {
                 levelUpSOs[2].ApplyTo(_player);
                 GetRandomSOs();
                 this.UpdateOptionsUI();
-                BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
+                AudioService.Service?.PlaySfx(ResourceEnum.OnMouseClickUI);
             }
         });
         btnClose.onClick.AddListener(() =>
         {
             GameLevelManager.Service.ResumeGame();
-            UIManager.Instance.HidePanel<LevelUpPanel>();
+            UIManager.Service.HidePanel<LevelUpPanel>();
         });
     }
 
@@ -82,7 +86,7 @@ public class LevelUpPanel : BasePanel
 
     private void InitLevelUpSOs()
     {
-        levelUpSOs = SOManager.Instance.GetPreferSOs();
+        levelUpSOs = SOManager.Service.GetPreferSOs();
         if (levelUpSOs[0] == null)
         {
             GetRandomSOs();
@@ -91,14 +95,14 @@ public class LevelUpPanel : BasePanel
 
     private void GetRandomSOs()
     {
-        levelUpSOs = SOManager.Instance.GetRandomPlayerLevelUpSOs(3);
-        SOManager.Instance.StorePreferSOs(levelUpSOs);
+        levelUpSOs = SOManager.Service.GetRandomPlayerLevelUpSOs(3);
+        SOManager.Service.StorePreferSOs(levelUpSOs);
     }
 
     public override void EscLogic()
     {
         base.EscLogic();
         GameLevelManager.Service.ResumeGame();
-        UIManager.Instance.HidePanel<LevelUpPanel>();
+        UIManager.Service.HidePanel<LevelUpPanel>();
     }
 }

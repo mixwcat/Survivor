@@ -11,7 +11,7 @@ public abstract class WeaponDataSO : BaseEntityDataSO
     public float AttackInterval = 1f;
 
     [Header("投射物 Prefab")]
-    [Tooltip("为空则回退到 Resources.Load")]
+    [Tooltip("为空则回退到 Addressable 加载")]
     public GameObject projectilePrefab;
 
     public override void FillStatModel(EntityStatModel model)

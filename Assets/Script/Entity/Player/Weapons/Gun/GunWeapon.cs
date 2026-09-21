@@ -1,5 +1,6 @@
+using System.Threading.Tasks;
 using UnityEngine;
-using System.Collections;
+using UnityEngine.ResourceManagement.AsyncOperations;
 
 /// <summary>
 /// 枪械武器
@@ -21,7 +22,10 @@ public class GunWeapon : BaseWeapon
     private string _inputHandleId = "local";
     private IInputHandle _inputHandle;
 
-    private void Start()
+    private GameObject _bulletPrefab;
+    private AsyncOperationHandle<GameObject> _bulletHandle;
+
+    private async void Start()
     {
         _inputHandle = InputHandleFactory.GetInput(_inputHandleId);
 
@@ -30,22 +34,24 @@ public class GunWeapon : BaseWeapon
             Debug.LogError("GunWeapon: Failed to create IInputHandle!");
         }
 
-        StartCoroutine(GenerateBullet());
+        _bulletHandle = ServiceLocator.Get<IAssetService>().LoadAssetAsync<GameObject>(AssetKeys.Bullet);
+        _bulletPrefab = await _bulletHandle.Task;
+    }
+
+    private void OnDestroy()
+    {
+        if (_bulletHandle.IsValid())
+            ServiceLocator.Get<IAssetService>().Release(_bulletHandle);
     }
 
     void Update()
     {
         RotateWeapon();
-    }
 
-    protected override void OnEnable()
-    {
-        base.OnEnable();
-    }
-
-    protected override void OnDisable()
-    {
-        base.OnDisable();
+        if (TryFire())
+        {
+            SpawnBullet();
+        }
     }
 
     private void RotateWeapon()
@@ -69,23 +75,20 @@ public class GunWeapon : BaseWeapon
     }
 
     /// <summary>
-    /// 协程生成子弹
+    /// 生成一颗子弹
     /// </summary>
-    IEnumerator GenerateBullet()
+    private void SpawnBullet()
     {
-        while (PlayerManager.Service.LocalPlayer != null)
-        {
-            float interval = GetAttackInterval();      // 从玩家读取（受升级影响）
-            int damage = (int)GetBaseDamage();           // 从玩家读取（受升级影响）
-            float hitForce = GetStat(StatType.BulletHitForce);
-            float speed = GetStat(StatType.BulletSpeed);
+        if (_bulletPrefab == null) return;
 
-            Instantiate(Resources.Load<GameObject>("Weapon/Bullet"), firePoint.position, firePoint.rotation)
-                .GetComponent<BulletController>()
-                .Init(damage, (int)hitForce, speed, _direction);
+        int damage = (int)GetBaseDamage();
+        float hitForce = GetStat(StatType.BulletHitForce);
+        float speed = GetStat(StatType.BulletSpeed);
 
-            BKMusic.Instance.PlaySound(ResourceEnum.PlayerShoot);
-            yield return new WaitForSeconds(interval);
-        }
+        Instantiate(_bulletPrefab, firePoint.position, firePoint.rotation)
+            .GetComponent<BulletController>()
+            .Init(damage, (int)hitForce, speed, _direction);
+
+        AudioService.Service?.PlaySfx(ResourceEnum.PlayerShoot);
     }
 }

@@ -123,6 +123,7 @@ GameObject:
   - component: {fileID: 1105557957183819941}
   - component: {fileID: 8407656575314816345}
   - component: {fileID: 162454493895878068}
+  - component: {fileID: 6847211400295706051}
   m_Layer: 0
   m_Name: Enemy_Cloud
   m_TagString: Enemy
@@ -222,7 +223,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2190df186f782ae4385867b572629e0b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _entityData: {fileID: 11400000, guid: 058cefa6388dd2845b88ca021f8f4093, type: 2}
+  entityType: 1
+  _knockbackRecoveryDuration: 0.1
 --- !u!114 &162454493895878068
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -235,6 +237,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 80b72819efe0ad74f8796221de1081a8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &6847211400295706051
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7301198939922729023}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd71c9645a09c814bbeb5b350f231f56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _updateInterval: 0.5
 --- !u!1 &7906422964212571449
 GameObject:
   m_ObjectHideFlags: 0

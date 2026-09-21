@@ -7,13 +7,17 @@ public class TowerHealthPanel : MonoBehaviour
     public TMPro.TextMeshProUGUI healthText;
     private BaseHealthController tetoHealthController;
 
-    void Start()
+    void Awake()
     {
         tetoHealthController = GetComponentInParent<BaseHealthController>();
     }
 
     public void UpdateHealthUI()
     {
+        if (tetoHealthController == null)
+            tetoHealthController = GetComponentInParent<BaseHealthController>();
+        if (tetoHealthController == null) return;
+
         healthSlider.value = tetoHealthController.CurrentHealth / tetoHealthController.MaxHealth;
         healthText.text = $"{(int)tetoHealthController.CurrentHealth} / {(int)tetoHealthController.MaxHealth}";
     }

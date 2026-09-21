@@ -10,13 +10,12 @@ public class LuoTowerDataSO : TowerDataSO
     [Header("Luo 治疗专属")]
     public float HealAmount = 0f;
     public float HealInterval = 0f;
-    public float HealRange = 0f;
 
     public override void FillStatModel(EntityStatModel model)
     {
         base.FillStatModel(model);
         model.SetBaseValue(StatType.HealAmount, HealAmount);
         model.SetBaseValue(StatType.HealInterval, HealInterval);
-        model.SetBaseValue(StatType.HealRange, HealRange);
+        // 注意：Luo 的治疗范围直接使用 TowerAttackRange，不再使用 HealRange
     }
 }

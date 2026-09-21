@@ -19,6 +19,8 @@ MonoBehaviour:
   AttackRange: 2
   AttackInterval: 5
   HitForce: 0
+  BulletSpeed: 8
   HealAmount: 0
   HealInterval: 0
   HealRange: 0
+  Cost: 1

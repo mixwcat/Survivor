@@ -62,12 +62,26 @@ public static class InputHandleFactory
     /// <summary>释放指定输入句柄的缓存</summary>
     public static void ReleaseInput(string inputId)
     {
-        _inputCache.Remove(inputId);
+        if (_inputCache.TryGetValue(inputId, out var handle))
+        {
+            if (handle is MobileInputHandle mobileHandle)
+            {
+                mobileHandle.Dispose();
+            }
+            _inputCache.Remove(inputId);
+        }
     }
 
     /// <summary>清空所有输入缓存</summary>
     public static void ClearCache()
     {
+        foreach (var handle in _inputCache.Values)
+        {
+            if (handle is MobileInputHandle mobileHandle)
+            {
+                mobileHandle.Dispose();
+            }
+        }
         _inputCache.Clear();
     }
 
@@ -76,10 +90,11 @@ public static class InputHandleFactory
     {
 #if UNITY_STANDALONE_WIN
         // Windows 平台：使用 InputReader（新版 Input System）
-        if (InputReaderManager.Instance == null)
+        // 场景未配置 InputReaderManager 时按需自建，避免依赖 Inspector/场景接线。
+        if (!InputReaderManager.HasInstance)
         {
-            Debug.LogError("InputReaderManager.Instance is null! Make sure InputReaderManager exists in scene.");
-            return null;
+            GameObject go = new GameObject("[InputReaderManager]");
+            go.AddComponent<InputReaderManager>();
         }
 
         return new PCInputHandle(InputReaderManager.Instance.inputReader);
@@ -90,8 +105,8 @@ public static class InputHandleFactory
 
         if (joysticks.Length < 2)
         {
-            Debug.LogError($"MobileInputHandle requires 2 Joystick components in scene, but found {joysticks.Length}. " +
-            "Make sure you have a move joystick and an attack joystick in the scene.");
+            // 菜单等无摇杆场景会走到这里，属正常情况，仅提示
+            Debug.LogWarning($"MobileInputHandle 需要场景中至少有 2 个 Joystick，当前 {joysticks.Length} 个，返回 null。");
             return null;
         }
 

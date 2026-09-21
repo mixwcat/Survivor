@@ -12,6 +12,10 @@ public class TowerDataSO : BaseEntityDataSO
     public float AttackRange = 2f;
     public float AttackInterval = 2f;
     public float HitForce = 0f;
+    public float BulletSpeed = 8f;
+
+    [Header("塔购买消耗")]
+    public int Cost = 1;
 
     public override void FillStatModel(EntityStatModel model)
     {
@@ -19,5 +23,6 @@ public class TowerDataSO : BaseEntityDataSO
         model.SetBaseValue(StatType.TowerAttackRange, AttackRange);
         model.SetBaseValue(StatType.AttackInterval, AttackInterval);
         model.SetBaseValue(StatType.TowerHitForce, HitForce);
+        model.SetBaseValue(StatType.BulletSpeed, BulletSpeed);
     }
 }

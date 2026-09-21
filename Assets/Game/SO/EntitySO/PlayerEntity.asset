@@ -13,6 +13,9 @@ MonoBehaviour:
   m_Name: PlayerEntity
   m_EditorClassIdentifier: 
   entityType: 0
-  dataRef: {fileID: 0}
-  upgrades: []
-  includeInPlayerUpgradePool: 0
+  dataRef: {fileID: 11400000, guid: 90d8d153933596a4a9903493c6802f2c, type: 2}
+  upgrades:
+  - {fileID: 11400000, guid: d9bbf8b90f1ab3b4a8ca6b0deff8e25a, type: 2}
+  - {fileID: 11400000, guid: 4388f125628534b4c852b6cd99263958, type: 2}
+  - {fileID: 11400000, guid: f3011556ba10f124e8d6d6f42724bcb6, type: 2}
+  - {fileID: 11400000, guid: d8de75c2a2bca39418aed35c891935b0, type: 2}

@@ -9,4 +9,10 @@ public class TowerEntitySO : BaseEntitySO
 {
     [Header("塔专属")]
     public GameObject prefab;
+
+    [Header("塔显示信息")]
+    public string displayName;
+    [TextArea]
+    public string description;
+    public Sprite icon;
 }

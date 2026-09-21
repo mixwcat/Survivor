@@ -1,5 +1,176 @@
 # Changelog
 
+## 2026-09-21 — 项目重组（阶段 6 + 武器归属）
+
+### 事件与权威边界
+- **删除 `EventCenter`** 全局枚举事件总线（连同 `PlayerEnum`/`TowerEnum`）；`ResourceEnum`（音频 ID）独立为 `Assets/Script/Core/ResourceEnum.cs`
+- 玩家死亡改为 `PlayerHealthController.Die()` → `IGameLevelManager.NotifyPlayerDied(player)`（权威边界预留；联机实现将转发服务器）
+- SO 只读：移除 `WeaponSelectSO.OnSelect` 全局事件；武器激活改由 `PlayerWeaponController.SelectWeapon` 直接处理
+
+### 武器槽按玩家归属
+- 新增 `Assets/Script/Entity/Player/PlayerWeaponController.cs`（实现 `IWeaponManager`），挂在 Player 上
+  - 槽位由子物体 `BaseWeapon` → `WeaponEntitySO.weaponSelect` **自动建立**（免 Inspector 逐个拖拽）
+- `WeaponEntitySO` 新增 `weaponSelect`；`Weapon_Spin/Gun.asset` 绑定 `SpinSelect/GunSelect`
+- `PlayerController` 新增 `Weapons` 属性；`BaseWeapon` 经 `Owner.Weapons` 注册
+- 消费点改用本地玩家：`SOManager.GetRandomPlayerLevelUpSOs`、`ChooseWeaponPanel`、`GamePanel`
+- 删除全局 `WeaponManager`（`Assets/Editor/PlayerWeaponSetup.cs` 批处理迁移场景：Player 加组件、移除旧组件与空物体后删除脚本）
+
+## 2026-09-21 — 项目重组（阶段 5）：按玩家实例化（保守方案）
+
+### 经验按玩家
+- `ExperienceLevController` 移除全局 `ServiceLocator` 注册与 `Service` 属性（经验控制器挂在 Player 上，按玩家实例化）
+- `PlayerController.Awake` 从同物体 `GetComponent<ExperienceLevController>()`；`ExperienceController` 属性不再回退全局
+- 消费点改用本地玩家：`ExpSpriteController`、`TowerPlacementController`、`ChooseTowerPanel`、`LevelUpPanel`、`TowerLevelUpPanel`（均经 `PlayerManager.Service.LocalPlayer.ExperienceController`）
+
+### 武器按父级玩家
+- `BaseWeapon.CanOperate()` 改为 `GetComponentInParent<PlayerController>()`，不再依赖全局 `LocalPlayer`
+
+### 一并修复
+- `TowerDataSO` 新增 `BulletSpeed` 并在 `FillStatModel` 写入（修复 `Tower_Teto 缺少Type：BulletSpeed`）；`Tower_Teto.asset` 显式设为 8
+
+### 暂缓（保守方案）
+- 武器槽下放到玩家（`PlayerWeaponController` + 按 owner 注册表）
+- 塔 `OwnerId`/`team` 预留
+
+## 2026-09-21 — 清理回退代码 + Bug 修复
+
+### 移除回退（保持单一访问路径）
+- `ManagerSingleton`：删除 `Instance` 的 `FindFirstObjectByType` 懒查找与错误日志、删除 `FindInstance()`；`Instance` 仅返回当前缓存实例
+- 各 `Service` 静态属性（`IPlayerManager`/`IGameLevelManager`/`IWeaponManager`/`ITowerManager`/`ISOManager`/`IExperienceController`/`IDamageNumService`）改为纯 `ServiceLocator.TryGet`，无实例时返回 null
+- `DamageNumManager`/`ExperienceLevController` 删除 `Instance` 与 `_instance` 字段
+- 以 `[DefaultExecutionOrder]` 保证 Manager 先于业务脚本初始化：`InputReaderManager -150`、`SOManager -140`、`PlayerManager -130`、`GameLevelManager`/`ExperienceLevController -120`、`WeaponManager`/`TowerManager -110`、`DamageNumManager -100`
+
+### Bug 修复
+- `BaseTower.ForEachValidTarget` 改为**快照遍历**：修复 `Rin` 范围攻击击杀敌人时触发 `OnTriggerExit2D` 修改同一列表导致的 `ArgumentOutOfRangeException`
+- 新增 `EPress` 输入动作（`<Keyboard>/e`）到 `InputSystem_Actions.inputactions` 并重新生成包装类，修复「靠近塔按 E 无反应」（此前 Player map 只有 Move/EscapePress，E 交互整条链从未接入）
+- 新增 `Assets/Editor/InputActionsSetup.cs`：强制重导入 `.inputactions` 以重生成包装类
+
+## 2026-09-21 — 项目重组（阶段 3）：UI 全量重构
+
+### IUIService / UIManager
+- `IUIService` 新增 `OnEscapeUnhandled` 事件与 `HandleEscape()`
+- `UIManager` 维护面板显示栈；`ShowPanel` 置顶（`SetAsLastSibling`）；`HidePanel` 立即出栈
+- ESC 统一由 `UIManager` 分发：从栈顶向下找第一个 `CanHandleEscape` 的面板执行 `EscLogic`，无人处理则触发 `OnEscapeUnhandled`
+- 预加载改为**反射收集全部 `BasePanel` 子类**，新增面板零改动
+
+### BasePanel
+- 移除隐式 `InputHandleFactory.GetInput("local")` 与逐面板 `OnEscape` 订阅
+- 新增 `CanHandleEscape`（HUD 为 false，弹窗为 true）
+- 淡出回调触发一次后置空，避免重复执行
+
+### HUD 事件驱动
+- 新增 `Assets/Script/UI/PlayerHudBinder.cs`：订阅 `LocalPlayer` 的 `IExperienceController` 事件刷新 `GamePanel`
+- `ExperienceLevController` 删除 `SyncUI()`，核心只发事件，UI 由绑定器更新
+
+### ESC 行为
+- `GameLevelManager` 不再直接订阅输入，改订阅 `IUIService.OnEscapeUnhandled` 打开暂停面板
+- `GameSettingPanel`/`MusicSettingPanel` 新增 `EscLogic`（关闭并恢复）
+- `ChooseTowerPanel`/`LevelUpPanel`/`TowerLevelUpPanel`/`PausePanel` 标记 `CanHandleEscape`
+- `InputHandleFactory` Android 缺摇杆由 `LogError` 降为 `LogWarning`（菜单场景正常情况）
+
+### 关键文件
+```
+Assets/Script/Core/IInterface/IUIService.cs   ← 扩展 ESC API
+Assets/Script/UI/UIManager.cs                 ← 面板栈 + ESC + 反射预加载
+Assets/Script/UI/BasePanel.cs                 ← 去输入依赖 + CanHandleEscape
+Assets/Script/UI/PlayerHudBinder.cs           ← 新增
+Assets/Script/UI/GamePanel/*.cs               ← 迁移到 UIManager.Service + ESC
+Assets/Script/Core/Level/ExperienceLevController.cs ← 删除 SyncUI
+Assets/Script/Manager/GameLevelManager.cs     ← ESC 改订阅 OnEscapeUnhandled
+```
+
+### 运行期修复（阶段 3 验证中发现）
+- **`ManagerSingleton.FindInstance()`**：`Service` 回退改为「缓存实例 → 静默查找场景实例」。此前的 `HasInstance ? Instance : null` 在场景加载时若实体 `OnEnable` 早于 Manager `Awake`，会返回 null 导致注册被跳过——进而 `PlayerManager.LocalPlayer` 恒为空，连锁导致怪物不生成、武器不工作、HUD 不更新。
+- **`GameBootstrap`**：改为每个服务独立 `SafeInit`，任一服务初始化失败不再阻塞其余服务。
+- **`AudioService`**：逐条音频加载单独 try/catch，单条失败不影响其余。
+
+## 2026-09-21 — 项目重组（阶段 4）：音频接口化
+
+> 为减少面板二次改动，音频阶段提前到 UI 重写之前完成。
+
+### 新增
+- `Assets/Script/Core/Services/AudioService.cs`：实现 `IAudioService`。BGM 使用独立循环 `AudioSource`；SFX 使用 8 路 `AudioSource` 对象池 + `PlayOneShot`，取代原先「每个音效 `new GameObject` 1 秒后 `Destroy`」。支持 `BgmMuted`/`SfxEnabled`/`BgmVolume`/`SfxVolume`，并提供 `AudioService.Service` 访问入口。
+- `GameBootstrap` 创建并注册 `IAudioService`。
+
+### 迁移与删除
+- 全部 38 处 `BKMusic` 调用点迁移到 `IAudioService`（HealthController、Teto/Rin/Luo、Spin/Gun 武器、经验球、各 UI 面板）
+- `GameSettingPanel`/`MusicSettingPanel` 不再直接操作 `AudioSource`
+- 删除 `Assets/Script/Manager/BKMusic.cs`
+
+### 关键文件
+```
+Assets/Script/Core/Services/AudioService.cs   ← 新增
+Assets/Script/Core/GameBootstrap.cs           ← 注册 IAudioService
+Assets/Script/Manager/BKMusic.cs              ← 删除
+```
+
+## 2026-09-21 — 项目重组（阶段 2）：Manager 接口化
+
+### 新增接口 + 实现
+- `ISOManager` ← `SOManager`（注册进 `ServiceLocator`，`Service` 静态回退）
+- `IWeaponManager` ← `WeaponManager`（新增 `WeaponSlots`/`Weapons` 只读属性）
+- `ITowerManager` ← `TowerManager`（新增 `Towers` 只读属性）
+- `IDamageNumService` ← `DamageNumManager`（注册提前到 `Awake`）
+- `IUIService` ← `UIManager`（组合根注册）
+
+### 调用点迁移（`.Instance` → 接口 `Service`）
+- 玩法侧：`EntityBehaviour`、`BaseTower`、`BaseWeapon`、`EnemyTargetFinder`、各 `*HealthController`、`DamageNumText`
+- UI/关卡侧：`GameLevelManager`、`DetectPlayer`、`TowerPlacementController`、`ExperienceLevController`、`Main`、`LevelUpPanel`、`TowerLevelUpPanel`、`ChooseWeaponPanel`、`GamePanel`、`SOManager`
+
+### 延后项（已记录于 Docs/Plan.md）
+- `IAudioService`/`AudioService` 实现与音频调用点 → 阶段 4（与面板音频一起）
+- 面板内 `UIManager.Instance` → 阶段 3 UI 重写
+- `IPlayerManager.GetPlayer(int)` → 阶段 5（需先有玩家网络 id）
+
+### 运行期修复（阶段 2 验证中发现）
+- 返回菜单时 `[InputReaderManager] 重复实例` 会销毁整个 `Start` 物体（连带 `Main`）导致菜单不显示 → `Assets/Editor/PrefabCleanup.cs` 从 `Start.prefab` 移除 `InputReaderManager`，统一由 `InputHandleFactory` 按需自建
+- `TowerHealthPanel.UpdateHealthUI` 初始化时序 NRE → 缓存移到 `Awake` 并加空守卫
+- `TowerPlacementController.Update` 在 `Init` 之前运行导致 `_inputHandle` 为空的 NRE → `Update` 顶部空守卫
+- 塔预制体漏配 `EntityType`（默认 `Player=0`），导致塔读取玩家配置、报 `缺少Type：TowerAttackRange` / `operate interval <= 0` → 新增 `Assets/Editor/EntityPrefabSetup.cs` 幂等写入 `TowerTeto=4/TowerRin=5/TowerLuo=6`
+
+### 关键文件
+```
+Assets/Script/Core/IInterface/ISOManager.cs        ← 新增
+Assets/Script/Core/IInterface/IWeaponManager.cs    ← 新增
+Assets/Script/Core/IInterface/ITowerManager.cs     ← 新增
+Assets/Script/Core/IInterface/IDamageNumService.cs ← 新增
+Assets/Script/Core/IInterface/IUIService.cs        ← 新增
+Assets/Script/Core/IInterface/IAudioService.cs     ← 新增（待阶段 4 实现）
+Assets/Script/Manager/{SOManager,WeaponManager,TowerManager}.cs  ← 实现接口 + 注册
+Assets/Script/UI/{UIManager,DamageNumManager}.cs   ← 实现接口
+```
+
+## 2026-09-21 — 项目重组（阶段 1）：组合根 + Addressables + 地址常量
+
+### 修复既有编译错误（工作树此前无法编译）
+- 6 处 `(await handle.Task).Result` 误用（`Task<T>` await 后已是结果）→ `await handle.Task`
+- `AssetService.InitializeAsync` 的 `Addressables.ResourceLocators.Count` 缺 `using System.Linq` → `.Count()`
+- `UIManager` 预加载 `TowerHealthPanel`（非 `BasePanel`）导致泛型约束失败 → 移除该预加载
+
+### 组合根（Composition Root）
+- 新增 `Assets/Script/Core/GameBootstrap.cs`：`[RuntimeInitializeOnLoadMethod(BeforeSceneLoad)]` 自建，统一初始化并注册全局服务；暴露 `GameBootstrap.Ready`
+- `Main.cs` / `GameLevelManager.Start()` 删除重复的 `AssetService`/`UIManager`/`BKMusic` 引导，改为 `await GameBootstrap.Ready`
+- `InputReaderManager` 运行时自建 `InputReader`（`ScriptableObject.CreateInstance`），PC 平台在缺失时由 `InputHandleFactory` 按需创建，解决 Windows 输入不可用且不覆盖场景内已有实例
+- `ServiceLocator` 新增 `IsRegistered<T>()`、`Clear()`
+
+### Addressables
+- 新增 `Assets/Editor/AddressablesSetup.cs`：幂等生成 `AddressableAssetsData` 与 UI/Common/Weapon/Music 分组和地址（配合 `AssetKeys`）
+- 新增 `Assets/Script/Core/AssetKeys.cs`：集中所有资源地址，替换硬编码字符串
+- 修复 `ResourceEnum.Walk` → `PlayerMove`（原先无对应资源，音频初始化会失败）
+
+### 关键文件
+```
+Assets/Script/Core/GameBootstrap.cs          ← 新增
+Assets/Script/Core/AssetKeys.cs              ← 新增
+Assets/Editor/AddressablesSetup.cs           ← 新增
+Assets/Script/Core/ServiceLocator.cs         ← IsRegistered / Clear
+Assets/Script/Core/Main.cs                   ← 委托 Bootstrap
+Assets/Script/Manager/GameLevelManager.cs    ← 去重复引导
+Assets/Script/Manager/InputReaderManager.cs  ← 自建 InputReader
+Assets/Script/Util/Event/EventEnum.cs        ← Walk → PlayerMove
+Docs/Plan.md                                 ← 新增（计划源）
+```
+
 ## 2026-06-10 — ServiceLocator + Manager 接口化
 
 ### ServiceLocator 基础设施

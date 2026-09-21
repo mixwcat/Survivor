@@ -27,9 +27,8 @@ public class SpinWeaponController : MonoBehaviour
     /// </summary>
     void Start()
     {
-        targetSize = transform.localScale;
         transform.localScale = Vector3.zero;
-        growSpeed = Vector3.Distance(transform.localScale, targetSize) / 0.2f; // 1 秒完成
+        growSpeed = targetSize.magnitude / 0.2f;
     }
 
     /// <summary>
@@ -60,7 +59,7 @@ public class SpinWeaponController : MonoBehaviour
         {
             other.GetComponent<EnemyHealthController>().TakeDamage(damage);
             other.GetComponent<EnemyController>().HitImpact(hitImpactForce, 0.1f);
-            BKMusic.Instance.PlaySound(ResourceEnum.PlayerAttackEnemy);
+            AudioService.Service?.PlaySfx(ResourceEnum.PlayerAttackEnemy);
         }
     }
 }

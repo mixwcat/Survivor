@@ -18,7 +18,7 @@ public class BaseHealthController : MonoBehaviour
     /// <summary>攻击力（从 StatModel 实时读取，敌人使用）</summary>
     public float Damage => _entity != null ? _entity.GetStat(StatType.Damage) : 0f;
 
-    protected virtual void Awake()
+    protected virtual void Start()
     {
         _entity = GetComponent<EntityBehaviour>();
         CurrentHealth = MaxHealth;
@@ -67,7 +67,7 @@ public class BaseHealthController : MonoBehaviour
         {
             CurrentHealth = MaxHealth;
         }
-        DamageNumManager.Instance.SpawnDamageNum(transform.position, amount, DamageNumType.green);
+        DamageNumManager.Service.SpawnDamageNum(transform.position, amount, DamageNumType.green);
     }
 
     protected virtual void Die()

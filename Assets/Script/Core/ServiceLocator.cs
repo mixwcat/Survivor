@@ -35,9 +35,24 @@ public static class ServiceLocator
         return false;
     }
 
+    /// <summary>服务是否已注册</summary>
+    public static bool IsRegistered<T>()
+    {
+        return _services.ContainsKey(typeof(T));
+    }
+
     /// <summary>注销服务</summary>
     public static void Unregister<T>()
     {
         _services.Remove(typeof(T));
+    }
+
+    /// <summary>
+    /// 清空所有服务。用于会话/场景整体重建。
+    /// 注意：会同时清除跨场景服务，仅在明确知道需要重新引导时调用。
+    /// </summary>
+    public static void Clear()
+    {
+        _services.Clear();
     }
 }

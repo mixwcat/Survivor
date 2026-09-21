@@ -75,7 +75,7 @@ public class PlayerAnimationController : MonoBehaviour
         {
             if (isMoving)
             {
-                moveAudioSource.volume = BKMusic.Instance.soundValue;
+                moveAudioSource.volume = AudioService.Service?.SfxVolume ?? 0.5f;
                 moveAudioSource.Play();
             }
             else

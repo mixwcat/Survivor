@@ -2,31 +2,41 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SOManager : MonoBehaviour
+[DefaultExecutionOrder(-140)]
+public class SOManager : ManagerSingleton<SOManager>, ISOManager
 {
-    [Header("单例模式")]
-    private static SOManager instance;
-    public static SOManager Instance => instance;
-
-    [Header("实体配置注册表")]
+    [Header("实体配置目录")]
     [Tooltip("统一管理所有 EntityType → EntitySO 映射，EntityBehaviour 通过 entityType 自动获取")]
-    public List<EntitySOEntry> entitySOList = new();
+    public EntityCatalogSO entityCatalog;
     private Dictionary<EntityType, BaseEntitySO> _entitySOCache;
 
     [Header("升级")]
-    public UpgradeCatalogSO upgradeCatalog;
     private UpgradeSelector _upgradeSelector;
     private LevelUpSO[] _preferPlayerSOs = new LevelUpSO[3];
 
     [Header("材质")]
     public Material towerHighlightMaterial;
 
+    /// <summary>ISOManager：塔高亮材质</summary>
+    public Material TowerHighlightMaterial => towerHighlightMaterial;
 
-    private void Awake()
+    /// <summary>服务访问入口（未注册时返回 null）。</summary>
+    public static ISOManager Service =>
+        ServiceLocator.TryGet<ISOManager>(out var svc) ? svc : null;
+
+
+    protected override void OnSingletonAwake()
     {
-        instance = this;
-        if (upgradeCatalog != null)
-            _upgradeSelector = new UpgradeSelector(upgradeCatalog);
+        if (entityCatalog != null)
+            _upgradeSelector = new UpgradeSelector(entityCatalog);
+
+        ServiceLocator.Register<ISOManager>(this);
+    }
+
+    protected override void OnDestroy()
+    {
+        base.OnDestroy();
+        ServiceLocator.Unregister<ISOManager>();
     }
 
     /// <summary>
@@ -43,17 +53,38 @@ public class SOManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 将 List<EntitySOEntry> 转换为 Dictionary 缓存
+    /// 将 EntityCatalogSO 中所有列表合并为 Dictionary 缓存
+    /// 重复 EntityType 会输出警告，后写入的覆盖先写入的
     /// </summary>
     private void BuildEntitySOCache()
     {
         _entitySOCache = new Dictionary<EntityType, BaseEntitySO>();
-        if (entitySOList == null) return;
-
-        foreach (var entry in entitySOList)
+        if (entityCatalog == null)
         {
-            if (entry.entitySO == null) continue;
-            _entitySOCache[entry.entityType] = entry.entitySO;
+            Debug.LogWarning("[SOManager] entityCatalog 未赋值，无法构建 EntitySO 缓存。");
+            return;
+        }
+
+        var duplicates = new List<string>();
+
+        void Add(BaseEntitySO so, string listName)
+        {
+            if (so == null) return;
+            if (_entitySOCache.ContainsKey(so.entityType))
+            {
+                duplicates.Add($"{listName}: {so.name} ({so.entityType})");
+            }
+            _entitySOCache[so.entityType] = so;
+        }
+
+        Add(entityCatalog.playerEntity, nameof(entityCatalog.playerEntity));
+        foreach (var so in entityCatalog.weaponEntities) Add(so, nameof(entityCatalog.weaponEntities));
+        foreach (var so in entityCatalog.towerEntities) Add(so, nameof(entityCatalog.towerEntities));
+        foreach (var so in entityCatalog.enemyEntities) Add(so, nameof(entityCatalog.enemyEntities));
+
+        if (duplicates.Count > 0)
+        {
+            Debug.LogWarning($"[SOManager] EntityCatalogSO 中存在重复的 EntityType，后出现的已覆盖先出现的：\n{string.Join("\n", duplicates)}");
         }
     }
 
@@ -63,25 +94,26 @@ public class SOManager : MonoBehaviour
     /// </summary>
     public LevelUpSO[] GetRandomPlayerLevelUpSOs(int count)
     {
-        if (_upgradeSelector == null || upgradeCatalog == null)
+        if (_upgradeSelector == null || entityCatalog == null)
         {
             var fallback = new LevelUpSO[count];
             for (int i = 0; i < count; i++)
-                fallback[i] = upgradeCatalog?.defaultPlayerUpgrade;
-            Debug.LogWarning("UpgradeSelector or UpgradeCatalog is null, returning fallback player upgrades.");
+                fallback[i] = entityCatalog?.defaultPlayerUpgrade;
+            Debug.LogWarning("UpgradeSelector or EntityCatalog is null, returning fallback player upgrades.");
             return fallback;
         }
 
         var sources = new List<BaseEntitySO>();
 
         // 玩家通用升级来源
-        if (upgradeCatalog.playerUpgradeSource != null)
-            sources.Add(upgradeCatalog.playerUpgradeSource);
+        if (entityCatalog.playerEntity != null)
+            sources.Add(entityCatalog.playerEntity);
 
-        // 已激活武器来源：从武器实例的 entityType 反查 WeaponEntitySO
-        if (WeaponManager.Instance != null)
+        // 已激活武器来源：取本地玩家的武器（按玩家实例化）
+        PlayerController local = PlayerManager.Service?.LocalPlayer;
+        if (local?.Weapons != null)
         {
-            foreach (var weapon in WeaponManager.Instance.weapons)
+            foreach (var weapon in local.Weapons.Weapons)
             {
                 if (weapon?.EntityConfig is WeaponEntitySO weaponSO)
                     sources.Add(weaponSO);
@@ -96,11 +128,11 @@ public class SOManager : MonoBehaviour
     /// </summary>
     public LevelUpSO[] GetRandomTowerLevelUpSOs(int count, BaseTower towerType)
     {
-        if (_upgradeSelector == null || upgradeCatalog == null)
+        if (_upgradeSelector == null || entityCatalog == null)
         {
             var fallback = new LevelUpSO[count];
             for (int i = 0; i < count; i++)
-                fallback[i] = upgradeCatalog?.defaultTowerUpgrade;
+                fallback[i] = entityCatalog?.defaultTowerUpgrade;
             return fallback;
         }
 
@@ -119,17 +151,4 @@ public class SOManager : MonoBehaviour
     {
         return _preferPlayerSOs;
     }
-}
-
-/// <summary>
-/// EntitySO 注册表条目
-/// </summary>
-[Serializable]
-public class EntitySOEntry
-{
-    [Tooltip("实体类型枚举")]
-    public EntityType entityType;
-
-    [Tooltip("对应的 EntitySO asset")]
-    public BaseEntitySO entitySO;
 }

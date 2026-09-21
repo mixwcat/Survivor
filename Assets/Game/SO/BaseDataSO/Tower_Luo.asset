@@ -22,3 +22,4 @@ MonoBehaviour:
   HealAmount: 5
   HealInterval: 1
   HealRange: 5
+  Cost: 1

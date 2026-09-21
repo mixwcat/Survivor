@@ -29,7 +29,7 @@ public class DetectPlayer : MonoBehaviour, IInteractable
     /// </summary>
     public void Interact()
     {
-        UIManager.Instance.ShowPanel<TowerLevelUpPanel>().SetTowerType(GetComponentInParent<BaseTower>());
+        UIManager.Service.ShowPanel<TowerLevelUpPanel>().SetTowerType(GetComponentInParent<BaseTower>());
     }
 
     /// <summary>
@@ -38,7 +38,7 @@ public class DetectPlayer : MonoBehaviour, IInteractable
     public void OnSelected()
     {
         ShowInteractTips(true);
-        GetComponentInParent<BaseTower>()?.SetHighlight(true);
+        GetComponentInParent<BaseTower>()?.OnSelected();
     }
 
     /// <summary>
@@ -47,7 +47,7 @@ public class DetectPlayer : MonoBehaviour, IInteractable
     public void OnDeselected()
     {
         ShowInteractTips(false);
-        GetComponentInParent<BaseTower>()?.SetHighlight(false);
+        GetComponentInParent<BaseTower>()?.OnDeselected();
     }
 
 
@@ -73,6 +73,6 @@ public class DetectPlayer : MonoBehaviour, IInteractable
     // 显示或隐藏塔升级按钮
     private void ShowTowerLevelUpButton(bool isActive)
     {
-        UIManager.Instance.GetPanel<GamePanel>().SetButtonTowerLevelUpActive(isActive, GetComponentInParent<BaseTower>());
+        UIManager.Service.GetPanel<GamePanel>().SetButtonTowerLevelUpActive(isActive, GetComponentInParent<BaseTower>());
     }
 }

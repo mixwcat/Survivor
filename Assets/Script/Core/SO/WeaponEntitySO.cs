@@ -9,4 +9,5 @@ public class WeaponEntitySO : BaseEntitySO
 {
     [Header("武器专属")]
     public GameObject prefab;
+    public WeaponSelectSO weaponSelect;
 }

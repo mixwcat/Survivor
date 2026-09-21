@@ -33,9 +33,9 @@ public enum StatType
 
     // === Luo ===
     HealAmount,
-    HealRange,
-    HealInterval,
+    // HealRange 已移除，Luo 统一使用 TowerAttackRange
+    HealInterval = 16,
 
     // === 敌人 ===
-    ExpReward,
+    ExpReward = 17,
 }

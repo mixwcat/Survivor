@@ -197,3 +197,6 @@ opencode.json
 
 # BFG Repo-Cleaner reports
 .bfg-report/
+
+# Local opencode workspace
+.opencode/

@@ -67,10 +67,10 @@ public class EnemyTargetFinder : MonoBehaviour
 
         Transform targetTrans = nearestPlayer.transform;
 
-        var tm = TowerManager.Instance;
-        if (tm != null && tm.towers != null)
+        var tm = TowerManager.Service;
+        if (tm != null && tm.Towers != null)
         {
-            foreach (var tower in tm.towers)
+            foreach (var tower in tm.Towers)
             {
                 if (tower == null) continue;
                 float distToTower = Vector3.Distance(transform.position, tower.transform.position);

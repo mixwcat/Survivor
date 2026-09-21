@@ -1,5 +1,6 @@
+using System.Threading.Tasks;
 using UnityEngine;
-using System.Collections;
+using UnityEngine.ResourceManagement.AsyncOperations;
 
 /// <summary>
 /// 旋转火球武器
@@ -10,6 +11,9 @@ public class SpinWeapon : BaseWeapon
 {
     public Transform SpinWeaponPosition;
 
+    private GameObject _spinPrefab;
+    private AsyncOperationHandle<GameObject> _spinHandle;
+
     protected override void Awake()
     {
         base.Awake();
@@ -17,21 +21,38 @@ public class SpinWeapon : BaseWeapon
             StatModel.OnStatChanged += OnAnyStatChanged;
     }
 
+    private async void Start()
+    {
+        _spinHandle = ServiceLocator.Get<IAssetService>().LoadAssetAsync<GameObject>(AssetKeys.Spin);
+        _spinPrefab = await _spinHandle.Task;
+    }
+
     protected virtual void OnDestroy()
     {
         if (StatModel != null)
             StatModel.OnStatChanged -= OnAnyStatChanged;
+
+        if (_spinHandle.IsValid())
+            ServiceLocator.Get<IAssetService>().Release(_spinHandle);
     }
 
-    void Start()
+    /// <summary>
+    /// 火球实际发射间隔 = 攻击间隔 + 火球存在时间，确保新旧火球不重叠。
+    /// </summary>
+    protected override float GetFireInterval()
     {
-        StartCoroutine(GenerateSpinWeapon());
+        return GetAttackInterval() + GetStat(StatType.SpinWeaponLifeTime);
     }
 
     void Update()
     {
         float speed = GetStat(StatType.SpinWeaponRotationSpeed);
         transform.rotation = Quaternion.Euler(0, 0, transform.rotation.eulerAngles.z + speed * Time.deltaTime);
+
+        if (TryFire())
+        {
+            SpawnSpinWeapon();
+        }
     }
 
     /// <summary>
@@ -50,28 +71,25 @@ public class SpinWeapon : BaseWeapon
     }
 
     /// <summary>
-    /// 协程生成旋转武器
+    /// 生成一个旋转火球
     /// </summary>
-    IEnumerator GenerateSpinWeapon()
+    private void SpawnSpinWeapon()
     {
-        while (PlayerManager.Service.LocalPlayer != null)
-        {
-            float interval = GetAttackInterval();
-            float lifeTime = GetStat(StatType.SpinWeaponLifeTime);
-            float size = GetStat(StatType.SpinWeaponSize);
-            int damage = (int)GetBaseDamage();
-            float hitImpactForce = GetStat(StatType.HitPushForce);
+        if (_spinPrefab == null) return;
 
-            SpinWeaponController spinWeapon = Instantiate(
-                Resources.Load<GameObject>("Weapon/Spin"),
-                SpinWeaponPosition.position,
-                Quaternion.identity
-            ).GetComponent<SpinWeaponController>();
+        float lifeTime = GetStat(StatType.SpinWeaponLifeTime);
+        float size = GetStat(StatType.SpinWeaponSize);
+        int damage = (int)GetBaseDamage();
+        float hitImpactForce = GetStat(StatType.HitPushForce);
 
-            spinWeapon.transform.parent = SpinWeaponPosition;
-            spinWeapon.Init(lifeTime, size, damage, hitImpactForce);
+        SpinWeaponController spinWeapon = Instantiate(
+            _spinPrefab,
+            SpinWeaponPosition.position,
+            Quaternion.identity
+        ).GetComponent<SpinWeaponController>();
 
-            yield return new WaitForSeconds(interval + lifeTime); // 等待攻击间隔 + 旋转武器存在时间，确保不重叠
-        }
+        spinWeapon.transform.SetParent(SpinWeaponPosition, false);
+        spinWeapon.transform.position = SpinWeaponPosition.position;
+        spinWeapon.Init(lifeTime, size, damage, hitImpactForce);
     }
 }

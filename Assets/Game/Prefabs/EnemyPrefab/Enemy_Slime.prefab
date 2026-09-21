@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 8876079613553853738}
   - component: {fileID: 3429137073808142669}
   - component: {fileID: 4804928861422703592}
+  - component: {fileID: 237128556430263954}
   m_Layer: 0
   m_Name: Enemy_Slime
   m_TagString: Enemy
@@ -76,7 +77,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2190df186f782ae4385867b572629e0b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _entityData: {fileID: 11400000, guid: 498e0756b09764e4491636ed723ed6de, type: 2}
+  entityType: 2
+  _knockbackRecoveryDuration: 0.1
 --- !u!114 &3429137073808142669
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -135,6 +137,19 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1.1688378, y: 1.0099318}
   m_EdgeRadius: 0
+--- !u!114 &237128556430263954
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 64072624753369210}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd71c9645a09c814bbeb5b350f231f56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _updateInterval: 0.5
 --- !u!1 &3520106369979867879
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,0 +1,98 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: UI
+  m_EditorClassIdentifier: 
+  m_GroupName: UI
+  m_GUID: ace140679299ae348a4c13c2ae2ed54d
+  m_SerializeEntries:
+  - m_GUID: 10056446dbbeb974080afe61f810ce49
+    m_Address: UI/PausePanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 22ae9aa4b23a903449e9143c0dc4b20c
+    m_Address: UI/TowerHealthPanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2e445511ae4e9d446bfa29657fd4342a
+    m_Address: UI/TowerLevelUpPanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 80e974f7a42db2c44a3d9a452073364f
+    m_Address: UI/GamePanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b442c6be7580c0e48a862c1e9bc86059
+    m_Address: UI/DeadPanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b8b0736ccea2d304aa23a328359360bb
+    m_Address: UI/CanvasWithEntity
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bc03d1742e73280418e965f36b5a4971
+    m_Address: UI/TipsPanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cf7e166dbbadcd74b90a28ee971f7af8
+    m_Address: UI/ChooseWeaponPanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d3c90750650176449bf898932a27de6c
+    m_Address: UI/Canvas
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: dee31a8aeebe0d24fbc68a605e8175f9
+    m_Address: UI/LevelUpPanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e4bbdac017991b34da4e732c0abc5494
+    m_Address: UI/ChooseTowerPanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f25e14632a72ea843a83a7071ac2ce9e
+    m_Address: UI/DamageNumText
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f5db0deba37616c4cada74287d663120
+    m_Address: UI/GameSettingPanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f5e6abfa03da9654088bcc5f0702a262
+    m_Address: UI/MenuPanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fe5b140ef70dab340bfe01965c116522
+    m_Address: UI/MusicSettingPanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: ce065eaf85320254fb5f4c62ea283932, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: e8f1009d25e263c47a3df02a63c5fb7a, type: 2}
+    - {fileID: 11400000, guid: bac7c27dfba5ed5468bbcdd04c02c2b6, type: 2}

@@ -36,6 +36,6 @@ public class TipsPanel : BasePanel
         }
 
         // 隐藏面板
-        UIManager.Instance.HidePanel<TipsPanel>();
+        UIManager.Service.HidePanel<TipsPanel>();
     }
 }

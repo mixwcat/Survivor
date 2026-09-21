@@ -118,13 +118,13 @@ public class EnemyController : EntityBehaviour
 
     void OnEnable()
     {
-        GameLevelManager.Service.RegisterEnemy(this);
+        GameLevelManager.Service?.RegisterEnemy(this);
     }
 
     void OnDisable()
     {
         if (_isQuitting || !gameObject.scene.isLoaded) return;
-        GameLevelManager.Service.UnregisterEnemy(this);
+        GameLevelManager.Service?.UnregisterEnemy(this);
         if (ExpSpritePool.Instance != null)
             ExpSpritePool.Instance.SpawnExpSprite(transform);
     }

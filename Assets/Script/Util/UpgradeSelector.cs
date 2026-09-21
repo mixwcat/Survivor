@@ -8,9 +8,9 @@ using UnityEngine;
 /// </summary>
 public class UpgradeSelector
 {
-    private readonly UpgradeCatalogSO _catalog;
+    private readonly EntityCatalogSO _catalog;
 
-    public UpgradeSelector(UpgradeCatalogSO catalog)
+    public UpgradeSelector(EntityCatalogSO catalog)
     {
         _catalog = catalog;
     }

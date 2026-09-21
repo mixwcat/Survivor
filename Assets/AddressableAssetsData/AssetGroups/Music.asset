@@ -1,0 +1,93 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Music
+  m_EditorClassIdentifier: 
+  m_GroupName: Music
+  m_GUID: 731caa1fa457a534289d1c9aad402a32
+  m_SerializeEntries:
+  - m_GUID: 3d101536347148f4ab975c5be30ecece
+    m_Address: Music/PlayerGetHurt
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3eda754976914d145b2d1727d19ad39c
+    m_Address: Music/Heal
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6002efe70ecda234aae62e060df9e101
+    m_Address: Music/PlayerShoot
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6e896d589a0a4194fa3d67b2c541a3a2
+    m_Address: Music/PickExp
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6f4cc6e3d18e7fb4d82357fe652ce912
+    m_Address: Music/ChooseWeapon
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6f66fd15d11077945b0535a631f39408
+    m_Address: Music/PlayerLevelUP
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8420f8cb3521288478e0290a7bfb5ffc
+    m_Address: Music/WinGame
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ab71d1b0565154442900dae49f1938e8
+    m_Address: Music/OnMouseClickUI
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: af0c14ae68b9efe4db232d6a1bacaaa3
+    m_Address: Music/StartGame
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c0ed1fae0dbb5714886ba6872e6740d4
+    m_Address: Music/PlayerAttackEnemy
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d1dbe0a1f5579b1498097e39fc87e4d7
+    m_Address: Music/LoseGame
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d4a1cbdc8e5e71b4e94076720d8f751b
+    m_Address: Music/PlayerMove
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e64c5b928f185a14b8f6236b12c127a5
+    m_Address: Music/bgm
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fc76b5ac5a5a5b449ac218ba8ec4062c
+    m_Address: Music/RinAttack
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: ce065eaf85320254fb5f4c62ea283932, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: e581070f2b5c4004da7d9f327f30a4d2, type: 2}
+    - {fileID: 11400000, guid: 854b2e8625920d6498306d413c39d1f2, type: 2}

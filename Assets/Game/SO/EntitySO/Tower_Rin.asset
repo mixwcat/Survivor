@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81da4c876cbdec147a0fb020c4ab3ec1, type: 3}
+  m_Name: Tower_Rin
+  m_EditorClassIdentifier: 
+  entityType: 5
+  dataRef: {fileID: 11400000, guid: b983f2a93f3cc8045b141b259bbfcf00, type: 2}
+  upgrades:
+  - {fileID: 11400000, guid: 87ef6031a94169f40b83527b5eaea17e, type: 2}
+  - {fileID: 11400000, guid: 4682c9bce0f66184f8aa5baf91e9b483, type: 2}
+  - {fileID: 11400000, guid: 259ed92b980cb244c87ecce32feb0020, type: 2}
+  - {fileID: 11400000, guid: c9a74074cbec5264fb387a457ec4cd19, type: 2}
+  prefab: {fileID: 103225250565977969, guid: 8b8ba7001d719734ea4ae21092dc1ff8, type: 3}
+  displayName: Rin
+  description: 
+  icon: {fileID: 21300000, guid: bd6d8a279f98e8742ae95261f7fddc75, type: 3}

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.ComponentModel.Design;
 using UnityEngine;
 
 /// <summary>
@@ -7,26 +6,9 @@ using UnityEngine;
 /// 负责全局游戏状态（时间、波次、暂停、敌人注册、游戏结束）。
 /// 实现 IGameLevelManager 接口，支持通过 ServiceLocator 替换为联机实现。
 /// </summary>
-public class GameLevelManager : MonoBehaviour, IGameLevelManager
+[DefaultExecutionOrder(-120)]
+public class GameLevelManager : ManagerSingleton<GameLevelManager>, IGameLevelManager
 {
-    [Header("单例模式")]
-    private static GameLevelManager instance;
-    public static GameLevelManager Instance => instance;
-
-    /// <summary>
-    /// 兼容层：优先从 ServiceLocator 获取 IGameLevelManager，回退到 Instance。
-    /// 重构期间所有调用方统一改用此属性，便于后续无痛切换为联机实现。
-    /// </summary>
-    public static IGameLevelManager Service
-    {
-        get
-        {
-            if (ServiceLocator.TryGet(out IGameLevelManager svc))
-                return svc;
-            return instance;
-        }
-    }
-
     [Header("Enemy管理")]
     private List<EnemyController> enemies = new List<EnemyController>();
 
@@ -35,9 +17,6 @@ public class GameLevelManager : MonoBehaviour, IGameLevelManager
     [SerializeField] private bool _isGameActive = true;
     [SerializeField] private int _currentWave; // 当前波次
     [SerializeField] private bool _isGameOver;
-
-    [Header("输入管理")]
-    private IInputHandle _inputHandle;
 
     // ---- IGameLevelManager 事件 ----
     public event System.Action<float> OnGameOver;
@@ -49,26 +28,29 @@ public class GameLevelManager : MonoBehaviour, IGameLevelManager
     public bool IsGameActive => _isGameActive;
     public bool IsGameOver => _isGameOver;
 
-    private void Awake()
+    /// <summary>服务访问入口（未注册时返回 null）。</summary>
+    public static IGameLevelManager Service =>
+        ServiceLocator.TryGet<IGameLevelManager>(out var svc) ? svc : null;
+
+    protected override void OnSingletonAwake()
     {
-        instance = this;
         _isGameOver = false;
-
-        UIManager.Instance.ShowPanel<GamePanel>();
-        _inputHandle = InputHandleFactory.GetInput("local");
-
-        if (_inputHandle == null)
-        {
-            Debug.LogError("GameLevelManager: Failed to create IInputHandle!");
-        }
 
         // 注册到 ServiceLocator，使 Service 属性能正确返回接口
         ServiceLocator.Register<IGameLevelManager>(this);
     }
 
-    private void Start()
+    private async void Start()
     {
-        UIManager.Instance.ShowPanel<ChooseWeaponPanel>();
+        // 全局服务（AssetService/UIManager/音频）由 GameBootstrap 统一初始化，
+        // 这里只等其就绪后展示关卡内面板。
+        await GameBootstrap.Ready;
+        UIManager.Service.ShowPanel<GamePanel>();
+        UIManager.Service.ShowPanel<ChooseWeaponPanel>();
+
+        // ESC 未被任何面板消费时，打开暂停面板
+        if (UIManager.Service != null)
+            UIManager.Service.OnEscapeUnhandled += ShowSettingPanel;
     }
 
     void Update()
@@ -80,11 +62,14 @@ public class GameLevelManager : MonoBehaviour, IGameLevelManager
         }
     }
 
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
+        base.OnDestroy();
+
+        if (UIManager.Service != null)
+            UIManager.Service.OnEscapeUnhandled -= ShowSettingPanel;
+
         ServiceLocator.Unregister<IGameLevelManager>();
-        if (instance == this)
-            instance = null;
     }
 
 
@@ -120,14 +105,14 @@ public class GameLevelManager : MonoBehaviour, IGameLevelManager
     }
     public void UpdateGameTimeUI()
     {
-        UIManager.Instance.GetPanel<GamePanel>()?.UpdateTime(_levelTime);
+        UIManager.Service.GetPanel<GamePanel>()?.UpdateTime(_levelTime);
         OnGameTimeUpdate?.Invoke(_levelTime);
     }
     private void ShowSettingPanel()
     {
         if (_isGameActive)
         {
-            UIManager.Instance.ShowPanel<PausePanel>();
+            UIManager.Service.ShowPanel<PausePanel>();
         }
     }
 
@@ -138,34 +123,15 @@ public class GameLevelManager : MonoBehaviour, IGameLevelManager
         _isGameOver = true;
         OnGameOver?.Invoke(_levelTime);
 
-        UIManager.Instance.ShowPanel<DeadPanel>().SetSurvivalTime((int)_levelTime);
-        UIManager.Instance.HidePanel<GamePanel>();
-    }
-
-    void OnEnable()
-    {
-        EventCenter.Subscribe(PlayerEnum.OnPlayerDead, OnPlayerDeadEvent);
-
-        if (_inputHandle != null)
-        {
-            _inputHandle.OnEscape += ShowSettingPanel;
-        }
-    }
-    void OnDisable()
-    {
-        EventCenter.Unsubscribe(PlayerEnum.OnPlayerDead, OnPlayerDeadEvent);
-
-        if (_inputHandle != null)
-        {
-            _inputHandle.OnEscape -= ShowSettingPanel;
-        }
+        UIManager.Service.ShowPanel<DeadPanel>().SetSurvivalTime((int)_levelTime);
+        UIManager.Service.HidePanel<GamePanel>();
     }
 
     /// <summary>
-    /// 玩家死亡事件回调，转发到 GameOver
+    /// 玩家死亡。单机：直接结束游戏；联机：由权威端决定（客户端应发送请求）。
     /// </summary>
-    private void OnPlayerDeadEvent(object param)
+    public void NotifyPlayerDied(PlayerController player)
     {
-        GameOver(param);
+        GameOver(player);
     }
 }

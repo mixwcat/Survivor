@@ -19,15 +19,26 @@ public class PlayerController : EntityBehaviour
 
     [Header("经验系统")]
     [SerializeField]
-    [Tooltip("玩家自身的经验控制器；为空时回退到全局 Service")]
+    [Tooltip("玩家自身的经验控制器；未拖拽时从同物体自动获取")]
     private ExperienceLevController _experienceController;
 
-    /// <summary>玩家经验控制器（优先自身，回退全局）</summary>
-    public IExperienceController ExperienceController => _experienceController ?? ExperienceLevController.Service;
+    /// <summary>玩家经验控制器（自身组件，按玩家实例化）</summary>
+    public IExperienceController ExperienceController => _experienceController;
+
+    [Header("武器系统")]
+    private PlayerWeaponController _weapons;
+
+    /// <summary>玩家武器控制器（按玩家实例化）</summary>
+    public IWeaponManager Weapons => _weapons;
 
     protected override void Awake()
     {
         base.Awake();
+
+        if (_experienceController == null)
+            _experienceController = GetComponent<ExperienceLevController>();
+        if (_weapons == null)
+            _weapons = GetComponent<PlayerWeaponController>();
 
         // 通过工厂按 ID 获取输入处理器
         _inputHandle = InputHandleFactory.GetInput(_inputHandleId);

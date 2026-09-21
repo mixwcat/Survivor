@@ -4,6 +4,8 @@ using UnityEngine.UI;
 
 public class GameSettingPanel : BasePanel
 {
+    public override bool CanHandleEscape => true;
+
     public Toggle togBKM;
     public Toggle togSE;
     public Slider sliderBKM;
@@ -18,47 +20,47 @@ public class GameSettingPanel : BasePanel
 
         togBKM.onValueChanged.AddListener((isOn) =>
         {
-            BKMusic.Instance.audioSource.mute = !isOn;
+            AudioService.Service.BgmMuted = !isOn;
         });
 
         togSE.onValueChanged.AddListener((isOn) =>
         {
-            BKMusic.Instance.soundOpen = isOn;
+            AudioService.Service.SfxEnabled = isOn;
         });
 
         sliderBKM.onValueChanged.AddListener((value) =>
         {
-            BKMusic.Instance.audioSource.volume = value;
+            AudioService.Service.BgmVolume = value;
         });
 
         sliderSE.onValueChanged.AddListener((value) =>
         {
-            BKMusic.Instance.soundValue = value;
+            AudioService.Service.SfxVolume = value;
         });
         btnMenu.onClick.AddListener(() =>
         {
-            UIManager.Instance.HidePanel<GameSettingPanel>();
-            UIManager.Instance.HidePanel<GamePanel>();
+            UIManager.Service.HidePanel<GameSettingPanel>();
+            UIManager.Service.HidePanel<GamePanel>();
             GameLevelManager.Service.ResumeGame();
 
             SceneManager.LoadScene("Menu");
         });
         btnRestart.onClick.AddListener(() =>
         {
-            UIManager.Instance.HidePanel<GameSettingPanel>();
+            UIManager.Service.HidePanel<GameSettingPanel>();
             GameLevelManager.Service.ResumeGame();
 
-            SceneManager.LoadScene("Main");
+            SceneManager.LoadScene("Level0");
         });
         btnGoOn.onClick.AddListener(() =>
         {
-            UIManager.Instance.HidePanel<GameSettingPanel>();
+            UIManager.Service.HidePanel<GameSettingPanel>();
 
             GameLevelManager.Service.ResumeGame();
         });
         btnClose.onClick.AddListener(() =>
         {
-            UIManager.Instance.HidePanel<GameSettingPanel>();
+            UIManager.Service.HidePanel<GameSettingPanel>();
 
             GameLevelManager.Service.ResumeGame();
         });
@@ -66,11 +68,21 @@ public class GameSettingPanel : BasePanel
 
     private void InitDisplay()
     {
-        togBKM.isOn = !BKMusic.Instance.audioSource.mute;
-        togSE.isOn = BKMusic.Instance.soundOpen;
-        sliderBKM.value = BKMusic.Instance.audioSource.volume;
-        sliderSE.value = BKMusic.Instance.soundValue;
+        IAudioService audio = AudioService.Service;
+        if (audio != null)
+        {
+            togBKM.isOn = !audio.BgmMuted;
+            togSE.isOn = audio.SfxEnabled;
+            sliderBKM.value = audio.BgmVolume;
+            sliderSE.value = audio.SfxVolume;
+        }
 
         GameLevelManager.Service.PauseGame();
+    }
+
+    public override void EscLogic()
+    {
+        UIManager.Service.HidePanel<GameSettingPanel>();
+        GameLevelManager.Service?.ResumeGame();
     }
 }

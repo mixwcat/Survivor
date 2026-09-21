@@ -1,21 +1,17 @@
 using UnityEngine;
 
-public class InputReaderManager : MonoBehaviour
+[DefaultExecutionOrder(-150)]
+public class InputReaderManager : ManagerSingleton<InputReaderManager>
 {
-    public static InputReaderManager Instance;
-    private void Awake()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(this.gameObject);
-        }
-        else
-        {
-            Destroy(this.gameObject);
-        }
-    }
-
+    protected override bool PersistAcrossScenes => true;
 
     public InputReader inputReader;
+
+    protected override void OnSingletonAwake()
+    {
+        // InputReader 自身在 OnEnable 中创建并启用 InputSystem_Actions，
+        // 无需 Inspector 拖拽；未配置时运行时自建，保证 PC 输入可用。
+        if (inputReader == null)
+            inputReader = ScriptableObject.CreateInstance<InputReader>();
+    }
 }

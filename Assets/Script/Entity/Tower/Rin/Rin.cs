@@ -6,7 +6,6 @@ using UnityEngine;
 /// </summary>
 public class Rin : BaseTower
 {
-    private float _fireTimer;
     private Animator _anim;
 
     protected override void Start()
@@ -15,37 +14,20 @@ public class Rin : BaseTower
         _anim = GetComponent<Animator>();
     }
 
-    protected override void Update()
+    protected override float GetOperateInterval()
     {
-        base.Update();
-        _fireTimer += Time.deltaTime;
-        float interval = GetStat(StatType.AttackInterval);
-        if (_fireTimer >= interval)
-        {
-            Attack();
-            _fireTimer = 0f;
-        }
+        return GetStat(StatType.AttackInterval);
     }
 
-    private void Attack()
+    protected override void OnOperate()
     {
-        if (enemyInRange.Count == 0) return;
+        if (!HasEnemyInRange) return;
 
         _anim.SetTrigger("Attack");
-        BKMusic.Instance.PlaySound(ResourceEnum.RinAttack);
-        DrawCircle();
+        AudioService.Service?.PlaySfx(ResourceEnum.RinAttack);
 
         float damage = GetStat(StatType.Damage);
-        for (int i = enemyInRange.Count - 1; i >= 0; i--)
-        {
-            if (enemyInRange[i] != null)
-            {
-                enemyInRange[i].GetComponent<EnemyHealthController>()?.TakeDamage(damage);
-            }
-            else
-            {
-                enemyInRange.RemoveAt(i);
-            }
-        }
+        ForEachValidTarget(enemyInRange, e =>
+            e.GetComponent<EnemyHealthController>()?.TakeDamage(damage));
     }
 }

@@ -9,8 +9,9 @@ public class EnemyHealthController : BaseHealthController
 {
     private List<GameObject> _colliders = new();
 
-    void Start()
+    protected override void Start()
     {
+        base.Start();
         // 增强已在 EnemyController.Start 中完成，这里只初始化血量
         CurrentHealth = MaxHealth;
         InvokeRepeating(nameof(HurtColliders), 0f, 1f);
@@ -40,7 +41,7 @@ public class EnemyHealthController : BaseHealthController
             CancelInvoke(nameof(HurtColliders));
             Die();
         }
-        DamageNumManager.Instance.SpawnDamageNum(transform.position, damage);
+        DamageNumManager.Service.SpawnDamageNum(transform.position, damage);
     }
 
     void OnTriggerEnter2D(Collider2D other)

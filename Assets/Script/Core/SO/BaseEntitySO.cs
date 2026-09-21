@@ -17,8 +17,4 @@ public class BaseEntitySO : ScriptableObject
 
     [Header("升级选项")]
     public List<LevelUpSO> upgrades = new();
-
-    [Header("升级来源标记")]
-    [Tooltip("勾选后，该实体的 upgrades 会进入玩家升级随机池")]
-    public bool includeInPlayerUpgradePool;
 }

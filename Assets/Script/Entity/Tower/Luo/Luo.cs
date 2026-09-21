@@ -4,57 +4,64 @@ using UnityEngine;
 /// <summary>
 /// Luo 塔 — 治疗
 /// 所有数值属性从 StatModel 读取
+/// 治疗范围直接使用 TowerAttackRange
 /// </summary>
 public class Luo : BaseTower
 {
-    private float _healTimer;
-    public Animator anim;
-    private List<BaseTower> _towersInRange = new List<BaseTower>();
+    private Animator _anim;
+    private readonly List<BaseTower> _towersInRange = new List<BaseTower>();
 
-    protected override void Update()
+    protected override void Start()
     {
-        base.Update();
-        _healTimer += Time.deltaTime;
-        float interval = GetStat(StatType.HealInterval);
-        if (_healTimer >= interval)
-        {
-            Heal();
-            _healTimer = 0f;
-        }
+        base.Start();
+        // 根 Animator（Luo.controller）无参数；Heal 触发器在子物体 Bao 的 Animator 上
+        _anim = FindAnimatorWithParameter("Heal");
     }
 
-    private void Heal()
+    private Animator FindAnimatorWithParameter(string parameter)
+    {
+        foreach (Animator animator in GetComponentsInChildren<Animator>(true))
+        {
+            foreach (AnimatorControllerParameter p in animator.parameters)
+            {
+                if (p.name == parameter) return animator;
+            }
+        }
+        return null;
+    }
+
+    protected override float GetOperateInterval()
+    {
+        return GetStat(StatType.HealInterval);
+    }
+
+    protected override void OnOperate()
     {
         if (_towersInRange.Count == 0) return;
 
-        anim.SetTrigger("Heal");
-        DrawCircle();
-        BKMusic.Instance.PlaySound(ResourceEnum.Heal);
+        if (_anim != null) _anim.SetTrigger("Heal");
+        AudioService.Service?.PlaySfx(ResourceEnum.Heal);
 
         float healAmount = GetStat(StatType.HealAmount);
-        for (int i = _towersInRange.Count - 1; i >= 0; i--)
+        ForEachValidTarget(_towersInRange, t =>
         {
-            if (_towersInRange[i] != null)
-            {
-                if (_towersInRange[i] is Luo) continue;
-                _towersInRange[i].GetComponent<BaseHealthController>()?.Heal(healAmount);
-            }
-            else
-            {
-                _towersInRange.RemoveAt(i);
-            }
-        }
+            if (t == this) return;
+            t.GetComponent<BaseHealthController>()?.Heal(healAmount);
+        });
+    }
+
+    protected override void CleanupCustomTargets()
+    {
+        RemoveNullTargets(_towersInRange);
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Tower"))
-            _towersInRange.Add(other.GetComponent<BaseTower>());
+        TryAddTarget(other, "Tower", _towersInRange);
     }
 
     private void OnTriggerExit2D(Collider2D other)
     {
-        if (other.CompareTag("Tower"))
-            _towersInRange.Remove(other.GetComponent<BaseTower>());
+        TryRemoveTarget(other, "Tower", _towersInRange);
     }
 }

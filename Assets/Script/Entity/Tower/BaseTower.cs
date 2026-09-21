@@ -10,31 +10,28 @@ public class BaseTower : EntityBehaviour
 {
     protected List<EnemyController> enemyInRange = new List<EnemyController>();
 
-    [Header("攻击范围显示")]
-    public int segments = 20;
-    private LineRenderer _lineRenderer;
-    public CircleCollider2D detectionCollider;
+    [Header("索敌/治疗范围碰撞体")]
+    [Tooltip("为空时自动在子对象中查找 isTrigger 的 CircleCollider2D")]
+    [SerializeField] private CircleCollider2D _detectionCollider;
 
     [Header("高亮材质")]
     [Tooltip("为空则使用 SOManager 中的统一配置")]
-    public Material highlightMaterial;
+    [SerializeField] private Material _highlightMaterial;
     private SpriteRenderer[] _spriteRenderers;
     private Material[] _originalMaterials;
+
+    private TowerRangeVisualizer _rangeVisualizer;
+    private float _operateTimer;
+    private float _cleanupTimer = 0.5f;
 
 
     protected override void Awake()
     {
         base.Awake();
-        _lineRenderer = gameObject.AddComponent<LineRenderer>();
-        _lineRenderer.positionCount = segments + 1;
-        _lineRenderer.loop = true;
-        _lineRenderer.startWidth = 0.05f;
-        _lineRenderer.endWidth = 0.05f;
-        _lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-        _lineRenderer.startColor = Color.white;
-        _lineRenderer.endColor = Color.white;
 
-        DrawCircle();
+        _rangeVisualizer = GetComponent<TowerRangeVisualizer>();
+        if (_rangeVisualizer == null)
+            _rangeVisualizer = gameObject.AddComponent<TowerRangeVisualizer>();
 
         // 缓存所有 SpriteRenderer 的原始材质
         _spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
@@ -45,15 +42,32 @@ public class BaseTower : EntityBehaviour
         }
 
         // 如果没有单独配置高亮材质，尝试从 SOManager 获取统一配置
-        if (highlightMaterial == null && SOManager.Instance != null)
+        if (_highlightMaterial == null && SOManager.Service != null)
         {
-            highlightMaterial = SOManager.Instance.towerHighlightMaterial;
+            _highlightMaterial = SOManager.Service.TowerHighlightMaterial;
         }
     }
 
     protected virtual void Start()
     {
-        detectionCollider.radius = GetStat(StatType.TowerAttackRange);
+        // 自动查找子对象中的 search range trigger
+        if (_detectionCollider == null)
+        {
+            CircleCollider2D[] circles = GetComponentsInChildren<CircleCollider2D>();
+            foreach (var c in circles)
+            {
+                if (c.isTrigger)
+                {
+                    _detectionCollider = c;
+                    break;
+                }
+            }
+        }
+
+        if (_detectionCollider != null)
+            _detectionCollider.radius = GetStat(StatType.TowerAttackRange);
+        else
+            Debug.LogWarning($"[{nameof(BaseTower)}] 找不到 search range trigger: {gameObject.name}");
 
         if (StatModel != null)
             StatModel.OnStatChanged += OnAnyStatChanged;
@@ -61,12 +75,12 @@ public class BaseTower : EntityBehaviour
 
     void OnEnable()
     {
-        TowerManager.Instance.RegisterTower(this);
+        TowerManager.Service?.RegisterTower(this);
     }
 
     void OnDisable()
     {
-        TowerManager.Instance.UnregisterTower(this);
+        TowerManager.Service?.UnregisterTower(this);
     }
 
     protected virtual void OnDestroy()
@@ -83,50 +97,78 @@ public class BaseTower : EntityBehaviour
         if (type == StatType.TowerAttackRange)
         {
             float newRange = GetStat(StatType.TowerAttackRange);
-            detectionCollider.radius = newRange;
-            DrawCircle();
+            if (_detectionCollider != null)
+                _detectionCollider.radius = newRange;
+            _rangeVisualizer?.Refresh(newRange);
         }
     }
 
     protected virtual void Update()
     {
-        if (_lineRenderer.startColor.a > 0f)
+        _cleanupTimer -= Time.deltaTime;
+        if (_cleanupTimer <= 0f)
         {
-            Color color = new Color(1f, 1f, 1f, Mathf.MoveTowards(_lineRenderer.startColor.a, 0f, 2f * Time.deltaTime));
-            _lineRenderer.startColor = color;
-            _lineRenderer.endColor = color;
+            RemoveNullTargets(enemyInRange);
+            CleanupCustomTargets();
+            _cleanupTimer = 0.5f;
         }
+
+        if (TryOperate())
+            OnOperate();
     }
 
+    #region 周期行为骨架（模板方法模式）
 
-    #region 绘制攻击范围
-    protected void SetDefaultAlpha()
+    /// <summary>
+    /// 子类返回自己的操作间隔。Teto/Rin 默认 AttackInterval，Luo 可覆盖为 HealInterval。
+    /// </summary>
+    protected virtual float GetOperateInterval()
     {
-        _lineRenderer.startColor = new Color(1f, 1f, 1f, 1f);
-        _lineRenderer.endColor = new Color(1f, 1f, 1f, 1f);
+        return GetStat(StatType.AttackInterval);
     }
 
     /// <summary>
-    /// 绘制圆环（攻击范围）
+    /// 按间隔累计计时器；返回 true 表示该进行一次操作。
     /// </summary>
-    protected void DrawCircle()
+    protected bool TryOperate()
     {
-        SetDefaultAlpha();
-        float range = GetStat(StatType.TowerAttackRange);
-        float angle = 0f;
-        for (int i = 0; i <= segments; i++)
+        float interval = GetOperateInterval();
+        if (interval <= 0f)
         {
-            float x = Mathf.Cos(angle) * range + transform.position.x;
-            float y = Mathf.Sin(angle) * range + transform.position.y;
-            _lineRenderer.SetPosition(i, new Vector3(x, y, 0));
-            angle += 2 * Mathf.PI / segments;
+            Debug.LogWarning($"[{nameof(BaseTower)}] operate interval <= 0 on {GetType().Name}");
+            return false;
         }
+
+        _operateTimer -= Time.deltaTime;
+        if (_operateTimer <= 0f)
+        {
+            _operateTimer = interval;
+            return true;
+        }
+        return false;
     }
+
+    /// <summary>
+    /// 子类重写具体行为（攻击/治疗等）
+    /// </summary>
+    protected virtual void OnOperate() { }
+
+    /// <summary>
+    /// 每 0.5s 清理时调用；子类可重写以清理自己的自定义目标列表。
+    /// </summary>
+    protected virtual void CleanupCustomTargets() { }
+
     #endregion
 
     #region 索敌逻辑
+
     /// <summary>
-    /// 寻找目标
+    /// 范围内是否有敌人
+    /// </summary>
+    protected bool HasEnemyInRange => enemyInRange.Count > 0;
+
+    /// <summary>
+    /// 寻找目标（默认取最先进入范围的敌人）
     /// </summary>
     protected Transform FindTarget()
     {
@@ -142,33 +184,95 @@ public class BaseTower : EntityBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Enemy"))
-            enemyInRange.Add(other.GetComponent<EnemyController>());
+        TryAddTarget(other, "Enemy", enemyInRange);
     }
 
     private void OnTriggerExit2D(Collider2D other)
     {
-        if (other.CompareTag("Enemy"))
-            enemyInRange.Remove(other.GetComponent<EnemyController>());
+        TryRemoveTarget(other, "Enemy", enemyInRange);
     }
+
     #endregion
 
+    #region 目标列表工具
 
+    protected void TryAddTarget<T>(Collider2D other, string tag, List<T> list) where T : Component
+    {
+        if (other.CompareTag(tag))
+            list.Add(other.GetComponent<T>());
+    }
 
-    #region 高亮显示
+    protected void TryRemoveTarget<T>(Collider2D other, string tag, List<T> list) where T : Component
+    {
+        if (other.CompareTag(tag))
+            list.Remove(other.GetComponent<T>());
+    }
+
+    protected void RemoveNullTargets<T>(List<T> list) where T : Component
+    {
+        for (int i = list.Count - 1; i >= 0; i--)
+        {
+            if (list[i] == null)
+                list.RemoveAt(i);
+        }
+    }
+
+    protected void ForEachValidTarget<T>(List<T> targets, System.Action<T> action) where T : Component
+    {
+        if (targets.Count == 0) return;
+
+        // 快照遍历：action 可能因目标死亡触发 OnTriggerExit2D 修改 targets，
+        // 直接按索引遍历会越界。
+        T[] snapshot = targets.ToArray();
+        foreach (T target in snapshot)
+        {
+            if (target == null)
+            {
+                targets.Remove(target);
+                continue;
+            }
+            action(target);
+        }
+    }
+
+    #endregion
+
+    #region 选中与高亮
+
+    /// <summary>
+    /// 玩家选中该塔（由 DetectPlayer 调用）
+    /// </summary>
+    public void OnSelected()
+    {
+        SetHighlight(true);
+        if (_rangeVisualizer != null)
+        {
+            _rangeVisualizer.Show();
+            _rangeVisualizer.Refresh(GetStat(StatType.TowerAttackRange));
+        }
+    }
+
+    /// <summary>
+    /// 玩家取消选中该塔（由 DetectPlayer 调用）
+    /// </summary>
+    public void OnDeselected()
+    {
+        SetHighlight(false);
+        _rangeVisualizer?.FadeOut();
+    }
 
     /// <summary>
     /// 设置高亮状态：true 切换为高亮材质，false 恢复原始材质
     /// </summary>
-    public void SetHighlight(bool active)
+    protected void SetHighlight(bool active)
     {
         if (_spriteRenderers == null || _spriteRenderers.Length == 0) return;
-        if (active && highlightMaterial == null) return;
+        if (active && _highlightMaterial == null) return;
 
         for (int i = 0; i < _spriteRenderers.Length; i++)
         {
             if (_spriteRenderers[i] == null) continue;
-            _spriteRenderers[i].material = active ? highlightMaterial : _originalMaterials[i];
+            _spriteRenderers[i].material = active ? _highlightMaterial : _originalMaterials[i];
         }
     }
 

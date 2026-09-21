@@ -108,6 +108,15 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""EPress"",
+                    ""type"": ""Button"",
+                    ""id"": ""5b7f2c1a-9d3e-4a6b-8c1f-2e4d6a8b0c3d"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -207,6 +216,17 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": "";Gamepad"",
                     ""action"": ""EscapePress"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""6c8e3d2b-0e4f-4b7c-9d2a-3f5e7c9d1e4f"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""EPress"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -796,6 +816,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         m_Player = asset.FindActionMap("Player", throwIfNotFound: true);
         m_Player_Move = m_Player.FindAction("Move", throwIfNotFound: true);
         m_Player_EscapePress = m_Player.FindAction("EscapePress", throwIfNotFound: true);
+        m_Player_EPress = m_Player.FindAction("EPress", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Navigate = m_UI.FindAction("Navigate", throwIfNotFound: true);
@@ -891,6 +912,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     private List<IPlayerActions> m_PlayerActionsCallbackInterfaces = new List<IPlayerActions>();
     private readonly InputAction m_Player_Move;
     private readonly InputAction m_Player_EscapePress;
+    private readonly InputAction m_Player_EPress;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -910,6 +932,10 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/EscapePress".
         /// </summary>
         public InputAction @EscapePress => m_Wrapper.m_Player_EscapePress;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/EPress".
+        /// </summary>
+        public InputAction @EPress => m_Wrapper.m_Player_EPress;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -942,6 +968,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @EscapePress.started += instance.OnEscapePress;
             @EscapePress.performed += instance.OnEscapePress;
             @EscapePress.canceled += instance.OnEscapePress;
+            @EPress.started += instance.OnEPress;
+            @EPress.performed += instance.OnEPress;
+            @EPress.canceled += instance.OnEPress;
         }
 
         /// <summary>
@@ -959,6 +988,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @EscapePress.started -= instance.OnEscapePress;
             @EscapePress.performed -= instance.OnEscapePress;
             @EscapePress.canceled -= instance.OnEscapePress;
+            @EPress.started -= instance.OnEPress;
+            @EPress.performed -= instance.OnEPress;
+            @EPress.canceled -= instance.OnEPress;
         }
 
         /// <summary>
@@ -1273,6 +1305,13 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnEscapePress(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "EPress" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnEPress(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.

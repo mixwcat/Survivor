@@ -15,7 +15,7 @@ public class EnemySpawner : MonoBehaviour
     private float timer;  // 当前波的持续时间计时器
 
     [Header("无限波次设置")]
-    public List<GameObject> enemyPrefabs;
+    public List<EnemyEntitySO> enemyEntities;
     private int defaultWaveLength = 50; // 默认波次持续时间
 
 
@@ -86,8 +86,11 @@ public class EnemySpawner : MonoBehaviour
             return;
 
 
+        var enemySO = waves[currentWaveIndex].enemyEntity;
+        if (enemySO == null || enemySO.prefab == null) return;
+
         // 生成敌人
-        Instantiate(waves[currentWaveIndex].enemyPrefab, SelectSpawnPoint(), Quaternion.identity);
+        Instantiate(enemySO.prefab, SelectSpawnPoint(), Quaternion.identity);
     }
 
 
@@ -118,7 +121,7 @@ public class EnemySpawner : MonoBehaviour
     private void GenerateNewWave()
     {
         WaveInfo waveInfo = waves[currentWaveIndex];
-        waveInfo.enemyPrefab = enemyPrefabs[Random.Range(0, enemyPrefabs.Count)];
+        waveInfo.enemyEntity = enemyEntities[Random.Range(0, enemyEntities.Count)];
         waveInfo.waveLength = defaultWaveLength + currentWaveIndex * 1;
         waveInfo.spawnCooldown = .05f;
         waves.Add(waveInfo);
@@ -129,7 +132,7 @@ public class EnemySpawner : MonoBehaviour
 [System.Serializable]
 public class WaveInfo
 {
-    public GameObject enemyPrefab;
+    public EnemyEntitySO enemyEntity;
     public int waveLength;  // 波次持续时间，单位秒
     public float timeBetweenSpawns;  // 两波次之间的间隔时间，单位秒
     public float spawnCooldown; // 每个敌人生成的间隔时间

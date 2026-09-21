@@ -7,5 +7,6 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "EnemyEntity", menuName = "Game/Entity/Enemy")]
 public class EnemyEntitySO : BaseEntitySO
 {
-
+    [Header("敌人专属")]
+    public GameObject prefab;
 }

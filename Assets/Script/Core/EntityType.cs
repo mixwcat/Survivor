@@ -5,13 +5,19 @@
 /// </summary>
 public enum EntityType
 {
-    Player,
-    Enemy,
+    Player = 0,
 
-    TowerTeto,
-    TowerRin,
-    TowerLuo,
+    // 敌人
+    EnemyCloud = 1,
+    EnemySlime = 2,
+    EnemySoil = 3,
 
-    WeaponFireBall,
-    WeaponGun,
+    // 塔
+    TowerTeto = 4,
+    TowerRin = 5,
+    TowerLuo = 6,
+
+    // 武器
+    WeaponSpin = 7,
+    WeaponGun = 8,
 }

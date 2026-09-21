@@ -131,7 +131,6 @@ GameObject:
   - component: {fileID: 514598885}
   - component: {fileID: 514598884}
   - component: {fileID: 514598888}
-  - component: {fileID: 514598889}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -257,18 +256,6 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
---- !u!114 &514598889
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 514598883}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7073a748cb0f1dd499b2806adc125aa3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &780382486
 GameObject:
   m_ObjectHideFlags: 0
@@ -435,7 +422,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1001 &7727603701467324244
+--- !u!1001 &2094687285
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -487,8 +474,7 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: 3834842078609788404, guid: 81a2c5cd86112704aad18ab5f2f17d52, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -500,4 +486,4 @@ SceneRoots:
   - {fileID: 514598886}
   - {fileID: 780382489}
   - {fileID: 1526563678}
-  - {fileID: 7727603701467324244}
+  - {fileID: 2094687285}

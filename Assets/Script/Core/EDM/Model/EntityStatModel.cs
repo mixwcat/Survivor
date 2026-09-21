@@ -76,6 +76,14 @@ public class EntityStatModel
     }
 
     /// <summary>
+    /// 是否已经有任意基础数值（用于判断 StatModel 是否被有效填充）
+    /// </summary>
+    public bool HasAnyStat()
+    {
+        return _baseValues.Count > 0;
+    }
+
+    /// <summary>
     /// 获取基础值（不含修饰符）
     /// </summary>
     public float GetBaseStat(StatType type)

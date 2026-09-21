@@ -4,6 +4,8 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 public class PausePanel : BasePanel
 {
+    public override bool CanHandleEscape => true;
+
     public TextMeshProUGUI gameTimeText;
     public Button menuButton;
     public Button resumeButton;
@@ -15,20 +17,20 @@ public class PausePanel : BasePanel
 
         menuButton.onClick.AddListener(() =>
         {
-            UIManager.Instance.HidePanel<PausePanel>();
-            UIManager.Instance.HidePanel<GamePanel>();
+            UIManager.Service.HidePanel<PausePanel>();
+            UIManager.Service.HidePanel<GamePanel>();
             SceneManager.LoadScene("Menu");
         });
         resumeButton.onClick.AddListener(() =>
         {
-            UIManager.Instance.HidePanel<PausePanel>();
+            UIManager.Service.HidePanel<PausePanel>();
             GameLevelManager.Service.ResumeGame();
         });
         restartButton.onClick.AddListener(() =>
         {
-            UIManager.Instance.HidePanel<GamePanel>(false);
-            UIManager.Instance.HidePanel<PausePanel>();
-            SceneManager.LoadScene("Main");
+            UIManager.Service.HidePanel<GamePanel>(false);
+            UIManager.Service.HidePanel<PausePanel>();
+            SceneManager.LoadScene("Level0");
         });
     }
 
@@ -42,7 +44,7 @@ public class PausePanel : BasePanel
 
     public override void EscLogic()
     {
-        UIManager.Instance.HidePanel<PausePanel>();
+        UIManager.Service.HidePanel<PausePanel>();
         GameLevelManager.Service.ResumeGame();
     }
 }

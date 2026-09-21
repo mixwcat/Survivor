@@ -13,12 +13,12 @@ public class MenuPanel : BasePanel
         {
             // 开始游戏
             SceneManager.LoadSceneAsync("Level0");
-            UIManager.Instance.HidePanel<MenuPanel>();
+            UIManager.Service.HidePanel<MenuPanel>();
         });
         settingsButton.onClick.AddListener(() =>
         {
             // 打开设置面板
-            UIManager.Instance.ShowPanel<MusicSettingPanel>();
+            UIManager.Service.ShowPanel<MusicSettingPanel>();
         });
         quitButton.onClick.AddListener(() =>
         {

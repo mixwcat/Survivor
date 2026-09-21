@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,17 +13,17 @@ public class ChooseWeaponPanel : BasePanel
     {
         GameLevelManager.Service.PauseGame();
 
-        // 获取未激活的武器槽（可供选择的武器）
-        var inactiveSlots = WeaponManager.Instance.weaponSlots;
+        // 获取本地玩家未激活的武器槽（按玩家实例化）
+        IReadOnlyList<WeaponSlot> inactiveSlots = PlayerManager.Service?.LocalPlayer?.Weapons?.WeaponSlots;
 
         // TODO: 当前 UI 固定支持 2 个选项，后续扩展武器类型时请改为动态生成
-        if (inactiveSlots.Count > 0)
+        if (inactiveSlots != null && inactiveSlots.Count > 0)
         {
             var slot0 = inactiveSlots[0];
             img1.sprite = slot0.weaponSelectSO.displaySprite;
             btn1.onClick.AddListener(() => OnChooseWeapon(slot0));
         }
-        if (inactiveSlots.Count > 1)
+        if (inactiveSlots != null && inactiveSlots.Count > 1)
         {
             var slot1 = inactiveSlots[1];
             img2.sprite = slot1.weaponSelectSO.displaySprite;
@@ -32,14 +33,14 @@ public class ChooseWeaponPanel : BasePanel
 
     private void OnChooseWeapon(WeaponSlot slot)
     {
-        slot.weaponSelectSO.RaiseSelectEvent();
-        UIManager.Instance.HidePanel<ChooseWeaponPanel>();
+        PlayerManager.Service?.LocalPlayer?.Weapons?.SelectWeapon(slot);
+        UIManager.Service.HidePanel<ChooseWeaponPanel>();
         GameLevelManager.Service.ResumeGame();
-        BKMusic.Instance.PlaySound(ResourceEnum.ChooseWeapon);
-        BKMusic.Instance.audioSource.mute = false;
+        AudioService.Service?.PlaySfx(ResourceEnum.ChooseWeapon);
+        AudioService.Service.BgmMuted = false;
 
 #if UNITY_ANDROID
-        UIManager.Instance.GetPanel<GamePanel>().UpdateJoystickVisibility();
+        UIManager.Service.GetPanel<GamePanel>().UpdateJoystickVisibility();
 #endif
     }
 }

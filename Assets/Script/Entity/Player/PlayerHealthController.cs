@@ -13,8 +13,9 @@ public class PlayerHealthController : BaseHealthController
     [Header("组件")]
     private HealthPanel _healthPanel;
 
-    private void Start()
+    protected override void Start()
     {
+        base.Start();
         _healthPanel = GetComponentInChildren<HealthPanel>();
         CurrentHealth = MaxHealth;
     }
@@ -27,8 +28,8 @@ public class PlayerHealthController : BaseHealthController
         if (_isUnbeatable) return;
 
         base.TakeDamage(damage);
-        DamageNumManager.Instance.SpawnDamageNum(transform.position, damage, DamageNumType.Red);
-        BKMusic.Instance.PlaySound(ResourceEnum.PlayerGetHurt);
+        DamageNumManager.Service.SpawnDamageNum(transform.position, damage, DamageNumType.Red);
+        AudioService.Service?.PlaySfx(ResourceEnum.PlayerGetHurt);
         _healthPanel.UpdateHealthUI();
 
         float unbeatableTime = _entity.GetStat(StatType.PlayerUnbeatableTime);
@@ -44,6 +45,7 @@ public class PlayerHealthController : BaseHealthController
     protected override void Die()
     {
         base.Die();
-        EventCenter.Trigger(PlayerEnum.OnPlayerDead, null);
+        // 通过 IGameLevelManager 上报死亡（权威边界：联机时由网络实现转发给服务器）
+        GameLevelManager.Service?.NotifyPlayerDied(_entity as PlayerController);
     }
 }

@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 3350021575282172774}
   - component: {fileID: 7648157431313966360}
   - component: {fileID: 4605376209582994252}
+  - component: {fileID: 7070677360389358391}
   m_Layer: 0
   m_Name: Enemy_Soil
   m_TagString: Enemy
@@ -76,7 +77,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2190df186f782ae4385867b572629e0b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _entityData: {fileID: 11400000, guid: 29209fbec9ea0ea4d9481a84373d520e, type: 2}
+  entityType: 3
+  _knockbackRecoveryDuration: 0.1
 --- !u!114 &7648157431313966360
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -135,6 +137,19 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1.443976, y: 0.48861393}
   m_EdgeRadius: 0
+--- !u!114 &7070677360389358391
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1877107013632305511}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd71c9645a09c814bbeb5b350f231f56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _updateInterval: 0.5
 --- !u!1 &4517807999206310094
 GameObject:
   m_ObjectHideFlags: 0

@@ -37,27 +37,32 @@ public class GamePanel : BasePanel
 
     public override void Init()
     {
+        // HUD 数据由绑定器订阅本地玩家事件驱动，面板本身不直接读 Manager
+        PlayerHudBinder binder = GetComponent<PlayerHudBinder>();
+        if (binder == null) binder = gameObject.AddComponent<PlayerHudBinder>();
+        binder.Bind(this);
+
         UpdateExp(0, 1, 1);
         // 开始游戏时，播放音效
-        BKMusic.Instance.audioSource.mute = true;
-        BKMusic.Instance.PlaySound(ResourceEnum.StartGame);
+        if (AudioService.Service != null) AudioService.Service.BgmMuted = true;
+        AudioService.Service?.PlaySfx(ResourceEnum.StartGame);
 
 
         btnWeaponShop.onClick.AddListener(() =>
         {
-            UIManager.Instance.ShowPanel<LevelUpPanel>();
+            UIManager.Service.ShowPanel<LevelUpPanel>();
         });
         btnTowerShop.onClick.AddListener(() =>
         {
-            UIManager.Instance.ShowPanel<ChooseTowerPanel>();
+            UIManager.Service.ShowPanel<ChooseTowerPanel>();
         });
         btnSetting.onClick.AddListener(() =>
         {
-            UIManager.Instance.ShowPanel<GameSettingPanel>();
+            UIManager.Service.ShowPanel<GameSettingPanel>();
         });
         btnTowerLevelUp.onClick.AddListener(() =>
         {
-            UIManager.Instance.ShowPanel<TowerLevelUpPanel>().SetTowerType(currentTower);
+            UIManager.Service.ShowPanel<TowerLevelUpPanel>().SetTowerType(currentTower);
         });
 
         // 移动端塔放置确认与取消按钮事件
@@ -113,7 +118,7 @@ public class GamePanel : BasePanel
     /// </summary>
     public void UpdateJoystickVisibility()
     {
-        if (WeaponManager.Instance.GetWeapon<GunWeapon>() != null)
+        if (PlayerManager.Service?.LocalPlayer?.Weapons?.GetWeapon<GunWeapon>() != null)
         {
             // 枪械武器：显示移动摇杆和攻击摇杆
             joystickMove.gameObject.SetActive(true);

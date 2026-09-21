@@ -48,7 +48,7 @@ public class DamageNumText : MonoBehaviour
     /// </summary>
     private void ReturnToPool()
     {
-        DamageNumManager.Instance.ReturnToPool(this);
+        DamageNumManager.Service.ReturnToPool(this);
     }
 
 

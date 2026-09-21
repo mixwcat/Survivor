@@ -1,35 +1,51 @@
 using System.Collections.Generic;
-using NUnit.Framework;
+using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.ResourceManagement.AsyncOperations;
 
-public class DamageNumManager : MonoBehaviour
+[DefaultExecutionOrder(-100)]
+public class DamageNumManager : MonoBehaviour, IDamageNumService
 {
-    [Header("单例")]
-    private static DamageNumManager instance;
-    public static DamageNumManager Instance => instance;
+    /// <summary>服务访问入口（未注册时返回 null）。</summary>
+    public static IDamageNumService Service =>
+        ServiceLocator.TryGet<IDamageNumService>(out var svc) ? svc : null;
 
     [Header("池")]
     [SerializeField] private List<DamageNumText> damageNumPool = new List<DamageNumText>();
     private DamageNumText damageNumToSpawn;
 
-    private void Start()
+    private IAssetService _assetService;
+    private GameObject _damageNumPrefab;
+    private AsyncOperationHandle<GameObject> _damageNumPrefabHandle;
+
+    private void Awake()
     {
-        instance = this;
+        ServiceLocator.Register<IDamageNumService>(this);
+    }
+
+    private void OnDestroy()
+    {
+        ServiceLocator.Unregister<IDamageNumService>();
+    }
+
+    private async void Start()
+    {
+        _assetService = ServiceLocator.Get<IAssetService>();
+        _damageNumPrefabHandle = _assetService.LoadAssetAsync<GameObject>(AssetKeys.DamageNumText);
+        _damageNumPrefab = await _damageNumPrefabHandle.Task;
     }
 
 
-    /// <summary>
-    /// 生成伤害数字
-    /// </summary>
-    /// <param name="position"></param>
-    /// <param name="damage"></param>
     public DamageNumText SpawnDamageNum(Vector3 position, float damage, DamageNumType type = DamageNumType.white)
     {
-        // 从池中取出
         DamageNumText text = GetFromPool();
+        if (text == null)
+        {
+            Debug.LogError("DamageNumManager: Failed to spawn damage number. Prefab not loaded.");
+            return null;
+        }
 
         text.transform.position = position;
-        // 设置数值
         text.GetComponent<DamageNumText>().SetUp((int)damage, type);
 
         return text;
@@ -46,13 +62,17 @@ public class DamageNumManager : MonoBehaviour
 
         if (damageNumPool.Count == 0)
         {
-            // 池中没有，创建一个新的
-            GameObject dmgNumObj = Instantiate(Resources.Load<GameObject>("UI/DamageNumText"), transform);
+            if (_damageNumPrefab == null)
+            {
+                Debug.LogError("DamageNumManager: DamageNumText prefab not loaded yet.");
+                return null;
+            }
+
+            GameObject dmgNumObj = Instantiate(_damageNumPrefab, transform);
             damageNumToSpawn = dmgNumObj.GetComponent<DamageNumText>();
         }
         else
         {
-            // 从池中取出一个
             damageNumToSpawn = damageNumPool[0];
             damageNumPool.RemoveAt(0);
             damageNumToSpawn.gameObject.SetActive(true);

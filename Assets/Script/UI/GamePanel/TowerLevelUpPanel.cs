@@ -4,6 +4,8 @@ using TMPro;
 
 public class TowerLevelUpPanel : BasePanel
 {
+    public override bool CanHandleEscape => true;
+
     public Image img1;
     public Image img2;
     public Image img3;
@@ -19,42 +21,44 @@ public class TowerLevelUpPanel : BasePanel
     public Button btnExit;
     private LevelUpSO[] levelUpSOs = new LevelUpSO[3];
     private BaseTower _towerType;
+    private IExperienceController _exp;
 
     public override void Init()
     {
+        _exp = PlayerManager.Service?.LocalPlayer?.ExperienceController;
         GetRandomSOs();
         GameLevelManager.Service.PauseGame();
 
         btn1.onClick.AddListener(() =>
         {
-            if (ExperienceLevController.Service.CanUseLevelPoint(levelUpSOs[0].cost))
+            if (_exp != null && _exp.CanUseLevelPoint(levelUpSOs[0].cost))
             {
                 levelUpSOs[0].ApplyTo(_towerType);
                 GetRandomSOs();
-                BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
+                AudioService.Service?.PlaySfx(ResourceEnum.OnMouseClickUI);
             }
         });
         btn2.onClick.AddListener(() =>
         {
-            if (ExperienceLevController.Service.CanUseLevelPoint(levelUpSOs[1].cost))
+            if (_exp != null && _exp.CanUseLevelPoint(levelUpSOs[1].cost))
             {
                 levelUpSOs[1].ApplyTo(_towerType);
                 GetRandomSOs();
-                BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
+                AudioService.Service?.PlaySfx(ResourceEnum.OnMouseClickUI);
             }
         });
         btn3.onClick.AddListener(() =>
         {
-            if (ExperienceLevController.Service.CanUseLevelPoint(levelUpSOs[2].cost))
+            if (_exp != null && _exp.CanUseLevelPoint(levelUpSOs[2].cost))
             {
                 levelUpSOs[2].ApplyTo(_towerType);
                 GetRandomSOs();
-                BKMusic.Instance.PlaySound(ResourceEnum.OnMouseClickUI);
+                AudioService.Service?.PlaySfx(ResourceEnum.OnMouseClickUI);
             }
         });
         btnExit.onClick.AddListener(() =>
         {
-            UIManager.Instance.HidePanel<TowerLevelUpPanel>();
+            UIManager.Service.HidePanel<TowerLevelUpPanel>();
             GameLevelManager.Service.ResumeGame();
         });
     }
@@ -74,13 +78,13 @@ public class TowerLevelUpPanel : BasePanel
 
     private void GetRandomSOs()
     {
-        levelUpSOs = SOManager.Instance.GetRandomTowerLevelUpSOs(3, _towerType);
+        levelUpSOs = SOManager.Service.GetRandomTowerLevelUpSOs(3, _towerType);
         UpdateOptionsUI();
     }
 
     public override void EscLogic()
     {
-        UIManager.Instance.HidePanel<TowerLevelUpPanel>();
+        UIManager.Service.HidePanel<TowerLevelUpPanel>();
         GameLevelManager.Service.ResumeGame();
     }
 

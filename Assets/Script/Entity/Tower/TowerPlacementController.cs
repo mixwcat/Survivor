@@ -17,8 +17,7 @@ public class TowerPlacementController : MonoBehaviour
 
     [Header("攻击范围显示")]
     private float attackRange = 2;
-    public int segments = 50;
-    private LineRenderer lineRenderer;
+    private TowerRangeVisualizer _rangeVisualizer;
     private Vector3 lastTransformPosition = Vector3.zero;
 
     private Vector3 _lastTouchWorldPos = Vector3.zero;
@@ -43,16 +42,21 @@ public class TowerPlacementController : MonoBehaviour
             Debug.LogError("TowerPlacementController: Failed to create IInputHandle!");
         }
 
-        SetUpLineRenderer();
+        _rangeVisualizer = gameObject.AddComponent<TowerRangeVisualizer>();
+        _rangeVisualizer.Show();
+        _rangeVisualizer.Refresh(attackRange);
 
 #if UNITY_ANDROID
-        UIManager.Instance.GetPanel<GamePanel>()?.SetTowerPlacementButtonsActive(true, this);
+        UIManager.Service.GetPanel<GamePanel>()?.SetTowerPlacementButtonsActive(true, this);
 #endif
     }
 
     float timer;  // 0.1s更新频率，减少性能消耗
     void Update()
     {
+        // Init 是异步实例化后调用的，防止首帧早于 Init 运行时 _inputHandle 为空
+        if (_inputHandle == null) return;
+
         timer += Time.deltaTime;
         if (timer > 0.1f)
         {
@@ -106,7 +110,7 @@ public class TowerPlacementController : MonoBehaviour
         if (transform.position != lastTransformPosition)
         {
             lastTransformPosition = transform.position;
-            DrawCircle();
+            _rangeVisualizer.Refresh(attackRange);
         }
     }
 
@@ -118,11 +122,10 @@ public class TowerPlacementController : MonoBehaviour
     {
         if (!canPlace) return;
 
-        ExperienceLevController.Service.CanUseLevelPoint(_placementCost);
         Instantiate(currentTowerSO.prefab, transform.position, Quaternion.identity);
 
 #if UNITY_ANDROID
-        UIManager.Instance.GetPanel<GamePanel>()?.SetTowerPlacementButtonsActive(false);
+        UIManager.Service.GetPanel<GamePanel>()?.SetTowerPlacementButtonsActive(false);
 #endif
 
         Destroy(gameObject);
@@ -130,38 +133,16 @@ public class TowerPlacementController : MonoBehaviour
 
     public void CancelPlacement()
     {
+        if (_placementCost > 0)
+        {
+            PlayerManager.Service?.LocalPlayer?.ExperienceController?.AddLevelPoint(_placementCost);
+        }
+
 #if UNITY_ANDROID
-        UIManager.Instance.GetPanel<GamePanel>()?.SetTowerPlacementButtonsActive(false);
+        UIManager.Service.GetPanel<GamePanel>()?.SetTowerPlacementButtonsActive(false);
 #endif
 
         Destroy(gameObject);
-    }
-
-
-    /// <summary>
-    /// 攻击范围线条设置与绘制
-    /// </summary>
-    void SetUpLineRenderer()
-    {
-        lineRenderer = gameObject.AddComponent<LineRenderer>();
-        lineRenderer.positionCount = segments + 1;
-        lineRenderer.loop = true;
-        lineRenderer.startWidth = 0.05f;
-        lineRenderer.endWidth = 0.05f;
-        lineRenderer.startColor = Color.white;
-        lineRenderer.endColor = Color.white;
-    }
-
-    void DrawCircle()
-    {
-        float angle = 0f;
-        for (int i = 0; i <= segments; i++)
-        {
-            float x = Mathf.Cos(angle) * attackRange + transform.position.x;
-            float y = Mathf.Sin(angle) * attackRange + transform.position.y;
-            lineRenderer.SetPosition(i, new Vector3(x, y, 0));
-            angle += 2 * Mathf.PI / segments;
-        }
     }
 
 

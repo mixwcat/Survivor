@@ -10,15 +10,33 @@ public class MobileInputHandle : IInputHandle
     private readonly Joystick _moveJoystick;
     private readonly Joystick _attackJoystick;
     private Touch? _cachedTouch;
+    private MobileInputDriver _driver;
 
     public MobileInputHandle(Joystick moveJoystick, Joystick attackJoystick)
     {
         _moveJoystick = moveJoystick;
         _attackJoystick = attackJoystick;
+
+        GameObject driverGO = new GameObject("MobileInputDriver");
+        _driver = driverGO.AddComponent<MobileInputDriver>();
+        _driver.Initialize(this);
+        Object.DontDestroyOnLoad(driverGO);
     }
 
     /// <summary>
-    /// 每帧更新触摸缓存（需要外部调用，建议在 MonoBehaviour.Update 中）
+    /// 释放驱动资源，应在输入句柄不再使用时调用。
+    /// </summary>
+    public void Dispose()
+    {
+        if (_driver != null)
+        {
+            Object.Destroy(_driver.gameObject);
+            _driver = null;
+        }
+    }
+
+    /// <summary>
+    /// 每帧更新触摸缓存（由 MobileInputDriver 调用）
     /// </summary>
     public void UpdateTouchCache()
     {
@@ -93,5 +111,28 @@ public class MobileInputHandle : IInputHandle
     public void TriggerEscape()
     {
         OnEscape?.Invoke();
+    }
+
+    /// <summary>
+    /// 内部驱动组件，负责在 Update 中刷新输入缓存。
+    /// </summary>
+    private class MobileInputDriver : MonoBehaviour
+    {
+        private MobileInputHandle _handle;
+
+        public void Initialize(MobileInputHandle handle)
+        {
+            _handle = handle;
+        }
+
+        void Update()
+        {
+            _handle?.UpdateTouchCache();
+        }
+
+        void OnDestroy()
+        {
+            _handle = null;
+        }
     }
 }

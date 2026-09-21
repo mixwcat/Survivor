@@ -24,7 +24,9 @@ public class EntityBehaviour : MonoBehaviour
         get
         {
             if (_entityConfig == null)
-                _entityConfig = SOManager.Instance?.GetEntitySO(entityType);
+            {
+                _entityConfig = SOManager.Service?.GetEntitySO(entityType);
+            }
             return _entityConfig;
         }
     }
@@ -33,39 +35,56 @@ public class EntityBehaviour : MonoBehaviour
 
     protected virtual void Awake()
     {
-        InitStatModel();
+        // InitStatModel();
     }
 
     void Start()
     {
         // 防止 SOManager 还未完成 Awake 导致初始化失败，在 Start 中重试一次
-        if (StatModel == null || EntityConfig == null)
+        if (StatModel == null || !StatModel.HasAnyStat())
             InitStatModel();
     }
 
     private void InitStatModel()
     {
-        if (StatModel != null) return;
+        // 已经完整初始化：有 StatModel 且里面已有基础数值
+        if (StatModel != null && StatModel.HasAnyStat()) return;
 
-        StatModel = new EntityStatModel();
-        _entityConfig = SOManager.Instance?.GetEntitySO(entityType);
-        _entityConfig?.dataRef?.FillStatModel(StatModel);
+        if (SOManager.Service == null)
+        {
+            Debug.LogWarning(gameObject.name + " 无法获取 SOManager 实例，无法初始化 StatModel");
+            return;
+        }
 
-        if (_entityConfig == null)
+        var config = SOManager.Service?.GetEntitySO(entityType);
+        _entityConfig = config;
+
+        if (config == null)
         {
             Debug.LogWarning(gameObject.name + " 缺少 EntitySO ，无法初始化 StatModel");
+            return;
         }
-        else if (_entityConfig.dataRef == null)
+
+        if (config.dataRef == null)
         {
             Debug.LogWarning(gameObject.name + " 缺少 DataSO，无法初始化 StatModel");
+            return;
         }
+
+        StatModel = new EntityStatModel();
+        config.dataRef.FillStatModel(StatModel);
     }
 
     /// <summary>
     /// 获取最终数值（快捷方法）
+    /// 若 SOManager 晚于 Awake/Start 就绪，会尝试懒加载 StatModel
     /// </summary>
     public float GetStat(StatType type)
     {
+        // 运行时补初始化：处理 SOManager 初始化时序晚于实体的情况
+        if (StatModel == null || !StatModel.HasAnyStat())
+            InitStatModel();
+
         if (StatModel == null)
         {
             Debug.LogWarning(gameObject.name + " 缺少 StatModel，返回默认值 1");
@@ -78,7 +97,7 @@ public class EntityBehaviour : MonoBehaviour
         }
         else if (!StatModel.HasStat(type))
         {
-            Debug.LogWarning(gameObject.name + " 缺少Type： " + type + "，返回默认值 1");
+            Debug.LogWarning(gameObject.name + "的" + EntityConfig.dataRef.name + " 缺少Type： " + type + "，返回默认值 1");
             return 1f;
         }
         return StatModel.GetStat(type);

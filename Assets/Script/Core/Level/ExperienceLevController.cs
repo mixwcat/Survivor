@@ -1,29 +1,16 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.ResourceManagement.AsyncOperations;
 
 /// <summary>
 /// 玩家经验/等级控制器
 /// 负责管理单个玩家的等级、经验值与技能点。
 /// 核心设计：状态变更与表现（UI/音效）分离，状态操作集中，表现通过事件订阅处理。
 /// </summary>
+[DefaultExecutionOrder(-120)]
 public class ExperienceLevController : MonoBehaviour, IExperienceController
 {
-    private static ExperienceLevController _instance;
-    public static ExperienceLevController Instance => _instance;
-
-    /// <summary>
-    /// 兼容层：优先从 ServiceLocator 获取 IExperienceController，回退到 Instance。
-    /// </summary>
-    public static IExperienceController Service
-    {
-        get
-        {
-            if (ServiceLocator.TryGet(out IExperienceController svc))
-                return svc;
-            return _instance;
-        }
-    }
-
     [Header("等级")]
     public int currentLevel;
     public int maxLevel;
@@ -53,11 +40,7 @@ public class ExperienceLevController : MonoBehaviour, IExperienceController
 
     private void Awake()
     {
-        if (_instance == null)
-            _instance = this;
-
-        ServiceLocator.Register<IExperienceController>(this);
-
+        // 经验控制器按玩家实例化（挂在 Player 上），不注册为全局服务。
         // 订阅默认表现（音效、提示）。联机模式下可替换为网络同步表现。
         SubscribeDefaultPresentation();
     }
@@ -65,15 +48,12 @@ public class ExperienceLevController : MonoBehaviour, IExperienceController
     private void OnDestroy()
     {
         UnsubscribeDefaultPresentation();
-        ServiceLocator.Unregister<IExperienceController>();
-        if (_instance == this)
-            _instance = null;
     }
 
-    private void Start()
+    private async void Start()
     {
         FillExpTable();
-        SyncUI();
+        await ExpSpritePool.Instance.InitializeAsync();
     }
 
 
@@ -87,7 +67,6 @@ public class ExperienceLevController : MonoBehaviour, IExperienceController
         currentExp += amount;
         ProcessLevelUps();
         OnExpChanged?.Invoke(currentExp);
-        SyncUI();
     }
 
     /// <summary>
@@ -105,7 +84,6 @@ public class ExperienceLevController : MonoBehaviour, IExperienceController
 
         levelPoint -= amount;
         OnPointsChanged?.Invoke(levelPoint);
-        SyncUI();
         return true;
     }
 
@@ -116,7 +94,6 @@ public class ExperienceLevController : MonoBehaviour, IExperienceController
 
         levelPoint += amount;
         OnPointsChanged?.Invoke(levelPoint);
-        SyncUI();
     }
 
     #endregion
@@ -153,16 +130,6 @@ public class ExperienceLevController : MonoBehaviour, IExperienceController
         }
     }
 
-    /// <summary>同步状态到 UI 面板</summary>
-    private void SyncUI()
-    {
-        var gamePanel = UIManager.Instance.GetPanel<GamePanel>();
-        if (gamePanel == null) return;
-
-        gamePanel.UpdateExp(currentExp, expTable[currentLevel], currentLevel);
-        gamePanel.UpdateLevelPoint(levelPoint);
-    }
-
     #endregion
 
 
@@ -182,12 +149,12 @@ public class ExperienceLevController : MonoBehaviour, IExperienceController
 
     private void HandleLevelUpSound(int newLevel)
     {
-        BKMusic.Instance?.PlaySound(ResourceEnum.PlayerLevelUP);
+        AudioService.Service?.PlaySfx(ResourceEnum.PlayerLevelUP);
     }
 
     private void HandleInsufficientPointsHint()
     {
-        UIManager.Instance?.ShowPanel<TipsPanel>();
+        UIManager.Service?.ShowPanel<TipsPanel>();
     }
 
     #endregion
@@ -201,10 +168,23 @@ class ExpSpritePool
     private List<ExpSpriteController> expSpritePool = new List<ExpSpriteController>();
     private ExpSpriteController expSpriteToSpawn;
 
+    private IAssetService _assetService;
+    private GameObject _expSpritePrefab;
+    private AsyncOperationHandle<GameObject> _expSpritePrefabHandle;
+
+    public async Task InitializeAsync()
+    {
+        _assetService = ServiceLocator.Get<IAssetService>();
+        _expSpritePrefabHandle = _assetService.LoadAssetAsync<GameObject>(AssetKeys.ExpSprite);
+        _expSpritePrefab = await _expSpritePrefabHandle.Task;
+    }
+
 
     public void SpawnExpSprite(Transform enemyTransform)
     {
         ExpSpriteController expSprite = GetFromPool(enemyTransform.position);
+        if (expSprite == null) return;
+
         expSprite.transform.position = enemyTransform.position;
     }
 
@@ -218,9 +198,13 @@ class ExpSpritePool
 
         if (expSpritePool.Count == 0)
         {
-            // 池中没有，创建一个新的
-            ExpSpriteController expSpriteObj = Object.Instantiate(Resources.Load<GameObject>("Prefabs/ExpSprite")).GetComponent<ExpSpriteController>();
-            // 赋值
+            if (_expSpritePrefab == null)
+            {
+                Debug.LogError("ExpSpritePool: ExpSprite prefab not loaded yet.");
+                return null;
+            }
+
+            ExpSpriteController expSpriteObj = Object.Instantiate(_expSpritePrefab).GetComponent<ExpSpriteController>();
             expSpriteToSpawn = expSpriteObj;
         }
         else
@@ -230,7 +214,6 @@ class ExpSpritePool
                 expSpritePool.RemoveAt(0);
                 return GetFromPool(position);
             }
-            // 从池中取出一个
             expSpriteToSpawn = expSpritePool[0];
             expSpritePool.RemoveAt(0);
             expSpriteToSpawn.gameObject.SetActive(true);

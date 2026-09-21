@@ -1,17 +1,28 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class TowerManager : MonoBehaviour
+[DefaultExecutionOrder(-110)]
+public class TowerManager : ManagerSingleton<TowerManager>, ITowerManager
 {
-    [Header("单例")]
-    public static TowerManager Instance;
-    void Awake()
-    {
-        Instance = this;
-    }
-
     [Header("塔列表")]
     public List<BaseTower> towers = new List<BaseTower>();
+
+    public IReadOnlyList<BaseTower> Towers => towers;
+
+    /// <summary>服务访问入口（未注册时返回 null）。</summary>
+    public static ITowerManager Service =>
+        ServiceLocator.TryGet<ITowerManager>(out var svc) ? svc : null;
+
+    protected override void OnSingletonAwake()
+    {
+        ServiceLocator.Register<ITowerManager>(this);
+    }
+
+    protected override void OnDestroy()
+    {
+        base.OnDestroy();
+        ServiceLocator.Unregister<ITowerManager>();
+    }
 
     public void RegisterTower(BaseTower tower)
     {

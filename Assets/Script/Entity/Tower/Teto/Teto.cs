@@ -1,5 +1,6 @@
-using System.Collections;
+using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.ResourceManagement.AsyncOperations;
 
 /// <summary>
 /// Teto 塔 — 远程射击
@@ -7,43 +8,43 @@ using UnityEngine;
 /// </summary>
 public class Teto : BaseTower
 {
-    protected override void Start()
+    private GameObject _bulletPrefab;
+    private AsyncOperationHandle<GameObject> _bulletHandle;
+
+    protected override async void Start()
     {
         base.Start();
-        StartCoroutine(GenerateBullet());
+        _bulletHandle = ServiceLocator.Get<IAssetService>().LoadAssetAsync<GameObject>(AssetKeys.TetoBullet);
+        _bulletPrefab = await _bulletHandle.Task;
     }
 
-    /// <summary>
-    /// 发射子弹
-    /// </summary>
-    IEnumerator GenerateBullet()
+    protected override void OnDestroy()
     {
-        while (true)
-        {
-            Vector3 direction = Vector3.zero;
-            Transform target = FindTarget();
-            if (target != null)
-            {
-                direction = (target.position - transform.position).normalized;
-            }
-            else
-            {
-                yield return new WaitForSeconds(GetStat(StatType.AttackInterval));
-                continue;
-            }
+        if (_bulletHandle.IsValid())
+            ServiceLocator.Get<IAssetService>().Release(_bulletHandle);
+        base.OnDestroy();
+    }
 
-            DrawCircle();
+    protected override float GetOperateInterval()
+    {
+        return GetStat(StatType.AttackInterval);
+    }
 
-            int damage = (int)GetStat(StatType.Damage);
-            int hitForce = (int)GetStat(StatType.TowerHitForce);
-            float interval = GetStat(StatType.AttackInterval);
-            float speed = GetStat(StatType.BulletSpeed);
+    protected override void OnOperate()
+    {
+        if (_bulletPrefab == null) return;
 
-            Instantiate(Resources.Load<GameObject>("Tower/TetoBullet"), transform.position, Quaternion.identity)
-                .GetComponents<TetoBulletController>()[0]
-                .Init(damage, hitForce, speed, direction);
+        Transform target = FindTarget();
+        if (target == null) return;
 
-            yield return new WaitForSeconds(interval);
-        }
+        Vector3 direction = (target.position - transform.position).normalized;
+
+        int damage = (int)GetStat(StatType.Damage);
+        int hitForce = (int)GetStat(StatType.TowerHitForce);
+        float speed = GetStat(StatType.BulletSpeed);
+
+        Instantiate(_bulletPrefab, transform.position, Quaternion.identity)
+            .GetComponent<TetoBulletController>()
+            .Init(damage, hitForce, speed, direction);
     }
 }

@@ -10,19 +10,19 @@ public class DeadPanel : BasePanel
 
     public override void Init()
     {
-        BKMusic.Instance.PlaySound(ResourceEnum.LoseGame);
-        BKMusic.Instance.audioSource.mute = true;
+        AudioService.Service?.PlaySfx(ResourceEnum.LoseGame);
+        if (AudioService.Service != null) AudioService.Service.BgmMuted = true;
 
         btnMenu.onClick.AddListener(() =>
         {
             SceneManager.LoadScene("Menu");
-            UIManager.Instance.HidePanel<DeadPanel>();
+            UIManager.Service.HidePanel<DeadPanel>();
         });
 
         btnRestart.onClick.AddListener(() =>
         {
-            SceneManager.LoadScene("Main");
-            UIManager.Instance.HidePanel<DeadPanel>();
+            SceneManager.LoadScene("Level0");
+            UIManager.Service.HidePanel<DeadPanel>();
         });
     }
 

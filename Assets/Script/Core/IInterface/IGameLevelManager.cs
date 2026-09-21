@@ -49,4 +49,10 @@ public interface IGameLevelManager
     /// </summary>
     /// <param name="param">可选参数，如死亡原因、击杀者等</param>
     void GameOver(object param = null);
+
+    /// <summary>
+    /// 玩家死亡通知。单机模式直接判定游戏结束；
+    /// 联机模式下客户端应发送请求，由权威端调用（权威边界预留）。
+    /// </summary>
+    void NotifyPlayerDied(PlayerController player);
 }
