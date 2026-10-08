@@ -63,6 +63,29 @@ public class NetworkPlayerState : NetworkBehaviour
     public float SyncedHealth => _syncedHealth;
 
     /// <summary>
+    /// 本玩家的**权威等级与经验**（服务端写，其余端读）。
+    ///
+    /// <para>
+    /// <b>为什么必须同步：</b>联机时经验只在服务端累加（<c>EnemyHealthController.Die</c>
+    /// 直接把经验给击杀者），客户端的 <c>AddExperience</c> 是空操作 ——
+    /// 不补这一条的话**客户端永远停在 1 级、经验条不动、升级三选一永远不弹**。
+    /// </para>
+    ///
+    /// <para><c>-1</c> 是"还没写过"的哨兵值，客户端会忽略它。</para>
+    /// </summary>
+    [SyncVar(hook = nameof(OnSyncedProgressChanged))]
+    [SerializeField] private int _syncedLevel = -1;
+
+    [SyncVar(hook = nameof(OnSyncedProgressChanged))]
+    [SerializeField] private int _syncedExp = -1;
+
+    /// <summary>本玩家的权威等级（同步值；-1 表示尚未初始化）。</summary>
+    public int SyncedLevel => _syncedLevel;
+
+    /// <summary>本玩家的权威经验（同步值；-1 表示尚未初始化）。</summary>
+    public int SyncedExp => _syncedExp;
+
+    /// <summary>
     /// 本机的玩家对象（没有本地玩家时为 null）。
     ///
     /// <para>
@@ -75,6 +98,7 @@ public class NetworkPlayerState : NetworkBehaviour
 
     private PlayerController _player;
     private BaseHealthController _health;
+    private ExperienceLevController _experience;
     private bool _warnedNoSpawner;
     private bool _warnedNoDefinition;
 
@@ -208,9 +232,42 @@ public class NetworkPlayerState : NetworkBehaviour
             _health = health;
             health.HealthChanged += OnServerHealthChanged;
         }
+
+        // 服务端：把等级/经验推给各端。同样订阅事件而不是在每个加经验点写 SyncVar
+        if (TryGetComponent(out ExperienceLevController experience))
+        {
+            _experience = experience;
+            experience.OnExpChanged += OnServerProgressChanged;
+            experience.OnLevelUp += OnServerProgressChanged;
+
+            _syncedLevel = experience.CurrentLevel;
+            _syncedExp = experience.CurrentExp;
+        }
     }
 
     private void OnServerHealthChanged(float current, float max) => _syncedHealth = current;
+
+    private void OnServerProgressChanged(int _) => SyncProgress();
+
+    private void SyncProgress()
+    {
+        if (_experience == null) return;
+
+        _syncedLevel = _experience.CurrentLevel;
+        _syncedExp = _experience.CurrentExp;
+    }
+
+    /// <summary>
+    /// 等级 / 经验同步的 hook。两个 SyncVar 共用它 —— 无论哪个变了都把两个值一起抄过去
+    ///（它们本来就是一对：只抄一个会出现"等级涨了但经验条还是旧的"）。
+    /// </summary>
+    private void OnSyncedProgressChanged(int oldValue, int newValue)
+    {
+        if (isServer) return;
+        if (_experience == null) TryGetComponent(out _experience);
+
+        _experience?.ApplyNetworkProgress(_syncedLevel, _syncedExp);
+    }
 
     /// <summary>
     /// 血量同步的 hook。服务端自己那份已经是权威值，跳过（否则会绕一圈回到 ApplyNetworkHealth）。
@@ -278,6 +335,12 @@ public class NetworkPlayerState : NetworkBehaviour
     public override void OnStopServer()
     {
         if (_health != null) _health.HealthChanged -= OnServerHealthChanged;
+
+        if (_experience != null)
+        {
+            _experience.OnExpChanged -= OnServerProgressChanged;
+            _experience.OnLevelUp -= OnServerProgressChanged;
+        }
 
         Player?.UnregisterSelf();
     }

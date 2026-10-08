@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Mirror;
 using UnityEngine;
 using UnityEngine.ResourceManagement.AsyncOperations;
 
@@ -65,9 +66,44 @@ public class ExperienceLevController : MonoBehaviour, IExperienceController
     {
         if (amount <= 0) return;
 
+        // 联机时经验**只在服务端累加**，客户端的等级/经验来自同步
+        //（见 NetworkPlayerState 的同名 SyncVar）。客户端也加的话两端会各自演化出一套等级，
+        // 而"升级三选一"是按本地等级弹的 —— 最后变成两边选项数量都不一样
+        if (NetworkBootstrap.IsActive && !NetworkServer.active) return;
+
         currentExp += amount;
         ProcessLevelUps();
         OnExpChanged?.Invoke(currentExp);
+    }
+
+    /// <summary>
+    /// 客户端应用服务端同步过来的等级与经验。
+    ///
+    /// <para>
+    /// <b>它必须照常发 <c>OnExpChanged</c> / <c>OnLevelUp</c></b>：
+    /// HUD 经验条与"升级三选一"面板都是**事件驱动**的订阅者，
+    /// 只改字段不发事件的表现是"等级涨了但面板不弹、经验条不动"。
+    /// </para>
+    ///
+    /// <para>
+    /// 与 <see cref="AddExperience"/> 的分工：那个是"结算"（会自己算升级），
+    /// 这个是"应用权威结果"（等级由服务端算好了直接抄）。
+    /// 两者不能互相调用 —— 客户端再算一遍就会与服务端分叉。
+    /// </para>
+    /// </summary>
+    public void ApplyNetworkProgress(int level, int exp)
+    {
+        if (level < 0 || exp < 0) return;   // 未初始化（SyncVar 哨兵值）
+
+        bool leveledUp = level > currentLevel;
+
+        currentLevel = level;
+        currentExp = exp;
+
+        OnExpChanged?.Invoke(currentExp);
+
+        // 升级才发 OnLevelUp —— 与 ProcessLevelUps 的行为保持一致
+        if (leveledUp) OnLevelUp?.Invoke(currentLevel);
     }
 
     #endregion

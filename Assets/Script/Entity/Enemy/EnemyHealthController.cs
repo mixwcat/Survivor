@@ -116,12 +116,27 @@ public class EnemyHealthController : BaseHealthController
         // 击杀归属：解析不出时 Killer 为 null，只记团队击杀，不错误发点。
         // ⚠️ 这里**不发升级点**：升级点是"升级"的奖励（PlayerProgressionController），
         // 按击杀发放会让一局几百次击杀直接把点数冲爆，也让"升级"失去意义。
-        var death = new EnemyDeathInfo(_entity, ResolveKiller(LastDamage.Attacker), transform.position, expReward);
+        PlayerController killer = ResolveKiller(LastDamage.Attacker);
+        var death = new EnemyDeathInfo(_entity, killer, transform.position, expReward);
 
         // 统计上报必须在回收之前：之后实例会被复用，位置与状态都不再是"这一只"的
         RunStatsTracker.Service?.ReportDeath(death);
 
-        ExpSpritePool.Instance.SpawnExpSprite(transform, expReward);
+        // 经验：联机时**直接给击杀者**（MirrorPlan D7），单机仍走经验球。
+        //
+        // ⚠️ 经验球（ExpSpritePool）是**纯本地实例**：客户端看不到、也捡不到 ——
+        // 所以联机下继续用它等于"只有主机能升级"。
+        // 代价是**丢掉了"走过去捡经验"的手感**；要找回它就得把经验球做成网络对象
+        //（服务端 Spawn + 服务端拾取判定），而峰值 20 次/秒的生成量让那条路的代价明显更高。
+        // 这个取舍记在 MirrorPlan 的 D7 里
+        if (NetworkBootstrap.IsActive)
+        {
+            killer?.GetComponent<ExperienceLevController>()?.AddExperience(expReward);
+        }
+        else
+        {
+            ExpSpritePool.Instance.SpawnExpSprite(transform, expReward);
+        }
 
         // 先发死亡事件再回收：订阅方（Boss 战）需要在这个时刻推进阶段，
         // 而回池之后实例会被复用，引用与状态都不再可信

@@ -353,6 +353,13 @@ public class NetworkSmokeDriver : MonoBehaviour
 
         Log("伤害往返已确认：客户端命中 → [Command] 上报 → 服务端结算 → Destroy 广播回来");
 
+        // ⭐ 击杀归属 + 经验同步：上面那一发致命伤害的 attacker 就是客户端的本地玩家，
+        // 所以经验应当记在**客户端自己的**玩家身上，并同步回来
+        yield return WaitUntil(LocalPlayerGainedExp, "击杀经验同步到客户端（说明击杀归属正确）", 60f);
+        if (_failed) yield break;
+
+        Log($"经验同步已确认：等级={LocalPlayerLevel()}，经验={LocalPlayerExp()}");
+
         // ⭐ 队友的血量必须同步下来：不打开这条，客户端副本的血量永远不动
         //（HUD 血条一直满、角色永远不会死），而且完全静默
         yield return WaitUntil(RemotePlayerDamaged, "队友的血量同步到客户端（服务端扣了 1 点）", 60f);
@@ -604,6 +611,38 @@ public class NetworkSmokeDriver : MonoBehaviour
         }
 
         return null;
+    }
+
+    // ── 客户端侧：经验同步 ──
+
+    /// <summary>
+    /// 客户端侧：本地玩家有没有拿到经验（等级或经验任一变化都算）。
+    ///
+    /// <para>
+    /// 查 <c>NetworkPlayerState</c> 的同步值而不是 <c>ExperienceLevController</c> 的字段 ——
+    /// 前者才能证明"服务端把击杀经验记在了击杀者身上并同步过来了"，
+    /// 而后者在客户端上永远不动（<c>AddExperience</c> 在客户端是空操作）。
+    /// </para>
+    /// </summary>
+    private static bool LocalPlayerGainedExp()
+    {
+        PlayerController local = FindLocalPlayer();
+        if (local == null) return false;
+        if (!local.TryGetComponent(out NetworkPlayerState state)) return false;
+
+        return state.SyncedExp > 0 || state.SyncedLevel > 1;
+    }
+
+    private static int LocalPlayerLevel()
+    {
+        PlayerController local = FindLocalPlayer();
+        return local != null && local.TryGetComponent(out NetworkPlayerState state) ? state.SyncedLevel : -1;
+    }
+
+    private static int LocalPlayerExp()
+    {
+        PlayerController local = FindLocalPlayer();
+        return local != null && local.TryGetComponent(out NetworkPlayerState state) ? state.SyncedExp : -1;
     }
 
     /// <summary>
