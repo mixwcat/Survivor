@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 919b7e9fe2e823e4db72f3bb3bf2fec0, type: 3}
+  m_Name: Weapon_TetoBullet
+  m_EditorClassIdentifier: 
+  id: weapon_teto_bullet
+  dataRef: {fileID: 11400000, guid: 19cc87db854002f4a9cd19b6fe875c1f, type: 2}
+  upgrades:
+  - {fileID: 11400000, guid: 8a3c8aa8d57788544b70569ad7a5b7e6, type: 2}
+  - {fileID: 11400000, guid: cff69d2bf8d04f745a2df901916b628e, type: 2}
+  - {fileID: 11400000, guid: b6c753a9dc6cd0949be7cb78e8abe8a4, type: 2}
+  - {fileID: 11400000, guid: 7f20a989d3f739545b006bc977bcfafe, type: 2}
+  prefab:
+    m_AssetGUID: 873acb99400e5c04b84b8ad868426f60
+    m_SubObjectName: 
+    m_SubObjectType: 
+    m_SubObjectGUID: 
+    m_EditorAssetChanged: 0
+  attack: {fileID: 11400000, guid: bcc02a1974e54e04c93f094bcf5f90d3, type: 2}
+  displayName: "Teto \u901F\u5C04\u5F39"
+  displaySprite: {fileID: 0}
+  unlockPrice: 800

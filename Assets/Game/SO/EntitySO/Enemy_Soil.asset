@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eedaed55aa22f6d4e8b1daa957ac26a1, type: 3}
   m_Name: Enemy_Soil
   m_EditorClassIdentifier: 
-  entityType: 3
+  id: enemy_soil
   dataRef: {fileID: 11400000, guid: 29209fbec9ea0ea4d9481a84373d520e, type: 2}
   upgrades: []
   prefab: {fileID: 1877107013632305511, guid: 744854a33f3a69d4bb062b29b7a53db5, type: 3}

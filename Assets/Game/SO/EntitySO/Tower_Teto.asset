@@ -12,15 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81da4c876cbdec147a0fb020c4ab3ec1, type: 3}
   m_Name: Tower_Teto
   m_EditorClassIdentifier: 
-  entityType: 4
+  id: tower_teto
   dataRef: {fileID: 11400000, guid: 1b80c7ade015d0e4fa60aba664043303, type: 2}
   upgrades:
-  - {fileID: 11400000, guid: cff69d2bf8d04f745a2df901916b628e, type: 2}
-  - {fileID: 11400000, guid: 7f20a989d3f739545b006bc977bcfafe, type: 2}
-  - {fileID: 11400000, guid: b6c753a9dc6cd0949be7cb78e8abe8a4, type: 2}
-  - {fileID: 11400000, guid: 8a3c8aa8d57788544b70569ad7a5b7e6, type: 2}
   - {fileID: 11400000, guid: c440b9f436b86624ca717fba1c532fea, type: 2}
-  prefab: {fileID: 1864442758682449286, guid: 467d3dff002fcee44b3a0927ddebf33b, type: 3}
+  - {fileID: 11400000, guid: 44c6d206b81b6d54488122dce62381b6, type: 2}
+  prefab:
+    m_AssetGUID: 467d3dff002fcee44b3a0927ddebf33b
+    m_SubObjectName: 
+    m_SubObjectType: 
+    m_SubObjectGUID: 
+    m_EditorAssetChanged: 0
   displayName: Teto
   description: 
   icon: {fileID: 21300000, guid: e8e2959ac42d6a84baac63a421e17392, type: 3}

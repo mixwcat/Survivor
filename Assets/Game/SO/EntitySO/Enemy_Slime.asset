@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eedaed55aa22f6d4e8b1daa957ac26a1, type: 3}
   m_Name: Enemy_Slime
   m_EditorClassIdentifier: 
-  entityType: 2
+  id: enemy_slime
   dataRef: {fileID: 11400000, guid: 498e0756b09764e4491636ed723ed6de, type: 2}
   upgrades: []
   prefab: {fileID: 64072624753369210, guid: 643c90b5d5bf9d94fba0fb9834d22f3d, type: 3}

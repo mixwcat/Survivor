@@ -1,94 +1,114 @@
-using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.ResourceManagement.AsyncOperations;
 
 /// <summary>
-/// 枪械武器
-/// 所有数值从 StatModel 读取，不再持有独立字段
+/// 枪械武器 —— 只负责**输入与瞄准**。
+///
+/// <para>
+/// 开火计时与子弹生成已移到 <see cref="AttackDriver"/> + <see cref="ProjectileAttackSO"/>：
+/// 本类把瞄准方向写进 <c>driver.AimDirection</c>，driver 到点后自己发射。
+/// 这样同一套投射物攻击方式既能给塔用，也能给枪用 —— 这是「攻击方式与载体解耦」的收益。
+/// </para>
+///
+/// <para>
+/// <b>平台差异不在本类</b>：「屏幕坐标 → 世界方向」的换算在
+/// <see cref="IInputHandle.TryGetAimDirection"/> 里（PC 用鼠标 + 相机，Android 用攻击摇杆）。
+/// 本类曾经自带 <c>#if UNITY_STANDALONE_WIN / #elif UNITY_ANDROID</c>，那条路径有两个人：
+/// ① 平台判断被复制成两份（与 <c>InputHandleFactory</c> 各一份）必须同步维护；
+/// ② Build Target 不是这两个平台时两个分支都不成立 → 方向恒为零向量，
+/// 枪不跟鼠标转而且**没有任何报错**。
+/// </para>
 /// </summary>
 public class GunWeapon : BaseWeapon
 {
-    [Header("鼠标旋转参数")]
-    private Vector3 _mousePosition;
-    private Vector3 _direction;
-    private float _angle;
-
-    [Header("枪械参数")]
-    public Transform firePoint;
+    /// <summary>朝向变化小于该角度（度）时不写 Transform。</summary>
+    private const float AngleEpsilon = 0.1f;
 
     [Header("输入系统")]
     [SerializeField]
     [Tooltip("输入标识：local=本地，network_X=远程玩家（联机用）")]
-    private string _inputHandleId = "local";
+    private string _inputHandleId = InputHandleFactory.LocalId;
     private IInputHandle _inputHandle;
 
-    private GameObject _bulletPrefab;
-    private AsyncOperationHandle<GameObject> _bulletHandle;
+    [Header("开火表现")]
+    [Tooltip("勾选后开火时播放下面的音效")]
+    [SerializeField] private bool _playSfx = true;
+    [SerializeField] private ResourceEnum _shootSfx = ResourceEnum.PlayerShoot;
 
-    private async void Start()
+    private Vector2 _direction;
+
+    /// <summary>上次写入的朝向角（度），配合 <see cref="AngleEpsilon"/> 避免每帧重复写 Transform。</summary>
+    private float _lastAngle;
+    private bool _hasAimed;
+
+    private void Start()
     {
-        _inputHandle = InputHandleFactory.GetInput(_inputHandleId);
+        AttackDriver driver = Driver;
+        if (driver == null)
+        {
+            Debug.LogError("[GunWeapon] 同物体上没有 AttackDriver，枪不会开火。");
+        }
+        else if (_playSfx)
+        {
+            // 表现订阅。Unity 保证所有 Start 先于所有 Update，不会漏掉第一次攻击。
+            driver.OnPerformed += PlayShootSfx;
+        }
 
+        _inputHandle = InputHandleFactory.GetInput(_inputHandleId);
         if (_inputHandle == null)
         {
             Debug.LogError("GunWeapon: Failed to create IInputHandle!");
         }
-
-        _bulletHandle = ServiceLocator.Get<IAssetService>().LoadAssetAsync<GameObject>(AssetKeys.Bullet);
-        _bulletPrefab = await _bulletHandle.Task;
     }
 
     private void OnDestroy()
     {
-        if (_bulletHandle.IsValid())
-            ServiceLocator.Get<IAssetService>().Release(_bulletHandle);
+        AttackDriver driver = Driver;
+        if (driver != null && _playSfx)
+            driver.OnPerformed -= PlayShootSfx;
+
+        // 与 Start 的 GetInput 成对，避免共享句柄的引用计数只增不减
+        InputHandleFactory.ReleaseInput(_inputHandleId);
+        _inputHandle = null;
     }
 
-    void Update()
+    private void PlayShootSfx()
     {
-        RotateWeapon();
-
-        if (TryFire())
-        {
-            SpawnBullet();
-        }
+        AudioService.Service?.PlaySfx(_shootSfx);
     }
 
+    private void Update()
+    {
+        // 未激活的武器不参与逐帧工作：备用枪继续读输入会与激活武器抢瞄准方向，
+        // 而"收起来的那把在转"在画面上完全看不出来（它本来就被停用了渲染之外的一切）
+        if (!IsActiveSlot) return;
+
+        RotateWeapon();
+    }
+
+    /// <summary>
+    /// 按输入算朝向：转自己，并把方向写给 driver 用于发射。
+    /// </summary>
     private void RotateWeapon()
     {
         if (_inputHandle == null) return;
 
-#if UNITY_STANDALONE_WIN
-        // Windows: 使用鼠标位置计算方向
-        Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(_inputHandle.ScreenPointerPosition);
-        mouseWorld.z = 0;
-        _direction = (mouseWorld - transform.position).normalized;
-#elif UNITY_ANDROID
-        // Android: 直接使用攻击摇杆方向
-        _direction = _inputHandle.AttackDirectionInput;
-        if (_direction.sqrMagnitude < 0.01f) return;
-#endif
+        // 摇杆回中 / 没有有效指针：保持上一次朝向（与旧 Android 分支的行为一致）
+        if (!_inputHandle.TryGetAimDirection(transform.position, out Vector2 direction)) return;
+        if (direction.sqrMagnitude < 0.0001f) return;
 
-        if (_direction.sqrMagnitude < 0.01f) _direction = transform.up; // 避免零向量导致的旋转问题
-        _angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
-        transform.rotation = Quaternion.Euler(new Vector3(0, 0, _angle));
-    }
+        _direction = direction;
+        // 方向有效就写进 driver（与「要不要写 Transform」是两件事：角度差极小时朝向仍然最新）
+        AttackDriver driver = Driver;
+        if (driver != null) driver.AimDirection = _direction;
 
-    /// <summary>
-    /// 生成一颗子弹
-    /// </summary>
-    private void SpawnBullet()
-    {
-        if (_bulletPrefab == null) return;
+        float angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
 
-        int damage = (int)GetBaseDamage();
-        float hitForce = GetStat(StatType.BulletHitForce);
-        float speed = GetStat(StatType.BulletSpeed);
+        // 朝向没变就不写 Transform：每次写都会脏化层级并触发变换传播（见 CLAUDE.md 性能红线）。
+        // SpinWeapon 的「转速为 0 就不写」是同一个道理。
+        if (_hasAimed && Mathf.Abs(Mathf.DeltaAngle(_lastAngle, angle)) < AngleEpsilon) return;
 
-        Instantiate(_bulletPrefab, firePoint.position, firePoint.rotation)
-            .GetComponent<BulletController>()
-            .Init(damage, (int)hitForce, speed, _direction);
-
-        AudioService.Service?.PlaySfx(ResourceEnum.PlayerShoot);
+        _hasAimed = true;
+        _lastAngle = angle;
+        transform.rotation = Quaternion.Euler(0f, 0f, angle);
     }
 }

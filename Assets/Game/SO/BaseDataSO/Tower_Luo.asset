@@ -12,14 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6699ae5103ed80347b7789aa353b6701, type: 3}
   m_Name: Tower_Luo
   m_EditorClassIdentifier: 
-  EntityName: 
   MaxHealth: 100
-  MoveSpeed: 5
-  Damage: 10
-  AttackRange: 2
-  AttackInterval: 2
-  HitForce: 0
-  HealAmount: 5
-  HealInterval: 1
-  HealRange: 5
   Cost: 1
+  HealAmount: 5
+  HealSpeed: 1

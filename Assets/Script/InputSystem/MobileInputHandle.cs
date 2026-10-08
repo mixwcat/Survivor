@@ -9,55 +9,34 @@ public class MobileInputHandle : IInputHandle
 {
     private readonly Joystick _moveJoystick;
     private readonly Joystick _attackJoystick;
-    private Touch? _cachedTouch;
-    private MobileInputDriver _driver;
 
     public MobileInputHandle(Joystick moveJoystick, Joystick attackJoystick)
     {
         _moveJoystick = moveJoystick;
         _attackJoystick = attackJoystick;
-
-        GameObject driverGO = new GameObject("MobileInputDriver");
-        _driver = driverGO.AddComponent<MobileInputDriver>();
-        _driver.Initialize(this);
-        Object.DontDestroyOnLoad(driverGO);
-    }
-
-    /// <summary>
-    /// 释放驱动资源，应在输入句柄不再使用时调用。
-    /// </summary>
-    public void Dispose()
-    {
-        if (_driver != null)
-        {
-            Object.Destroy(_driver.gameObject);
-            _driver = null;
-        }
-    }
-
-    /// <summary>
-    /// 每帧更新触摸缓存（由 MobileInputDriver 调用）
-    /// </summary>
-    public void UpdateTouchCache()
-    {
-        if (Input.touchCount > 0)
-        {
-            _cachedTouch = Input.GetTouch(0);
-        }
-        else
-        {
-            _cachedTouch = null;
-        }
     }
 
     // 移动输入：左摇杆方向
     public Vector2 MoveInput => _moveJoystick != null ? _moveJoystick.Direction : Vector2.zero;
 
-    // 攻击方向输入：右摇杆方向
-    public Vector2 AttackDirectionInput => _attackJoystick != null ? _attackJoystick.Direction : Vector2.zero;
+    /// <summary>
+    /// 瞄准方向 = 攻击摇杆方向。<see cref="worldOrigin"/> 用不上（摇杆给的就是方向本身）。
+    /// 摇杆回中时返回 false，调用方保持上一次朝向 —— 这条判断原先写在武器里，
+    /// 现在收敛到输入层（与 PC 的「鼠标始终有效」形成一致的契约）。
+    /// </summary>
+    public bool TryGetAimDirection(Vector2 worldOrigin, out Vector2 worldDirection)
+    {
+        Vector2 raw = _attackJoystick != null ? _attackJoystick.Direction : Vector2.zero;
 
-    // 屏幕指针位置：缓存的触摸点位置
-    public Vector2 ScreenPointerPosition => _cachedTouch?.position ?? Vector2.zero;
+        if (raw.sqrMagnitude < 0.01f)
+        {
+            worldDirection = Vector2.zero;
+            return false;
+        }
+
+        worldDirection = raw.normalized;
+        return true;
+    }
 
     // 世界触控：过滤 UI 区域的触摸（摇杆等）
     public bool TryGetWorldPointer(out Vector2 screenPos, out bool isDown, out bool isUp)
@@ -91,48 +70,47 @@ public class MobileInputHandle : IInputHandle
     // 取消输入：Android 无物理按键，返回 false
     public bool HasCancelInput => false;
 
+    /// <summary>
+    /// 触屏没有槽位切换键：HUD 的槽位按钮**直接调** <c>PlayerWeaponController.SwitchToSlot</c>
+    /// （按钮是 UI 事件，不是输入设备）。这里恒返回 -1，保持接口契约完整。
+    /// </summary>
+    public int ConsumeSlotSwitchRequest() => -1;
+
+    /// <summary>
+    /// 摇杆是否仍然存在。场景切换会销毁摇杆，此时本句柄必须由工厂重建，
+    /// 否则 <see cref="MoveInput"/> 会永远返回零（玩家无法移动，且不会有任何报错）。
+    /// </summary>
+    public bool IsAlive => _moveJoystick != null && _attackJoystick != null;
+
     // 交互事件：Android 需要 UI 按钮触发（暂不实现，保持空）
     public event System.Action OnInteract;
+
+    /// <summary>
+    /// 触屏是否正被按住 —— 由世界空间提示 UI 在触摸按下/抬起时写入。
+    ///
+    /// <para>
+    /// 输入层读不到"手指还按着屏幕"（那是 UI 事件），所以由**唯一的世界触控入口**
+    /// （<c>InteractionPromptView</c>）上报。这样"按住若干秒"的交互在触屏上是真正的按住，
+    /// 而不是"站在范围内就自动进行" —— 后者会让玩家路过推车时被定身。
+    /// </para>
+    /// </summary>
+    public static bool TouchHeld { get; set; }
+
+    /// <summary>触屏按住状态（见 <see cref="TouchHeld"/>）。</summary>
+    public bool InteractHeld => TouchHeld;
 
     // 返回事件：Android 需要 UI 按钮触发（暂不实现，保持空）
     public event System.Action OnEscape;
 
-    /// <summary>
-    /// 触发交互事件（供 UI 按钮调用）
-    /// </summary>
+    /// <summary>触发交互事件（供 UI 按钮调用）</summary>
     public void TriggerInteract()
     {
         OnInteract?.Invoke();
     }
 
-    /// <summary>
-    /// 触发返回事件（供 UI 按钮调用）
-    /// </summary>
+    /// <summary>触发返回事件（供 UI 按钮调用）</summary>
     public void TriggerEscape()
     {
         OnEscape?.Invoke();
-    }
-
-    /// <summary>
-    /// 内部驱动组件，负责在 Update 中刷新输入缓存。
-    /// </summary>
-    private class MobileInputDriver : MonoBehaviour
-    {
-        private MobileInputHandle _handle;
-
-        public void Initialize(MobileInputHandle handle)
-        {
-            _handle = handle;
-        }
-
-        void Update()
-        {
-            _handle?.UpdateTouchCache();
-        }
-
-        void OnDestroy()
-        {
-            _handle = null;
-        }
     }
 }

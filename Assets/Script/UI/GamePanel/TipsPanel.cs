@@ -6,8 +6,19 @@ public class TipsPanel : BasePanel
     public Image image;
     public TMPro.TextMeshProUGUI text;
 
+    private string _message;
+
+    /// <summary>注入提示文案（必须在 Init 之前调用）。留空则沿用 prefab 上的文字。</summary>
+    public void SetMessage(string message)
+    {
+        _message = message;
+    }
+
     public override void Init()
     {
+        if (!string.IsNullOrEmpty(_message) && text != null)
+            text.text = _message;
+
         StartCoroutine(ShowTipsCoroutine());
     }
 
@@ -20,8 +31,8 @@ public class TipsPanel : BasePanel
     {
         while (image.color.a > 0)
         {
-            // 上升效果
-            transform.position += new Vector3(0, 100 * Time.unscaledDeltaTime, 0);
+            // 上升效果：UI 用 localPosition（Overlay 画布下 1 单位 = 1 像素）
+            transform.localPosition += new Vector3(0, 100 * Time.unscaledDeltaTime, 0);
 
             // 渐变效果
             Color color = image.color;
@@ -36,6 +47,6 @@ public class TipsPanel : BasePanel
         }
 
         // 隐藏面板
-        UIManager.Service.HidePanel<TipsPanel>();
+        UIService.Service.HidePanel<TipsPanel>();
     }
 }

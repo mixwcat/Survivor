@@ -1,0 +1,104 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b88b6fac215af064d8dbb2cfee9344a2, type: 3}
+  m_Name: SpawnTable_Level0
+  m_EditorClassIdentifier: 
+  Segments:
+  - Label: "P0 \u2192 P1\uFF08\u6298\u70B9 \u2192 \u5145\u80FD\u70B9 1\uFF09"
+    StartDistance: 0
+    EndDistance: 8
+    Rules:
+    - Mode: 0
+      Rate: 0.5
+      WaveCount: 0
+      WaveInterval: 0
+      TotalCount: 0
+      MaxAlive: 0
+      Entries:
+      - Entity: {fileID: 11400000, guid: fe1f29baf396c414c886e4bf5e6043c0, type: 2}
+        Weight: 1
+      Side: 0
+      DistanceX: 16
+      RangeY: 8
+  - Label: "P1 \u2192 P2\uFF08\u5145\u80FD\u70B9 1 \u2192 \u5145\u80FD\u70B9 2\uFF09"
+    StartDistance: 8
+    EndDistance: 22.5
+    Rules:
+    - Mode: 0
+      Rate: 0.5
+      WaveCount: 0
+      WaveInterval: 0
+      TotalCount: 0
+      MaxAlive: 0
+      Entries:
+      - Entity: {fileID: 11400000, guid: fe1f29baf396c414c886e4bf5e6043c0, type: 2}
+        Weight: 1
+      Side: 0
+      DistanceX: 16
+      RangeY: 8
+  - Label: "P2 \u2192 P3\uFF08\u5145\u80FD\u70B9 2 \u2192 \u7EC8\u70B9\uFF09"
+    StartDistance: 22.5
+    EndDistance: 42.6
+    Rules:
+    - Mode: 0
+      Rate: 0.5
+      WaveCount: 0
+      WaveInterval: 0
+      TotalCount: 0
+      MaxAlive: 0
+      Entries:
+      - Entity: {fileID: 11400000, guid: fe1f29baf396c414c886e4bf5e6043c0, type: 2}
+        Weight: 1
+      Side: 0
+      DistanceX: 16
+      RangeY: 8
+  Nodes:
+  - Label: "P0 \xB7 \u6298\u70B9"
+    Kind: 0
+    Distance: 0
+    Rules: []
+  - Label: "P1 \xB7 \u5145\u80FD\u70B9 1"
+    Kind: 1
+    Distance: 8
+    Rules:
+    - Mode: 1
+      Rate: 0
+      WaveCount: 1
+      WaveInterval: 1
+      TotalCount: 1
+      MaxAlive: 0
+      Entries:
+      - Entity: {fileID: 11400000, guid: de1474b2fb5aca84ea9c32097e73fff9, type: 2}
+        Weight: 1
+      Side: 0
+      DistanceX: 0
+      RangeY: 0
+  - Label: "P2 \xB7 \u5145\u80FD\u70B9 2"
+    Kind: 2
+    Distance: 22.5
+    Rules:
+    - Mode: 1
+      Rate: 0
+      WaveCount: 1
+      WaveInterval: 1
+      TotalCount: 1
+      MaxAlive: 0
+      Entries:
+      - Entity: {fileID: 11400000, guid: 991030c97618dc54bb1873e3fedb13df, type: 2}
+        Weight: 1
+      Side: 0
+      DistanceX: 0
+      RangeY: 0
+  - Label: "P3 \xB7 \u7EC8\u70B9"
+    Kind: 3
+    Distance: 42.6
+    Rules: []

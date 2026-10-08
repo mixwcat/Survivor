@@ -15,12 +15,12 @@ public static class AssetKeys
 
     // ---- Common ----
     public const string ExpSprite = "Common/ExpSprite";
-    public const string TetoBullet = "Common/TetoBullet";
     public const string SpriteToHandle = "Common/SpriteToHandle";
 
     // ---- Weapon ----
-    public const string Bullet = "Weapon/Bullet";
-    public const string Spin = "Weapon/Spin";
+    // 注：Common/TetoBullet、Weapon/Bullet、Weapon/Spin 三个地址**没有**对应常量 ——
+    // 投射物 prefab 由 AttackDriver 用 AssetReferenceGameObject（GUID）引用，不经过地址字符串。
+    // ⚠️ 但那三条 Addressables 条目不能删：AssetReference 要求目标必须是 Addressable。
 
     // ---- Music / Sfx ----
     /// <summary>音频资源地址：Music/&lt;音频枚举名&gt;</summary>

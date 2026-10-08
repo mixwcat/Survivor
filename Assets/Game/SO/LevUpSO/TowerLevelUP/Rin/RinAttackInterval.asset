@@ -15,3 +15,9 @@ MonoBehaviour:
   levelUpText: "\u52A0\u5FEB\u653B\u51FB\u9891\u7387"
   cost: 1
   levelUpSprite: {fileID: 21300000, guid: 986ea43b6bc0e334286ea558538bb86f, type: 3}
+  statModifiers:
+  - TargetStat: 20
+    Value: 0.2
+    ModifierType: 1
+  fullHeal: 0
+  bonusHeal: 0

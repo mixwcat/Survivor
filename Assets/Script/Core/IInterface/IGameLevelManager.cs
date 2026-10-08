@@ -2,8 +2,14 @@ using System.Collections.Generic;
 
 /// <summary>
 /// 关卡/游戏状态管理接口
-/// 抽象全局游戏状态（时间、波次、暂停、敌人生存周期、游戏结束），
+/// 抽象全局游戏状态（时间、波次、暂停、敌人生存周期），
 /// 为单机模式和联机模式（权威服务器/客户端预测）提供统一访问点。
+///
+/// <para>
+/// <b>这里没有「结束游戏」</b>：胜负由 <see cref="StageDirector"/> 独占判定并触发结算。
+/// 接口上再留一个 <c>GameOver</c> 就会形成第二个结束入口 ——
+/// 曾经的表现是死亡面板与结算面板同时弹出，且多人局里第一个人阵亡就结束全队。
+/// </para>
 /// </summary>
 public interface IGameLevelManager
 {
@@ -13,14 +19,8 @@ public interface IGameLevelManager
     /// <summary>当前波次，由权威端维护；EnemySpawner 等逻辑可设置</summary>
     int CurrentWave { get; set; }
 
-    /// <summary>游戏是否处于活跃状态（未暂停、未结束）</summary>
+    /// <summary>游戏是否处于活跃状态（未暂停）</summary>
     bool IsGameActive { get; }
-
-    /// <summary>游戏是否已结束</summary>
-    bool IsGameOver { get; }
-
-    /// <summary>游戏结束事件（参数：存活时间）</summary>
-    event System.Action<float> OnGameOver;
 
     /// <summary>游戏时间更新事件（参数：当前时间）</summary>
     event System.Action<float> OnGameTimeUpdate;
@@ -35,24 +35,21 @@ public interface IGameLevelManager
     int GetEnemyCount();
 
     /// <summary>
-    /// 暂停游戏。单机模式下立即生效；联机模式下可能为空实现或发送 RPC 协商。
+    /// 申请暂停。<paramref name="token"/> 是**持有者身份**（面板 / 协调者自己造的令牌对象）。
+    ///
+    /// <para>
+    /// <b>暂停是有所有权的</b>：谁申请谁释放，<see cref="ReleasePause"/> 只释放自己那一次，
+    /// 最后一个持有者释放时才把 <c>Time.timeScale</c> 恢复为 1。
+    /// </para>
+    /// <para>
+    /// 旧接口是无参的 <c>PauseGame</c> / <c>ResumeGame</c>，任何面板都能无条件恢复全局时间 ——
+    /// 两个模态面板（升级三选一 + 塔管理）因异步加载而重叠时，先关的那个会把时间恢复成 1，
+    /// 另一个还显示着的面板就失去了暂停保护（反向时序则会留下 <c>timeScale = 0</c>）。
+    /// **不要**再退回布尔式暂停。
+    /// </para>
     /// </summary>
-    void PauseGame();
+    void AcquirePause(object token);
 
-    /// <summary>
-    /// 恢复游戏。单机模式下立即生效；联机模式下可能为空实现或发送 RPC 协商。
-    /// </summary>
-    void ResumeGame();
-
-    /// <summary>
-    /// 触发游戏结束。单机模式下直接执行；联机模式下由服务器权威决定。
-    /// </summary>
-    /// <param name="param">可选参数，如死亡原因、击杀者等</param>
-    void GameOver(object param = null);
-
-    /// <summary>
-    /// 玩家死亡通知。单机模式直接判定游戏结束；
-    /// 联机模式下客户端应发送请求，由权威端调用（权威边界预留）。
-    /// </summary>
-    void NotifyPlayerDied(PlayerController player);
+    /// <summary>释放暂停。只有当初申请的那个令牌有效；重复释放是空操作。</summary>
+    void ReleasePause(object token);
 }

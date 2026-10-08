@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Tower
+  m_EditorClassIdentifier: 
+  m_GroupName: Tower
+  m_GUID: e26f6758e0d243f4897479e09b55f303
+  m_SerializeEntries:
+  - m_GUID: 467d3dff002fcee44b3a0927ddebf33b
+    m_Address: Tower/Tower_Teto
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8b8ba7001d719734ea4ae21092dc1ff8
+    m_Address: Tower/Tower_Rin
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d203647572a64624592c87d0c82052da
+    m_Address: Tower/Tower_Luo
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: ce065eaf85320254fb5f4c62ea283932, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 6e29aa1506f2a174590b3cdf3065c1e6, type: 2}
+    - {fileID: 11400000, guid: 00a69d6afa7782d429d1ed0a71170f7e, type: 2}

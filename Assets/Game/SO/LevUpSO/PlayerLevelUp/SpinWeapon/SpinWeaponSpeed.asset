@@ -16,10 +16,8 @@ MonoBehaviour:
   cost: 1
   levelUpSprite: {fileID: 21300000, guid: 5994ac877b1361241b211a96d61f2e20, type: 3}
   statModifiers:
-  - TargetStat: 8
+  - TargetStat: 7
     Value: 1
     ModifierType: 0
   fullHeal: 0
   bonusHeal: 0
-  targetTags:
-  - FireBall

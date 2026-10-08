@@ -14,16 +14,16 @@ TagManager:
   - Water
   - UI
   - BackGround
-  - Player
-  - Tower
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - PlayerBody
+  - TowerBody
+  - EnemyBody
+  - CartBody
+  - WeaponHitbox
+  - EnemyDetector
+  - TowerDetector
+  - InteractZone
+  - Pickup
+  - Boundary
   - 
   - 
   - 

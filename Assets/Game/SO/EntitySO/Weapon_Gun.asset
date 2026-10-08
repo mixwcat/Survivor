@@ -12,11 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 919b7e9fe2e823e4db72f3bb3bf2fec0, type: 3}
   m_Name: Weapon_Gun
   m_EditorClassIdentifier: 
-  entityType: 8
+  id: weapon_gun
   dataRef: {fileID: 11400000, guid: 72005679ad543b041ad650ef560773e0, type: 2}
   upgrades:
   - {fileID: 11400000, guid: 6be38f9e54702574b968a134daace57d, type: 2}
   - {fileID: 11400000, guid: ad1b62fe5624b194b8f5c8640411f7a6, type: 2}
   - {fileID: 11400000, guid: 27a9c904927665640b71a0d5d2bb69cd, type: 2}
-  prefab: {fileID: 0}
-  weaponSelect: {fileID: 11400000, guid: ab2492f69edbbc14b954a4fc13e5db62, type: 2}
+  prefab:
+    m_AssetGUID: b9ff35f92ad96094e8c65cae332294e7
+    m_SubObjectName: 
+    m_SubObjectType: 
+    m_SubObjectGUID: 
+    m_EditorAssetChanged: 0
+  attack: {fileID: 11400000, guid: d8e2c5935953c944faeb757d232276fa, type: 2}
+  displayName: Gun
+  displaySprite: {fileID: 21300000, guid: 71974aa048ad53b4abb0eea6f789fcf7, type: 3}
+  unlockPrice: 800

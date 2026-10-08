@@ -12,15 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c7b3f985b3470f541853cdbd168d2be9, type: 3}
   m_Name: Tower_Teto
   m_EditorClassIdentifier: 
-  EntityName: Teto
   MaxHealth: 100
-  MoveSpeed: 5
+  Cost: 1
   Damage: 10
-  AttackRange: 2
-  AttackInterval: 5
+  AttackSpeed: 0.2
   HitForce: 0
   BulletSpeed: 8
-  HealAmount: 0
-  HealInterval: 0
-  HealRange: 0
-  Cost: 1
+  ShellDamage: 40
+  ShellExplosionRadius: 3

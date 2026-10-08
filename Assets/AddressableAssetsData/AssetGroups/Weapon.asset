@@ -15,13 +15,58 @@ MonoBehaviour:
   m_GroupName: Weapon
   m_GUID: a77059fd859abd244b465142ad9382c1
   m_SerializeEntries:
+  - m_GUID: 2c5601e3096ee2a4386be5c6e9c4fb58
+    m_Address: Weapon/Weapon_LuoHeal
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 497551e0795d4a9398f2453dc9dd1d66
+    m_Address: Weapon/Bullet_Shell
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 693598fcfcba81c4da1ac092010e3b8f
+    m_Address: Weapon/Weapon_RinAoE
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6da5927814dc7cb439cbe26dc470df35
+    m_Address: Weapon/Weapon_Cannon
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 778d86c5d4a60484e9259062b37799b6
+    m_Address: Weapon/Weapon_TetoShell
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 873acb99400e5c04b84b8ad868426f60
+    m_Address: Weapon/Weapon_TetoBullet
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 98a17a0949cc21043a90d452c78bbc51
     m_Address: Weapon/Bullet
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b01f5905ec7f64441b3f10c109a38faf
+    m_Address: Weapon/Weapon_Laser
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b9ff35f92ad96094e8c65cae332294e7
+    m_Address: Weapon/Weapon_Gun
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: ed6ea9dfa01fa9148beff33fe2995843
     m_Address: Weapon/Spin
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ef648875562d31442af22bceab699985
+    m_Address: Weapon/Weapon_Spin
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

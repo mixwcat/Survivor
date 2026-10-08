@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -44,44 +45,42 @@ public class EnemyTargetFinder : MonoBehaviour
         _nextUpdateTime = Time.time + _updateInterval;
     }
 
+    /// <summary>
+    /// 找最近的可攻击目标。
+    ///
+    /// <para>
+    /// 目标来自 <see cref="IEnemyTargetRegistry"/>（玩家 / 塔 / 推车都注册在那里），
+    /// 这里不分别遍历各个 Manager —— 每加一种可攻击单位都要改一次这个方法，
+    /// 而它本该只回答"最近的目标是谁"。
+    /// </para>
+    /// </summary>
     private Transform FindNearestTarget()
     {
-        var pm = PlayerManager.Service;
-        if (pm == null) return null;
+        IEnemyTargetRegistry registry = EnemyTargetRegistry.Service;
+        if (registry == null) return null;
 
-        // 联机兼容：从所有玩家中找最近的
-        PlayerController nearestPlayer = null;
+        IReadOnlyList<Transform> targets = registry.Targets;
+        Vector3 selfPos = transform.position;
+
+        Transform nearest = null;
         float nearestDist = float.MaxValue;
-        foreach (var player in pm.AllPlayers)
+
+        // 用 for + 索引器而不是 foreach：Targets 是 IReadOnlyList<T>，foreach 会走
+        // IEnumerable<T>.GetEnumerator() 把 List 的结构体枚举器装箱，每次寻敌都产生堆分配
+        // （敌人多、寻敌每 0.5s 一次，累计很可观）。
+        for (int i = 0; i < targets.Count; i++)
         {
-            if (player == null) continue;
-            float dist = Vector3.Distance(transform.position, player.transform.position);
+            Transform target = targets[i];
+            if (target == null) continue;   // 已销毁但尚未注销（销毁顺序不确定）
+
+            float dist = (target.position - selfPos).sqrMagnitude;
             if (dist < nearestDist)
             {
                 nearestDist = dist;
-                nearestPlayer = player;
+                nearest = target;
             }
         }
 
-        if (nearestPlayer == null) return null;
-
-        Transform targetTrans = nearestPlayer.transform;
-
-        var tm = TowerManager.Service;
-        if (tm != null && tm.Towers != null)
-        {
-            foreach (var tower in tm.Towers)
-            {
-                if (tower == null) continue;
-                float distToTower = Vector3.Distance(transform.position, tower.transform.position);
-                float distToCurrent = Vector3.Distance(transform.position, targetTrans.position);
-                if (distToTower < distToCurrent)
-                {
-                    targetTrans = tower.transform;
-                }
-            }
-        }
-
-        return targetTrans;
+        return nearest;
     }
 }

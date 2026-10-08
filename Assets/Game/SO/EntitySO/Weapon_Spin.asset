@@ -12,11 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 919b7e9fe2e823e4db72f3bb3bf2fec0, type: 3}
   m_Name: Weapon_Spin
   m_EditorClassIdentifier: 
-  entityType: 7
+  id: weapon_spin
   dataRef: {fileID: 11400000, guid: 31d3a4d8a7193c44babd9541a5fae193, type: 2}
   upgrades:
   - {fileID: 11400000, guid: 38a9e34d07d3eeb499866adc265a8654, type: 2}
   - {fileID: 11400000, guid: 7b450676e6ebe484b8072342e6127732, type: 2}
   - {fileID: 11400000, guid: 676a252e3fcce404c9b9ee6eec28e507, type: 2}
-  prefab: {fileID: 0}
-  weaponSelect: {fileID: 11400000, guid: 60932482e9947bd4a836789de9833de8, type: 2}
+  prefab:
+    m_AssetGUID: ef648875562d31442af22bceab699985
+    m_SubObjectName: 
+    m_SubObjectType: 
+    m_SubObjectGUID: 
+    m_EditorAssetChanged: 0
+  attack: {fileID: 11400000, guid: e6fbb21375e96864b87ba28dc2b0b7dd, type: 2}
+  displayName: Spin
+  displaySprite: {fileID: 21300000, guid: 71974aa048ad53b4abb0eea6f789fcf7, type: 3}
+  unlockPrice: 800

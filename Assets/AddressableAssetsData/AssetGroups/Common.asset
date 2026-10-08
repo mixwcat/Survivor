@@ -15,8 +15,18 @@ MonoBehaviour:
   m_GroupName: Common
   m_GUID: f25b3c55dd209224f9d8dcbd36967058
   m_SerializeEntries:
+  - m_GUID: 10ead4cf979dc17429743ca5126a8084
+    m_Address: Common/Player
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 1c8ebbb7927c1414ca9e010eff2781a3
     m_Address: Common/ExpSprite
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9423265b79f74bbc84d340cb3ebf82d0
+    m_Address: Common/TetoShell
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

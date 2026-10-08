@@ -12,14 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81da4c876cbdec147a0fb020c4ab3ec1, type: 3}
   m_Name: Tower_Luo
   m_EditorClassIdentifier: 
-  entityType: 6
+  id: tower_luo
   dataRef: {fileID: 11400000, guid: dae944600a5f4034094a6dddb11f2f2d, type: 2}
   upgrades:
-  - {fileID: 11400000, guid: d4a24a1516413fd43bbf9b3732ed0626, type: 2}
-  - {fileID: 11400000, guid: 2e138c229fba3664784156c2d505f3c5, type: 2}
-  - {fileID: 11400000, guid: 095bea29e8236e244a4c8949766e638d, type: 2}
   - {fileID: 11400000, guid: 8b32530509965f245a3fbd810ce60c41, type: 2}
-  prefab: {fileID: 6905693178617535602, guid: d203647572a64624592c87d0c82052da, type: 3}
+  prefab:
+    m_AssetGUID: d203647572a64624592c87d0c82052da
+    m_SubObjectName: 
+    m_SubObjectType: 
+    m_SubObjectGUID: 
+    m_EditorAssetChanged: 0
   displayName: Luo
   description: 
   icon: {fileID: 21300000, guid: 03e373fc758ad69418360a2dfad18a23, type: 3}

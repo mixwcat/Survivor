@@ -13,7 +13,9 @@ GameObject:
   - component: {fileID: 8264897056866476935}
   - component: {fileID: 8372913067270962355}
   - component: {fileID: 6858343028103272727}
-  m_Layer: 0
+  - component: {fileID: 2671185794764518185}
+  - component: {fileID: 5811004571879199819}
+  m_Layer: 9
   m_Name: Spoil
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -112,7 +114,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2190df186f782ae4385867b572629e0b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _entityData: {fileID: 11400000, guid: b70d965f98f4fd04c9ca1e4f9f836a0b, type: 2}
+  entityConfig: {fileID: 0}
+  _hitStunDuration: 0.1
+  _knockbackRecoveryDuration: 0.1
 --- !u!114 &6858343028103272727
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -125,6 +129,33 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 80b72819efe0ad74f8796221de1081a8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  UsePool: 1
+--- !u!114 &2671185794764518185
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 479997979672021348}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd71c9645a09c814bbeb5b350f231f56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _updateInterval: 0.5
+--- !u!114 &5811004571879199819
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 479997979672021348}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa863269bb3db784eabe85fd21427688, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _health: {fileID: 0}
 --- !u!1 &669850483842159193
 GameObject:
   m_ObjectHideFlags: 0
@@ -222,7 +253,7 @@ GameObject:
   m_Component:
   - component: {fileID: 9077081500036618459}
   - component: {fileID: 5780112006802781380}
-  m_Layer: 0
+  m_Layer: 12
   m_Name: ColliderTrigger
   m_TagString: Untagged
   m_Icon: {fileID: 0}

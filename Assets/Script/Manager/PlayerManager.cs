@@ -14,8 +14,8 @@ public class PlayerManager : ManagerSingleton<PlayerManager>, IPlayerManager
     public PlayerController LocalPlayer => _localPlayer;
     public IReadOnlyList<PlayerController> AllPlayers => _allPlayers;
 
-    /// <summary>兼容旧属性，建议迁移到 LocalPlayer</summary>
-    public PlayerController player => _localPlayer;
+    /// <summary>本地玩家变化（生成 / 销毁 / 切换）；参数可能为 null。</summary>
+    public event System.Action<PlayerController> LocalPlayerChanged;
 
     protected override void OnSingletonAwake()
     {
@@ -25,7 +25,9 @@ public class PlayerManager : ManagerSingleton<PlayerManager>, IPlayerManager
     protected override void OnDestroy()
     {
         base.OnDestroy();
-        ServiceLocator.Unregister<IPlayerManager>();
+
+        // 只有"当前注册的就是我"才注销：重复实例被销毁时无条件注销会清掉主实例的服务入口
+        ServiceLocator.UnregisterIfSelf<IPlayerManager>(this);
     }
 
     public void Register(PlayerController player)
@@ -33,29 +35,28 @@ public class PlayerManager : ManagerSingleton<PlayerManager>, IPlayerManager
         if (player == null) return;
         if (!_allPlayers.Contains(player))
             _allPlayers.Add(player);
+
         if (_localPlayer == null)
-            _localPlayer = player;
+            SetLocalPlayer(player);
     }
 
     public void Unregister(PlayerController player)
     {
         _allPlayers.Remove(player);
+
         if (_localPlayer == player)
-            _localPlayer = _allPlayers.Count > 0 ? _allPlayers[0] : null;
+            SetLocalPlayer(_allPlayers.Count > 0 ? _allPlayers[0] : null);
     }
 
     /// <summary>
-    /// 查找玩家对象（兼容旧代码，内部调用 Register）
+    /// 单一写入点：只有它发 <see cref="LocalPlayerChanged"/>，
+    /// 订阅方（升级面板协调者、HUD 等）据此退订旧玩家、绑定新玩家。
     /// </summary>
-    public void FindPlayer(PlayerController playerController = null)
+    private void SetLocalPlayer(PlayerController player)
     {
-        var player = playerController ?? FindFirstObjectByType<PlayerController>();
-        Register(player);
-    }
+        if (_localPlayer == player) return;
 
-    public void MissPlayer()
-    {
-        if (_localPlayer != null)
-            Unregister(_localPlayer);
+        _localPlayer = player;
+        LocalPlayerChanged?.Invoke(player);
     }
 }

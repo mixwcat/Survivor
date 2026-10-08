@@ -31,6 +31,33 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "Alpha1",
+                    "type": "Button",
+                    "id": "bad971f3-de62-4bf8-b149-c05083ed05d6",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Alpha2",
+                    "type": "Button",
+                    "id": "ae587139-8cb1-4366-8176-5b4184ec26e1",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Alpha3",
+                    "type": "Button",
+                    "id": "ac2f84db-672b-4585-9530-dd1c0fdd81af",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -39,7 +66,7 @@
                     "id": "978bfe49-cc26-4a3d-ab7b-7d7a29327403",
                     "path": "<Gamepad>/leftStick",
                     "interactions": "",
-                    "processors": "",
+                    "processors": "StickDeadzone(min=0.125,max=0.925)",
                     "groups": ";Gamepad",
                     "action": "Move",
                     "isComposite": false,
@@ -105,7 +132,7 @@
                     "id": "3ea4d645-4504-4529-b061-ab81934c3752",
                     "path": "<Joystick>/stick",
                     "interactions": "",
-                    "processors": "",
+                    "processors": "StickDeadzone(min=0.125,max=0.925)",
                     "groups": "Joystick",
                     "action": "Move",
                     "isComposite": false,
@@ -141,6 +168,39 @@
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
                     "action": "EPress",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "d83db42c-b2a2-45b5-94e2-139a727def09",
+                    "path": "<Keyboard>/1",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "Alpha1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b20fdeb0-46bd-44d1-ab30-501626dee4a5",
+                    "path": "<Keyboard>/2",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "Alpha2",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "4ac7a93c-4fa0-4e79-9fbc-60e385ad0eba",
+                    "path": "<Keyboard>/3",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "Alpha3",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

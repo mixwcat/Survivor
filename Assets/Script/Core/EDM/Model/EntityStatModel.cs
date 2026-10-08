@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 /// <summary>
 /// 运行时数值容器 — 每个实体一个实例
@@ -20,22 +19,11 @@ public class EntityStatModel
     #region 初始化
 
     /// <summary>
-    /// 用 DataSO 提供的基础值列表初始化
+    /// 设置单个基础值（由 DataSO 的 FillStatModel 逐条调用）
     /// </summary>
     public void SetBaseValue(StatType type, float value)
     {
         _baseValues[type] = value;
-    }
-
-    /// <summary>
-    /// 批量设置基础值（从 DataSO 调用）
-    /// </summary>
-    public void InitializeFromDefinitions(IEnumerable<StatDefinition> definitions)
-    {
-        foreach (var def in definitions)
-        {
-            _baseValues[def.Type] = def.BaseValue;
-        }
     }
 
     #endregion
@@ -43,31 +31,46 @@ public class EntityStatModel
     #region 查询
 
     /// <summary>
-    /// 获取指定数值的最终值（基础值 + 所有修饰符聚合）
+    /// 获取指定数值的最终值（基础值 + 所有修饰符聚合）。
+    /// <para>
+    /// 性能敏感：实体每帧都会调用（敌人移动速度、武器转速、拾取范围等）。
+    /// 因此这里**刻意不用 LINQ**——`FirstOrDefault/Where/Sum` 会为每次调用分配迭代器并装箱
+    /// List 枚举器，几十个敌人 × 每帧数次 = 持续 GC 压力（Android 上表现为卡顿）。
+    /// 下面用单次遍历替代，零堆分配，语义完全等价。
+    /// </para>
     /// </summary>
     public float GetStat(StatType type)
     {
-        if (!_baseValues.ContainsKey(type))
+        if (!_baseValues.TryGetValue(type, out float baseVal))
             return 0f;
 
-        float baseVal = _baseValues[type];
+        if (!_modifiers.TryGetValue(type, out List<StatModifier> mods) || mods.Count == 0)
+            return baseVal;
 
-        // 检查是否有 Override 修饰符（最高优先级）
-        if (_modifiers.TryGetValue(type, out var mods))
+        float addSum = 0f;
+        float multiplySum = 0f;
+
+        for (int i = 0; i < mods.Count; i++)
         {
-            var overrideMod = mods.FirstOrDefault(m => m.ModifierType == EModifierType.Override);
-            if (overrideMod != null)
-                return overrideMod.Value;
+            StatModifier mod = mods[i];
 
-            // 加法聚合
-            float addSum = mods.Where(m => m.ModifierType == EModifierType.Add).Sum(m => m.Value);
-            // 乘法聚合
-            float multiplySum = mods.Where(m => m.ModifierType == EModifierType.Multiply).Sum(m => m.Value);
+            switch (mod.ModifierType)
+            {
+                // Override 优先级最高，命中即返回（与原先 FirstOrDefault 取第一个 Override 等价）
+                case EModifierType.Override:
+                    return mod.Value;
 
-            return (baseVal + addSum) * (1f + multiplySum);
+                case EModifierType.Add:
+                    addSum += mod.Value;
+                    break;
+
+                case EModifierType.Multiply:
+                    multiplySum += mod.Value;
+                    break;
+            }
         }
 
-        return baseVal;
+        return (baseVal + addSum) * (1f + multiplySum);
     }
 
     public bool HasStat(StatType type)
@@ -76,19 +79,11 @@ public class EntityStatModel
     }
 
     /// <summary>
-    /// 是否已经有任意基础数值（用于判断 StatModel 是否被有效填充）
+    /// 是否已经有任意基础数值（用于判断 DataSO 是否真的灌进了数值）
     /// </summary>
     public bool HasAnyStat()
     {
         return _baseValues.Count > 0;
-    }
-
-    /// <summary>
-    /// 获取基础值（不含修饰符）
-    /// </summary>
-    public float GetBaseStat(StatType type)
-    {
-        return _baseValues.TryGetValue(type, out var val) ? val : 0f;
     }
 
     #endregion
@@ -108,35 +103,65 @@ public class EntityStatModel
     }
 
     /// <summary>
-    /// 批量添加修饰符
-    /// </summary>
-    public void AddModifiers(IEnumerable<StatModifier> modifiers)
-    {
-        foreach (var mod in modifiers)
-        {
-            AddModifier(mod);
-        }
-    }
-
-    /// <summary>
-    /// 移除某个来源的所有修饰符（如卸载装备/移除 buff）
+    /// 移除某个来源的所有修饰符（如卸载装备/移除 buff）。
+    ///
+    /// <para>
+    /// <b>它在敌人池的取出路径上</b>（<c>EnemyController.OnGetFromPool</c> 调两次：波次增强 + 哨站难度），
+    /// 而生成压力最高约 20 次/秒 —— 所以这里**不能**有任何堆分配：
+    /// 旧实现每次新建一个 <c>HashSet&lt;StatType&gt;</c>，并对每个列表调
+    /// <c>RemoveAll(m =&gt; m.Source == source)</c>（每次都要分配一个闭包 + 一个委托）。
+    /// 对象池消除了 GameObject 创建尖峰，却在复用入口留下了稳定的小对象分配。
+    /// </para>
     /// </summary>
     public void RemoveModifiersFromSource(object source)
     {
-        var typesToNotify = new HashSet<StatType>();
+        // 正常路径复用缓冲（零分配）。OnStatChanged 的订阅者若又调本方法，
+        // 内层退化成一次性列表 —— 否则会把外层还没发完的类型清掉
+        List<StatType> changed = _notifying ? new List<StatType>() : _notifyBuffer;
+        bool borrowed = !_notifying;
 
-        foreach (var kvp in _modifiers)
+        if (borrowed) _notifying = true;
+
+        try
         {
-            int removed = kvp.Value.RemoveAll(m => m.Source == source);
-            if (removed > 0)
-                typesToNotify.Add(kvp.Key);
+            // Dictionary 的具体类型 foreach 用的是结构体枚举器，不装箱
+            foreach (KeyValuePair<StatType, List<StatModifier>> pair in _modifiers)
+            {
+                List<StatModifier> mods = pair.Value;
+
+                // 倒序原地删除：不用 RemoveAll(lambda)，那会分配闭包与委托
+                int removed = 0;
+                for (int i = mods.Count - 1; i >= 0; i--)
+                {
+                    if (!ReferenceEquals(mods[i].Source, source)) continue;
+
+                    mods.RemoveAt(i);
+                    removed++;
+                }
+
+                // 每个 StatType 在字典里只出现一次，所以天然不需要 HashSet 去重
+                if (removed > 0) changed.Add(pair.Key);
+            }
+
+            // 通知统一放在改动之后：回调里读到的数值已经是最终值
+            for (int i = 0; i < changed.Count; i++)
+                OnStatChanged?.Invoke(changed[i]);
         }
-
-        foreach (var type in typesToNotify)
+        finally
         {
-            OnStatChanged?.Invoke(type);
+            if (borrowed)
+            {
+                _notifyBuffer.Clear();
+                _notifying = false;
+            }
         }
     }
+
+    /// <summary>变更通知的复用缓冲（见 <see cref="RemoveModifiersFromSource"/>）。</summary>
+    private readonly List<StatType> _notifyBuffer = new();
+
+    /// <summary>是否正在发通知 —— 用于识别"订阅者在回调里又改修饰符"的重入。</summary>
+    private bool _notifying;
 
     #endregion
 }

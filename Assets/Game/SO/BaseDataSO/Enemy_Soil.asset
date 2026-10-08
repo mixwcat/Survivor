@@ -12,7 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b4671d43c95d2e4c900eca02e4071c1, type: 3}
   m_Name: Enemy_Soil
   m_EditorClassIdentifier: 
-  EntityName: 
   MaxHealth: 20
   MoveSpeed: 1
   Damage: 3

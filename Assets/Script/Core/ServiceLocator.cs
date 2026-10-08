@@ -41,10 +41,28 @@ public static class ServiceLocator
         return _services.ContainsKey(typeof(T));
     }
 
-    /// <summary>注销服务</summary>
-    public static void Unregister<T>()
+    /// <summary>注销服务。返回是否确实移除了一个注册（未注册时返回 false）。</summary>
+    public static bool Unregister<T>()
     {
-        _services.Remove(typeof(T));
+        return _services.Remove(typeof(T));
+    }
+
+    /// <summary>
+    /// **仅当当前注册的就是 <paramref name="instance"/> 时**才注销。返回是否真的注销了。
+    ///
+    /// <para>
+    /// <b>为什么不要直接调 <see cref="Unregister{T}"/>：</b>场景里出现重复 Manager 时，
+    /// 重复实例会被销毁，而它的 <c>OnDestroy</c> 会无条件注销 ——
+    /// 结果是主实例还活着，服务入口却空了（输入、玩家、塔、统计突然全部不可用，
+    /// 且发生在切场景后一帧，极难定位）。销毁方必须确认"注册的那个确实是我"。
+    /// </para>
+    /// </summary>
+    public static bool UnregisterIfSelf<T>(object instance) where T : class
+    {
+        if (instance == null) return false;
+        if (!TryGet<T>(out T current) || !ReferenceEquals(current, instance)) return false;
+
+        return Unregister<T>();
     }
 
     /// <summary>

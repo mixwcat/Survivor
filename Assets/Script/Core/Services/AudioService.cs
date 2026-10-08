@@ -22,7 +22,7 @@ public class AudioService : MonoBehaviour, IAudioService
 
     private AudioSource _bgm;
     private int _sfxIndex;
-    private bool _isInitialized;
+    private Task _initTask;
 
     private float _bgmVolume = 0.5f;
     private float _sfxVolume = 0.5f;
@@ -69,31 +69,46 @@ public class AudioService : MonoBehaviour, IAudioService
         }
     }
 
-    public async Task InitializeAsync()
+    /// <summary>加载音频资源（由组合根调用，幂等 + 并发安全）。</summary>
+    public Task InitializeAsync()
     {
-        if (_isInitialized) return;
-        _isInitialized = true;
+        return _initTask ??= InitializeInternalAsync();
+    }
 
-        IAssetService assetService = ServiceLocator.Get<IAssetService>();
+    private async Task InitializeInternalAsync()
+    {
+        IAssetService assetService = AssetService.Service;
+        if (assetService == null)
+        {
+            Debug.LogError("[AudioService] IAssetService 未注册，音频无法加载。");
+            return;
+        }
 
         foreach (ResourceEnum res in System.Enum.GetValues(typeof(ResourceEnum)))
         {
             string address = AssetKeys.Music(res.ToString());
+            AsyncOperationHandle<AudioClip> handle = default;
+
             try
             {
-                AsyncOperationHandle<AudioClip> handle = assetService.LoadAssetAsync<AudioClip>(address);
+                handle = assetService.LoadAssetAsync<AudioClip>(address);
                 AudioClip clip = await handle.Task;
+
                 if (clip == null)
                 {
                     Debug.LogWarning($"[AudioService] 音频资源缺失：{address}");
+                    // 失败路径也必须归还句柄，否则引用计数只增不减、bundle 永不卸载
+                    if (handle.IsValid()) handle.Release();
                     continue;
                 }
+
                 _clips[res] = clip;
                 _handles.Add(handle);
             }
             catch (System.Exception e)
             {
                 Debug.LogError($"[AudioService] 加载失败 {address}: {e.Message}");
+                if (handle.IsValid()) handle.Release();
             }
         }
 

@@ -12,8 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b4671d43c95d2e4c900eca02e4071c1, type: 3}
   m_Name: Enemy_Wolf
   m_EditorClassIdentifier: 
-  EntityName: Wolf
-  MaxHealth: 100
-  MoveSpeed: 5
-  Damage: 10
-  ExpReward: 1
+  MaxHealth: 1500
+  MoveSpeed: 3.5
+  Damage: 20
+  ExpReward: 40

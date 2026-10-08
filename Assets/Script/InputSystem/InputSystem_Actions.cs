@@ -117,6 +117,33 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Alpha1"",
+                    ""type"": ""Button"",
+                    ""id"": ""bad971f3-de62-4bf8-b149-c05083ed05d6"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Alpha2"",
+                    ""type"": ""Button"",
+                    ""id"": ""ae587139-8cb1-4366-8176-5b4184ec26e1"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Alpha3"",
+                    ""type"": ""Button"",
+                    ""id"": ""ac2f84db-672b-4585-9530-dd1c0fdd81af"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -125,7 +152,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""id"": ""978bfe49-cc26-4a3d-ab7b-7d7a29327403"",
                     ""path"": ""<Gamepad>/leftStick"",
                     ""interactions"": """",
-                    ""processors"": """",
+                    ""processors"": ""StickDeadzone(min=0.125,max=0.925)"",
                     ""groups"": "";Gamepad"",
                     ""action"": ""Move"",
                     ""isComposite"": false,
@@ -191,7 +218,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""id"": ""3ea4d645-4504-4529-b061-ab81934c3752"",
                     ""path"": ""<Joystick>/stick"",
                     ""interactions"": """",
-                    ""processors"": """",
+                    ""processors"": ""StickDeadzone(min=0.125,max=0.925)"",
                     ""groups"": ""Joystick"",
                     ""action"": ""Move"",
                     ""isComposite"": false,
@@ -227,6 +254,39 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": "";Keyboard&Mouse"",
                     ""action"": ""EPress"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""d83db42c-b2a2-45b5-94e2-139a727def09"",
+                    ""path"": ""<Keyboard>/1"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""Alpha1"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b20fdeb0-46bd-44d1-ab30-501626dee4a5"",
+                    ""path"": ""<Keyboard>/2"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""Alpha2"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""4ac7a93c-4fa0-4e79-9fbc-60e385ad0eba"",
+                    ""path"": ""<Keyboard>/3"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""Alpha3"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -817,6 +877,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         m_Player_Move = m_Player.FindAction("Move", throwIfNotFound: true);
         m_Player_EscapePress = m_Player.FindAction("EscapePress", throwIfNotFound: true);
         m_Player_EPress = m_Player.FindAction("EPress", throwIfNotFound: true);
+        m_Player_Alpha1 = m_Player.FindAction("Alpha1", throwIfNotFound: true);
+        m_Player_Alpha2 = m_Player.FindAction("Alpha2", throwIfNotFound: true);
+        m_Player_Alpha3 = m_Player.FindAction("Alpha3", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Navigate = m_UI.FindAction("Navigate", throwIfNotFound: true);
@@ -913,6 +976,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Move;
     private readonly InputAction m_Player_EscapePress;
     private readonly InputAction m_Player_EPress;
+    private readonly InputAction m_Player_Alpha1;
+    private readonly InputAction m_Player_Alpha2;
+    private readonly InputAction m_Player_Alpha3;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -936,6 +1002,18 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/EPress".
         /// </summary>
         public InputAction @EPress => m_Wrapper.m_Player_EPress;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Alpha1".
+        /// </summary>
+        public InputAction @Alpha1 => m_Wrapper.m_Player_Alpha1;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Alpha2".
+        /// </summary>
+        public InputAction @Alpha2 => m_Wrapper.m_Player_Alpha2;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Alpha3".
+        /// </summary>
+        public InputAction @Alpha3 => m_Wrapper.m_Player_Alpha3;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -971,6 +1049,15 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @EPress.started += instance.OnEPress;
             @EPress.performed += instance.OnEPress;
             @EPress.canceled += instance.OnEPress;
+            @Alpha1.started += instance.OnAlpha1;
+            @Alpha1.performed += instance.OnAlpha1;
+            @Alpha1.canceled += instance.OnAlpha1;
+            @Alpha2.started += instance.OnAlpha2;
+            @Alpha2.performed += instance.OnAlpha2;
+            @Alpha2.canceled += instance.OnAlpha2;
+            @Alpha3.started += instance.OnAlpha3;
+            @Alpha3.performed += instance.OnAlpha3;
+            @Alpha3.canceled += instance.OnAlpha3;
         }
 
         /// <summary>
@@ -991,6 +1078,15 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @EPress.started -= instance.OnEPress;
             @EPress.performed -= instance.OnEPress;
             @EPress.canceled -= instance.OnEPress;
+            @Alpha1.started -= instance.OnAlpha1;
+            @Alpha1.performed -= instance.OnAlpha1;
+            @Alpha1.canceled -= instance.OnAlpha1;
+            @Alpha2.started -= instance.OnAlpha2;
+            @Alpha2.performed -= instance.OnAlpha2;
+            @Alpha2.canceled -= instance.OnAlpha2;
+            @Alpha3.started -= instance.OnAlpha3;
+            @Alpha3.performed -= instance.OnAlpha3;
+            @Alpha3.canceled -= instance.OnAlpha3;
         }
 
         /// <summary>
@@ -1312,6 +1408,27 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnEPress(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Alpha1" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnAlpha1(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Alpha2" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnAlpha2(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Alpha3" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnAlpha3(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.

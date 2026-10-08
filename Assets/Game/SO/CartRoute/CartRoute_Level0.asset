@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26ab663cdee1eaa4d9df1b7a0aa32f3a, type: 3}
+  m_Name: CartRoute_Level0
+  m_EditorClassIdentifier: 
+  Points:
+  - {x: -8, y: 0}
+  - {x: 0, y: 0}
+  - {x: 14.5, y: 0}
+  - {x: 34.6, y: 0}
+  Nodes:
+  - PointIndex: 1
+    Node: 1
+  - PointIndex: 2
+    Node: 2
+  - PointIndex: 3
+    Node: 3
+  SourceScene: Assets/Scenes/Level0.unity

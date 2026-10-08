@@ -16,11 +16,12 @@ public class TowerHealthController : BaseHealthController
         _towerHealthPanel?.UpdateHealthUI();
     }
 
-    public override void TakeDamage(float damage)
+    /// <summary>塔目前不吃击退，<see cref="DamageInfo.HitForce"/> 仅为保持重写签名一致。</summary>
+    public override void TakeDamage(in DamageInfo info)
     {
-        base.TakeDamage(damage);
+        base.TakeDamage(in info);
         _towerHealthPanel?.UpdateHealthUI();
-        DamageNumManager.Service.SpawnDamageNum(transform.position, damage, DamageNumType.Red);
+        DamageNumService.Service?.SpawnDamageNum(transform.position, info.Amount, DamageNumType.Red);
     }
 
     public override void Heal(float amount)

@@ -1,0 +1,22 @@
+﻿Class,Id,DisplayName,AssetName,AssetPath,DataRef,PrefabGuid,UpgradeCount
+CartEntitySO,cart_hauler,运输车,Cart_Hauler,Assets/Game/SO/EntitySO/Cart_Hauler.asset,Cart_HaulerData,7c77ecd63ee3bbe44b7d8bfebb5e658a,0
+CharacterDefinitionSO,char_engineer,工程师,Character_Engineer,Assets/Game/SO/CharacterSO/Character_Engineer.asset,Player_EngineerData,,0
+CharacterDefinitionSO,char_gunner,枪手,Character_Gunner,Assets/Game/SO/CharacterSO/Character_Gunner.asset,Player_GunnerData,,0
+EnemyEntitySO,enemy_cloud,,Enemy_Cloud,Assets/Game/SO/EntitySO/Enemy_Cloud.asset,Enemy_Cloud,3691157ec5a16ec4f9b3ec203b4ffff3,0
+EnemyEntitySO,enemy_slime,,Enemy_Slime,Assets/Game/SO/EntitySO/Enemy_Slime.asset,Enemy_Slime,643c90b5d5bf9d94fba0fb9834d22f3d,0
+EnemyEntitySO,enemy_snake,,Enemy_Snake,Assets/Game/SO/EntitySO/Enemy_Snake.asset,Enemy_Snake,05dcdb0e40f79184fbad3bdcde091060,0
+EnemyEntitySO,enemy_soil,,Enemy_Soil,Assets/Game/SO/EntitySO/Enemy_Soil.asset,Enemy_Soil,744854a33f3a69d4bb062b29b7a53db5,0
+EnemyEntitySO,enemy_wolf,,Enemy_Wolf,Assets/Game/SO/EntitySO/Enemy_Wolf.asset,Enemy_Wolf,9f057285d0f7adf41ada625faa975ce8,0
+PlayerEntitySO,player_engineer,,Player_Engineer,Assets/Game/SO/EntitySO/Player_Engineer.asset,Player_EngineerData,,4
+PlayerEntitySO,player_gunner,,Player_Gunner,Assets/Game/SO/EntitySO/Player_Gunner.asset,Player_GunnerData,,4
+TowerEntitySO,tower_luo,Luo,Tower_Luo,Assets/Game/SO/EntitySO/Tower_Luo.asset,Tower_Luo,d203647572a64624592c87d0c82052da,1
+TowerEntitySO,tower_rin,Rin,Tower_Rin,Assets/Game/SO/EntitySO/Tower_Rin.asset,Tower_Rin,8b8ba7001d719734ea4ae21092dc1ff8,1
+TowerEntitySO,tower_teto,Teto,Tower_Teto,Assets/Game/SO/EntitySO/Tower_Teto.asset,Tower_Teto,467d3dff002fcee44b3a0927ddebf33b,2
+WeaponEntitySO,weapon_cannon,Cannon,Weapon_Cannon,Assets/Game/SO/EntitySO/Weapon_Cannon.asset,Weapon_Cannon,6da5927814dc7cb439cbe26dc470df35,3
+WeaponEntitySO,weapon_gun,Gun,Weapon_Gun,Assets/Game/SO/EntitySO/Weapon_Gun.asset,Weapon_Gun,b9ff35f92ad96094e8c65cae332294e7,3
+WeaponEntitySO,weapon_laser,Laser,Weapon_Laser,Assets/Game/SO/EntitySO/Weapon_Laser.asset,Weapon_Laser,b01f5905ec7f64441b3f10c109a38faf,2
+WeaponEntitySO,weapon_luo_heal,Luo 治疗,Weapon_LuoHeal,Assets/Game/SO/EntitySO/Weapon_LuoHeal.asset,Weapon_LuoHeal,2c5601e3096ee2a4386be5c6e9c4fb58,3
+WeaponEntitySO,weapon_rin_aoe,Rin 范围攻击,Weapon_RinAoE,Assets/Game/SO/EntitySO/Weapon_RinAoE.asset,Weapon_RinAoE,693598fcfcba81c4da1ac092010e3b8f,3
+WeaponEntitySO,weapon_spin,Spin,Weapon_Spin,Assets/Game/SO/EntitySO/Weapon_Spin.asset,Weapon_Spin,ef648875562d31442af22bceab699985,3
+WeaponEntitySO,weapon_teto_bullet,Teto 速射弹,Weapon_TetoBullet,Assets/Game/SO/EntitySO/Weapon_TetoBullet.asset,Weapon_TetoBullet,873acb99400e5c04b84b8ad868426f60,4
+WeaponEntitySO,weapon_teto_shell,Teto 溅射炮弹,Weapon_TetoShell,Assets/Game/SO/EntitySO/Weapon_TetoShell.asset,Weapon_TetoShell,778d86c5d4a60484e9259062b37799b6,4

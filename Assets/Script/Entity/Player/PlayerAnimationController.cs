@@ -1,15 +1,19 @@
-using System.Collections;
 using UnityEngine;
 
 public class PlayerAnimationController : MonoBehaviour
 {
     [SerializeField]
     [Tooltip("输入标识：local=本地，network_X=远程玩家（联机用）")]
-    private string _inputHandleId = "local";
+    private string _inputHandleId = InputHandleFactory.LocalId;
     private IInputHandle _inputHandle;
     private Animator animator;
-    private AudioSource moveAudioSource;
-    public float soundInterval = 0.5f;
+
+    // Animator 参数哈希缓存：SetBool(string, ...) 每次都要重算字符串哈希
+    private static readonly int HashIsMoving = Animator.StringToHash("isMoving");
+    private static readonly int HashRight = Animator.StringToHash("rightWalking");
+    private static readonly int HashLeft = Animator.StringToHash("leftWalking");
+    private static readonly int HashBack = Animator.StringToHash("backWalking");
+    private static readonly int HashToward = Animator.StringToHash("towardWalking");
 
     private bool isMoving;
     private bool rightWalking;
@@ -20,7 +24,8 @@ public class PlayerAnimationController : MonoBehaviour
     void Awake()
     {
         animator = GetComponentInChildren<Animator>();
-        moveAudioSource = GetComponent<AudioSource>();
+        if (animator == null)
+            Debug.LogWarning($"[{nameof(PlayerAnimationController)}] 找不到 Animator，动画参数将不会更新：{gameObject.name}");
 
         _inputHandle = InputHandleFactory.GetInput(_inputHandleId);
 
@@ -30,13 +35,17 @@ public class PlayerAnimationController : MonoBehaviour
         }
     }
 
-    private void Start()
+    private void OnDestroy()
     {
+        // 与 Awake 的 GetInput 成对，避免共享句柄的引用计数只增不减
+        InputHandleFactory.ReleaseInput(_inputHandleId);
+        _inputHandle = null;
     }
 
-    // Update is called once per frame
     void Update()
     {
+        if (animator == null) return;
+
         GetWalkingState();
         SetAnimationParameters();
     }
@@ -49,41 +58,32 @@ public class PlayerAnimationController : MonoBehaviour
     {
         if (_inputHandle == null) return;
 
-        rightWalking = _inputHandle.MoveInput.x > 0;
-        leftWalking = _inputHandle.MoveInput.x < 0;
-        backWalking = _inputHandle.MoveInput.y > 0;
-        towardWalking = _inputHandle.MoveInput.y < 0;
+        // MoveInput 只读一次（原先连续读 4 次）
+        Vector2 move = _inputHandle.MoveInput;
+
+        rightWalking = move.x > 0;
+        leftWalking = move.x < 0;
+        backWalking = move.y > 0;
+        towardWalking = move.y < 0;
         isMoving = rightWalking || leftWalking || backWalking || towardWalking;
     }
 
     /// <summary>
-    /// 设置动画参数
+    /// 设置动画参数：只在状态真正变化时写入。
+    /// 原实现每帧无条件写 5 次（含字符串哈希计算 + 原生调用），静止时也满额开销。
     /// </summary>
     private void SetAnimationParameters()
     {
-        animator.SetBool("isMoving", isMoving);
-        animator.SetBool("rightWalking", rightWalking);
-        animator.SetBool("leftWalking", leftWalking);
-        animator.SetBool("backWalking", backWalking);
-        animator.SetBool("towardWalking", towardWalking);
+        SetBoolIfChanged(HashIsMoving, isMoving);
+        SetBoolIfChanged(HashRight, rightWalking);
+        SetBoolIfChanged(HashLeft, leftWalking);
+        SetBoolIfChanged(HashBack, backWalking);
+        SetBoolIfChanged(HashToward, towardWalking);
     }
 
-
-    IEnumerator PlayMoveSound()
+    private void SetBoolIfChanged(int hash, bool value)
     {
-        while (PlayerManager.Service.LocalPlayer != null)
-        {
-            if (isMoving)
-            {
-                moveAudioSource.volume = AudioService.Service?.SfxVolume ?? 0.5f;
-                moveAudioSource.Play();
-            }
-            else
-            {
-                moveAudioSource.Pause();
-            }
-
-            yield return new WaitForSeconds(soundInterval);
-        }
+        if (animator.GetBool(hash) == value) return;
+        animator.SetBool(hash, value);
     }
 }

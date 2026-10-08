@@ -25,8 +25,28 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2726b02b5ddb7ab45b399bee4bf79c4c
+    m_Address: UI/PortalStatusText
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 2e445511ae4e9d446bfa29657fd4342a
     m_Address: UI/TowerLevelUpPanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 33f7f9d34471ec649ad61c93401212a6
+    m_Address: UI/CharacterSelectPanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 74fd5047bfba8a4458d2e0ec80e7b0d0
+    m_Address: UI/InteractionPrompt
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 807a9f3d94b8a224da946c03a9e89589
+    m_Address: UI/LobbyHudPanel
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -35,8 +55,18 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: b442c6be7580c0e48a862c1e9bc86059
-    m_Address: UI/DeadPanel
+  - m_GUID: 866dc42783ad333469029605533bcc9f
+    m_Address: UI/WeaponUpgradePanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8eac540e5e9b96645a83755b99161a57
+    m_Address: UI/TowerBenchPanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b1acde8612effda46a4b7c5ee9374c1d
+    m_Address: UI/CartHealthPercent
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -50,11 +80,6 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: cf7e166dbbadcd74b90a28ee971f7af8
-    m_Address: UI/ChooseWeaponPanel
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: d3c90750650176449bf898932a27de6c
     m_Address: UI/Canvas
     m_ReadOnly: 0
@@ -62,6 +87,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: dee31a8aeebe0d24fbc68a605e8175f9
     m_Address: UI/LevelUpPanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e3d0dcacc3c47c54eaae2ed50d5dfee1
+    m_Address: UI/RunResultPanel
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -82,6 +112,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: f5e6abfa03da9654088bcc5f0702a262
     m_Address: UI/MenuPanel
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f942020bf7385cf49909699efaa14c8f
+    m_Address: UI/WeaponBenchPanel
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

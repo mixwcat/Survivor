@@ -16,7 +16,7 @@ MonoBehaviour:
   cost: 1
   levelUpSprite: {fileID: 21300000, guid: 4213bf0bf24756f4ab51c07896d5befe, type: 3}
   statModifiers:
-  - TargetStat: 13
+  - TargetStat: 11
     Value: 5
     ModifierType: 0
   fullHeal: 0

@@ -12,14 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c7b3f985b3470f541853cdbd168d2be9, type: 3}
   m_Name: Tower_Rin
   m_EditorClassIdentifier: 
-  EntityName: Rin
   MaxHealth: 100
-  MoveSpeed: 5
-  Damage: 10
-  AttackRange: 2
-  AttackInterval: 2
-  HitForce: 0
-  HealAmount: 0
-  HealInterval: 0
-  HealRange: 0
   Cost: 1
+  Damage: 10
+  AttackSpeed: 0.5
+  HitForce: 0
+  BulletSpeed: 8
+  ShellDamage: 40
+  ShellExplosionRadius: 3

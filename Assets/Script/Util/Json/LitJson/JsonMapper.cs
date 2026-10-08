@@ -256,6 +256,13 @@ namespace LitJson
                 if (p_info.Name == "Item")
                     continue;
 
+                // 静态属性不属于实例数据。GetProperties() 默认同时返回静态属性，
+                // 而它们无法通过实例写回 —— 反序列化时 SetValue 会抛，
+                // 后果不是"少读一个字段"，而是**整个对象都读不出来**。
+                MethodInfo getter = p_info.GetGetMethod ();
+                if (getter != null && getter.IsStatic)
+                    continue;
+
                 PropertyMetadata p_data = new PropertyMetadata ();
                 p_data.Info = p_info;
                 p_data.IsField = false;
@@ -263,6 +270,17 @@ namespace LitJson
             }
 
             foreach (FieldInfo f_info in type.GetFields ()) {
+                // ⚠️ GetFields() 默认返回**实例字段 + 静态字段**，其中包括 public const
+                // （IsLiteral）与 static readonly。它们都写不回去：
+                // const 抛 "Cannot set a constant field"，static readonly 抛 FieldAccessException。
+                //
+                // 这个坑真实发生过：PlayerProfile.CurrentSchemaVersion 是个 public const，
+                // 于是**每一次读档都在反序列化时抛异常**，被上层 catch 成"档案损坏"、
+                // 静默退回默认档 —— 金币、解锁、哨站进度每次重启全部归零，
+                // 而磁盘上那份 JSON 其实是完好无损的（只有一条 LogError 作为线索）。
+                if (f_info.IsStatic)
+                    continue;
+
                 PropertyMetadata p_data = new PropertyMetadata ();
                 p_data.Info = f_info;
                 p_data.IsField = true;
