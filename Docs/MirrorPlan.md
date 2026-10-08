@@ -108,7 +108,8 @@
 - Mirror 核心**只做 single-mode 切场景**（`ServerChangeScene` 内部就是 `LoadSceneAsync(name)`）；
   `SceneMessage` 的 `SceneOperation` 在日常流程里恒为 `Normal`。
   官方 additive 示例是自己 `LoadSceneAsync(..., LoadSceneMode.Additive)` 并自己管加载/卸载
-  （`Assets/Mirror/Examples/AdditiveScenes/Scripts/AdditiveNetworkManager.cs:39-51`）——**等于自己兜一套场景生命周期**。
+  （`Assets/Mirror/Examples/AdditiveScenes/Scripts/AdditiveNetworkManager.cs:39-51`；⚠️ 该示例目录**不在仓库里**，
+  已加进 `.gitignore`，需要时从 Mirror 官方仓库补回）——**等于自己兜一套场景生命周期**。
 - 引入 additive 会额外带来：每个场景各自的 `sceneId` 分配与校验、`SpawnObjects()` 需要按 additive 场景再调一次
   （`Core/NetworkServer.cs:1635-1641` 的注释就是为这个场景写的）、卸载顺序、以及"这个 NetworkIdentity 属于哪个场景"的心智负担。
 - 本项目 **3 个场景 / 2-4 人**，收益为零。**结论：不加。**

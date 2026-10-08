@@ -81,6 +81,13 @@
 > **唯一例外**是本项目已声明的那一处本地补丁（Unity 6 domain reload 下 `NetworkConnection()` 的 `Time.time` 异常，
 > 见 `03-项目落地注意.md` §15.3 与 `../MirrorPlan.md` P0.3）—— 打补丁时必须在文件里留注释说明，升级 Mirror 后要重贴。
 
+> 📦 **以下子目录不在本仓库里**（已加进 `.gitignore`，新克隆的工作区看不到它们；本文档提到这些路径时按"本地不存在"理解）：
+> `Assets/Mirror/Examples/`（官方示例）、`Assets/Mirror/Hosting/` 与 `Assets/Mirror/Transports/Edgegap/`（Edgegap 云托管与中继）、
+> `Assets/Mirror/Transports/Encryption/`（加密传输，体积主要是 BouncyCastle）。
+> 运行必需的 `Core` / `Components` / `Editor` / `Authenticators` / `CompilerSymbols` / `Presets` / `Plugins`
+> 与 `Transports` 下的 KCP / Latency / Middleware / Multiplex / SimpleWeb / Telepathy / Threaded **都在仓库里**。
+> 需要看官方示例时，从 Mirror 官方仓库或原始 unitypackage 补回即可（不影响编译）。
+
 ---
 
 ## 1. 网络模型与权威
@@ -2549,8 +2556,8 @@ public bool statisticsLog;                                // :75
 | MultiplexTransport | `Transports/Multiplex/MultiplexTransport.cs` | 一个服务器同时接多种 transport |
 | MiddlewareTransport | `Transports/Middleware/MiddlewareTransport.cs` | 中间件基类 |
 | ThreadedTransport | `Transports/Threaded/ThreadedTransport.cs` | 多线程基类 |
-| EncryptionTransport | `Transports/Encryption/EncryptionTransport.cs` | 加密中间件 |
-| EdgegapKcpTransport | `Transports/Edgegap/EdgegapRelay/EdgegapKcpTransport.cs` | 中继（NAT 穿透） |
+| EncryptionTransport | `Transports/Encryption/EncryptionTransport.cs` | 加密中间件 ⚠️ **本仓库未收录**（见 §0 的说明） |
+| EdgegapKcpTransport | `Transports/Edgegap/EdgegapRelay/EdgegapKcpTransport.cs` | 中继（NAT 穿透）⚠️ **本仓库未收录** |
 
 **LatencySimulation 用法**（【官方】[Latency Simulation Transport](https://mirror-networking.gitbook.io/docs/manual/transports/latency-simulaton-transport)）：
 
