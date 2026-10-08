@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Mirror;
 using UnityEngine;
 using UnityEngine.ResourceManagement.AsyncOperations;
 
@@ -381,6 +382,23 @@ public class TowerPlacementController : MonoBehaviour
     /// </summary>
     public void ConfirmPlacement()
     {
+        // 联机时塔必须由**服务端**生成（塔的网络生成是 MirrorPlan P4.5 的行为部分，尚未实现）。
+        //
+        // ⚠️ 在那条路径做好之前，纯客户端的放置会造出一座**只有自己看得见**的塔：
+        // 敌人不会打它（敌人 AI 在服务端，服务端根本不知道它存在）、队友看不到它、
+        // 拆除也退不回正确的账。这比"放不了"更糟 —— 它**看起来成功了**，
+        // 于是排查方向会完全跑偏（"我的塔怎么不掉血/队友说没看到"）。
+        // 所以这里明确拒绝并说清原因，而不是让它静默地造一个幽灵。
+        //
+        // 判据用 NetworkServer.active（本进程是不是服务端）而不是 LocalPlayerGuard：
+        // Host 上放塔是**完全正常**的（Host 就是服务端），只有纯客户端才拒绝。
+        if (NetworkBootstrap.IsActive && !NetworkServer.active)
+        {
+            AbortPlacement("[TowerPlacementController] 联机下客户端还不能放塔" +
+                           "（塔的网络生成尚未实现，见 MirrorPlan P4.5）。本次放置已取消。");
+            return;
+        }
+
         if (!canPlace) return;
 
         // 事务缺失（被别的入口直接调用）：不能放置 —— 没有付款人就没有归属，也无法退款
