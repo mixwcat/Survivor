@@ -501,6 +501,54 @@ Console 无红错；远程玩家的移动不会被本地物理覆盖。
 
 ## 7. 进度日志（倒序，最新在上）
 
+### 2026-10-08 · ⚠️ 修掉上一轮引入的**无限递归** + 玩家血量同步（P2.6 的玩家部分）
+
+#### 先修 bug：`base.TakeDamage` 在 `ApplyDamage` 重写里会栈溢出
+
+上一轮把 `TakeDamage` 拆成"非虚入口 + `ApplyDamage` 虚方法"时，
+子类重写里的 `base.TakeDamage(in info)` **没有跟着改名**：
+
+```csharp
+protected override void ApplyDamage(in DamageInfo info)
+{
+    base.TakeDamage(in info);   // ← 入口 → 路由 → ApplyDamage → 这里 → 无限递归 ⇒ 栈溢出
+}
+```
+
+中招的是 `PlayerHealthController` 与 `TowerHealthController` 两处。
+**为什么上一轮的测试没抓到**：那条伤害往返打的是**敌人**，
+而 `EnemyHealthController` 是内联实现扣血的，不调 `base.TakeDamage` ——
+敌人这条路径恰好绕开了雷。**敌人一碰到玩家或塔，服务端就会崩**。
+
+修完在双进程测试里加了守门断言（服务端给自己扣 1 点），它同时覆盖这两件事。
+
+**教训**：把"入口方法"和"可重写实现"拆开时，**子类里的 `base.Xxx` 必须逐个检查** ——
+编译器不会提醒，因为两种写法都是合法的。
+
+#### 玩家血量同步
+
+在此之前客户端副本的血量**永远不动**：敌人接触伤害从 P3 起就只在服务端结算，
+而客户端没有任何通道知道自己的血掉了 —— **HUD 血条一直满、角色永远不会死**，完全静默。
+
+- `NetworkPlayerState` 加 `[SyncVar] float _syncedHealth`（`-1` 是"还没写过"的哨兵）。
+  服务端**订阅 `HealthChanged`** 而不是在每个扣血点写 SyncVar ——
+  扣血路径有好几条（接触伤害、投射物、将来的毒圈），漏一条就是"某种伤害客户端看不见"。
+- `BaseHealthController.ApplyNetworkHealth`：客户端应用，只改数据 + 发事件，
+  **不走 `TakeDamage`/`Heal`**（那些是结算，客户端跑就等于两端各结算一次）。
+- `BaseHealthController.IsHealthSynced`（虚，默认 false，玩家 override 为 true）+
+  `IsClientHealthReplica`：**`Start` 不再无条件写 `CurrentHealth = MaxHealth`**。
+  这是个时序陷阱 —— SyncVar 的 hook 在 `Awake` 之后、`Start` **之前**跑，
+  `Start` 再写一次就把刚同步下来的值抹掉了（而且完全静默）。
+  只有声明了 `IsHealthSynced` 的实体受影响，敌人/塔/推车的行为不变。
+
+#### 验证（双进程，两端 `SMOKE_OK`）
+
+```
+server: 服务端给自己扣 1 点：100.0 → 99.0（玩家路径无递归）
+client: 满足：队友的血量同步到客户端（服务端扣了 1 点）
+client: 玩家血量同步已确认：服务端扣血 → SyncVar → 客户端副本血量下降
+```
+
 ### 2026-10-08 · P4（第一段）伤害路由：客户端命中 → 服务端结算（☑ 双进程已验证）
 
 **之前的状态**：客户端能开火、子弹能飞、能"打中"，但**打不掉血** ——

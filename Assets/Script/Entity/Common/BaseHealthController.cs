@@ -1,4 +1,5 @@
 using System;
+using Mirror;
 using UnityEngine;
 
 /// <summary>
@@ -73,7 +74,11 @@ public class BaseHealthController : MonoBehaviour
     protected virtual void Start()
     {
         _entity = GetComponent<EntityBehaviour>();
-        CurrentHealth = MaxHealth;
+
+        // 客户端副本的血量来自服务端同步（SyncVar 的 hook 在 Awake 之后、Start 之前就跑过了）。
+        // 这里再写一次 MaxHealth 会把刚同步下来的值抹掉 —— 表现是"客户端血量永远是满的、
+        // 队友打掉的血看不见"，而且完全静默。只有声明了 IsHealthSynced 的实体受影响
+        if (!IsClientHealthReplica) CurrentHealth = MaxHealth;
 
         // 初始化也要广播一次：订阅方（玩家血条 / 车顶耐久百分比）在 OnEnable 里读到的
         // CurrentHealth 还是 0 —— Start 晚于所有 OnEnable，不补这一发就会一直显示 0%，
@@ -153,6 +158,41 @@ public class BaseHealthController : MonoBehaviour
 
         IsDead = true;
         Die();
+    }
+
+    /// <summary>
+    /// 血量是否由服务端同步。
+    ///
+    /// <para>
+    /// 只有**联网且有血量显示**的实体才该返回 true —— 目前是玩家。
+    /// 敌人不需要：它们没有血条，死亡靠 <c>NetworkServer.Destroy</c> 广播，本身就是同步信号。
+    /// </para>
+    /// </summary>
+    protected virtual bool IsHealthSynced => false;
+
+    /// <summary>本副本是不是"血量由服务端同步的客户端副本"。</summary>
+    protected bool IsClientHealthReplica =>
+        IsHealthSynced && NetworkBootstrap.IsActive && !NetworkServer.active;
+
+    /// <summary>
+    /// 客户端应用服务端同步过来的血量。
+    ///
+    /// <para>
+    /// <b>只改数据 + 发事件，不走 <c>TakeDamage</c>/<c>Heal</c></b> ——
+    /// 那两个是"结算"，在客户端跑就等于两端各结算一次（还会连带触发伤害数字、无敌帧之类）。
+    /// </para>
+    /// </summary>
+    public void ApplyNetworkHealth(float current)
+    {
+        if (float.IsNaN(current) || current < 0f) return;   // 未初始化（SyncVar 默认值）时忽略
+
+        // 容差：同步是离散的、两端浮点路径也不同，逐位相等是奢望。
+        // 不设容差会让 HealthChanged 每次同步都发一次，而订阅方里有 TMP 文本
+        //（每帧赋值会触发整套字形网格重建，见 CLAUDE.md 性能红线）
+        if (Mathf.Abs(current - CurrentHealth) < 0.01f) return;
+
+        CurrentHealth = current;
+        RaiseHealthChanged();
     }
 
     /// <summary>

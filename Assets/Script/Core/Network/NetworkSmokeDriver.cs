@@ -202,6 +202,23 @@ public class NetworkSmokeDriver : MonoBehaviour
         uint victimNetId = LowestEnemyNetId();
         Log($"盯着 netId={victimNetId} 的敌人，等客户端上报的伤害把它打死…");
 
+        // 回归①：玩家血量同步。客户端随后会断言"队友的血量掉下来了"。
+        // 回归②（更重要）：它同时是**递归 bug 的守门人** ——
+        // PlayerHealthController.ApplyDamage 曾经写成 base.TakeDamage（而不是 base.ApplyDamage），
+        // 那在服务端会无限递归 ⇒ 栈溢出。敌人那条扣血路径不走这里，所以上一轮的测试抓不到它
+        PlayerController hostPlayer = FindLocalPlayer();
+        if (hostPlayer != null && hostPlayer.TryGetComponent(out BaseHealthController hostHealth))
+        {
+            float before = hostHealth.CurrentHealth;
+            hostHealth.TakeDamage(new DamageInfo(1f, 0f, null, DamageSource.Contact));
+            Log($"服务端给自己扣 1 点：{before:F1} → {hostHealth.CurrentHealth:F1}（玩家路径无递归）");
+        }
+        else
+        {
+            Fail("服务端上找不到本地玩家，无法验证玩家血量同步");
+            yield break;
+        }
+
         yield return WaitUntil(() => !NetworkServer.spawned.ContainsKey(victimNetId),
                                "客户端上报的伤害被服务端结算，敌人已销毁", 90f);
         if (_failed) yield break;
@@ -335,6 +352,32 @@ public class NetworkSmokeDriver : MonoBehaviour
         if (_failed) yield break;
 
         Log("伤害往返已确认：客户端命中 → [Command] 上报 → 服务端结算 → Destroy 广播回来");
+
+        // ⭐ 队友的血量必须同步下来：不打开这条，客户端副本的血量永远不动
+        //（HUD 血条一直满、角色永远不会死），而且完全静默
+        yield return WaitUntil(RemotePlayerDamaged, "队友的血量同步到客户端（服务端扣了 1 点）", 60f);
+        if (_failed) yield break;
+
+        Log("玩家血量同步已确认：服务端扣血 → SyncVar → 客户端副本血量下降");
+    }
+
+    /// <summary>客户端侧：有没有一个**远程**玩家的血量低于其上限。</summary>
+    private static bool RemotePlayerDamaged()
+    {
+        IPlayerManager players = PlayerManager.Service;
+        if (players == null) return false;
+
+        for (int i = 0; i < players.AllPlayers.Count; i++)
+        {
+            PlayerController player = players.AllPlayers[i];
+            if (player == null) continue;
+            if (player.TryGetComponent(out NetworkIdentity identity) && identity.isLocalPlayer) continue;
+            if (!player.TryGetComponent(out BaseHealthController health)) continue;
+
+            if (health.CurrentHealth < health.MaxHealth - 0.5f) return true;
+        }
+
+        return false;
     }
 
     /// <summary>客户端侧必须能认出"哪个是我的角色"——认错就等于相机跟错人、输入给错人。</summary>

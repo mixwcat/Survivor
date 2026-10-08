@@ -43,6 +43,26 @@ public class NetworkPlayerState : NetworkBehaviour
     public string CharacterId => _characterId;
 
     /// <summary>
+    /// 本玩家的**权威血量**（服务端写，其余端读）。
+    ///
+    /// <para>
+    /// <b>为什么血量必须同步：</b>敌人接触伤害从 P3 起就只在服务端结算，
+    /// 客户端副本的血量自己永远不会变 —— 不补这一条的话，
+    /// **客户端 HUD 血条一直是满的、角色也永远不会死**，而这一切完全静默。
+    /// </para>
+    ///
+    /// <para>
+    /// <c>-1</c> 是"还没写过"的哨兵值：它随初始 <c>SpawnMessage</c> 下发时，
+    /// 客户端的 hook 会忽略它，等 <c>Start</c> 里那次 <c>RaiseHealthChanged</c> 把真值推过来。
+    /// </para>
+    /// </summary>
+    [SyncVar(hook = nameof(OnSyncedHealthChanged))]
+    [SerializeField] private float _syncedHealth = -1f;
+
+    /// <summary>本玩家的权威血量（同步值；-1 表示尚未初始化）。</summary>
+    public float SyncedHealth => _syncedHealth;
+
+    /// <summary>
     /// 本机的玩家对象（没有本地玩家时为 null）。
     ///
     /// <para>
@@ -54,6 +74,7 @@ public class NetworkPlayerState : NetworkBehaviour
     public static NetworkPlayerState LocalSender { get; private set; }
 
     private PlayerController _player;
+    private BaseHealthController _health;
     private bool _warnedNoSpawner;
     private bool _warnedNoDefinition;
 
@@ -179,6 +200,27 @@ public class NetworkPlayerState : NetworkBehaviour
     {
         // 服务端：玩家表 + 敌人目标表（敌人 AI 只在服务端选目标）
         Player?.RegisterSelf();
+
+        // 服务端：把权威血量推给各端。订阅 HealthChanged 而不是在每个扣血点写 SyncVar ——
+        // 扣血路径有好几条（接触伤害、投射物、将来的毒圈），漏一条就是"某种伤害客户端看不见"
+        if (TryGetComponent(out BaseHealthController health))
+        {
+            _health = health;
+            health.HealthChanged += OnServerHealthChanged;
+        }
+    }
+
+    private void OnServerHealthChanged(float current, float max) => _syncedHealth = current;
+
+    /// <summary>
+    /// 血量同步的 hook。服务端自己那份已经是权威值，跳过（否则会绕一圈回到 ApplyNetworkHealth）。
+    /// </summary>
+    private void OnSyncedHealthChanged(float oldValue, float newValue)
+    {
+        if (isServer) return;
+        if (_health == null) TryGetComponent(out _health);
+
+        _health?.ApplyNetworkHealth(newValue);
     }
 
     public override void OnStartClient()
@@ -233,7 +275,12 @@ public class NetworkPlayerState : NetworkBehaviour
         health.TakeDamage(new DamageInfo(amount, safeHitForce, attacker, (DamageSource)source));
     }
 
-    public override void OnStopServer() => Player?.UnregisterSelf();
+    public override void OnStopServer()
+    {
+        if (_health != null) _health.HealthChanged -= OnServerHealthChanged;
+
+        Player?.UnregisterSelf();
+    }
 
     public override void OnStopClient()
     {

@@ -19,7 +19,9 @@ public class TowerHealthController : BaseHealthController
     /// <summary>塔目前不吃击退，<see cref="DamageInfo.HitForce"/> 仅为保持重写签名一致。</summary>
     protected override void ApplyDamage(in DamageInfo info)
     {
-        base.TakeDamage(in info);
+        // ⚠️ 必须调 base.ApplyDamage，**不能**调 base.TakeDamage（后者是唯一入口，
+        // 在服务端会再走一遍 ApplyDamage ⇒ 无限递归 ⇒ 栈溢出）
+        base.ApplyDamage(in info);
         _towerHealthPanel?.UpdateHealthUI();
         DamageNumService.Service?.SpawnDamageNum(transform.position, info.Amount, DamageNumType.Red);
     }

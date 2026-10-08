@@ -19,10 +19,17 @@ public class PlayerHealthController : BaseHealthController
     [Header("无敌")]
     private bool _isUnbeatable = false;
 
+    /// <summary>
+    /// 玩家的血量由服务端权威并同步给各端（见 <c>NetworkPlayerState</c> 的同名 SyncVar）。
+    /// 敌人接触伤害从 P3 起就只在服务端结算 —— 不打开这一条的话，
+    /// **客户端副本的血量永远不动：HUD 血条一直是满的、也永远不会死**。
+    /// </summary>
+    protected override bool IsHealthSynced => true;
+
     protected override void Start()
     {
+        // 血量初始化归基类（它知道客户端副本不该自己写 MaxHealth）
         base.Start();
-        CurrentHealth = MaxHealth;
     }
 
     /// <summary>
@@ -39,7 +46,10 @@ public class PlayerHealthController : BaseHealthController
     {
         if (_isUnbeatable) return;
 
-        base.TakeDamage(in info);
+        // ⚠️ 必须调 base.ApplyDamage，**不能**调 base.TakeDamage ——
+        // 后者是"唯一入口"，它在服务端会再走一遍 ApplyDamage ⇒ 无限递归 ⇒ 栈溢出。
+        // TakeDamage 是给**外部调用者**用的（子弹/接触伤害），重写里的"先跑基类逻辑"是 ApplyDamage
+        base.ApplyDamage(in info);
         DamageNumService.Service?.SpawnDamageNum(transform.position, info.Amount, DamageNumType.Red);
         AudioService.Service?.PlaySfx(ResourceEnum.PlayerGetHurt);
 
