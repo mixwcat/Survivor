@@ -149,7 +149,18 @@ public class PlayerSpawner : MonoBehaviour
         _offlineInstance = instance;
 
         // 注册由 PlayerController 自己在生命周期里完成，这里不重复注册
-        await EquipLoadoutAsync(instance.GetComponent<PlayerController>());
+        //
+        // 单机/离线路径的装备来源是本机的 RunSession（联机那条读的是会话表）。
+        // 空装备在这里是**正常状态**：大厅里玩家在选装备之前就已生成；
+        // 只有"出行已锁定"（= 正在进关卡）还空着手才是配置错误
+        IReadOnlyList<string> offlineLoadout = RunSessionService.Service?.Current.WeaponLoadoutIds;
+        if ((offlineLoadout == null || offlineLoadout.Count == 0) &&
+            RunSessionService.Service?.IsLocked == true)
+        {
+            Debug.LogWarning("[PlayerSpawner] 出行已锁定但没有装备列表，玩家将空手出场。");
+        }
+
+        await EquipLoadoutAsync(instance.GetComponent<PlayerController>(), offlineLoadout);
     }
 
     // ── 联机：服务端为一个连接生成玩家 ──
@@ -223,7 +234,17 @@ public class PlayerSpawner : MonoBehaviour
         //    而未激活的对象 Awake 还没跑、netIdentity 还是 null —— 直接抛 NullReferenceException。
         if (definition != null) state.ServerSetCharacter(definition.id);
 
-        // 5) AddPlayerForConnection 内部会 Spawn，并自动把这个连接标记为 ready
+        // 5) 装备列表同样在 spawn 之前写入（进初始载荷）。
+        //
+        //    客户端要靠它给自己这边的**每一个**玩家副本装上武器 ——
+        //    不写的话联机下**所有人都是空手的**（包括客户端自己的角色，
+        //    因为装配逻辑跑在服务端那份副本上）。
+        //    放在初始载荷里而不是"生成后再同步"：客户端的 `Start` 早于变更同步到达，
+        //    武器会在"已经 Start 过"之后才出现
+        IReadOnlyList<string> loadout = ResolveNetworkLoadout(conn);
+        state.ServerSetLoadout(loadout);
+
+        // 6) AddPlayerForConnection 内部会 Spawn，并自动把这个连接标记为 ready
         if (!NetworkServer.AddPlayerForConnection(conn, instance))
         {
             Debug.LogError($"[{nameof(PlayerSpawner)}] AddPlayerForConnection 失败（conn={conn.connectionId}）。");
@@ -231,7 +252,7 @@ public class PlayerSpawner : MonoBehaviour
             return false;
         }
 
-        await EquipLoadoutAsync(instance.GetComponent<PlayerController>(), conn);
+        await EquipLoadoutAsync(instance.GetComponent<PlayerController>(), loadout);
         return true;
     }
 
@@ -353,7 +374,29 @@ public class PlayerSpawner : MonoBehaviour
     /// 静默跳过会让"大厅里配了两把、进关卡只有一把"变成无从定位的问题。
     /// </para>
     /// </summary>
-    private async Task EquipLoadoutAsync(PlayerController player, NetworkConnectionToClient conn = null)
+    private async Task EquipLoadoutAsync(PlayerController player, NetworkConnectionToClient conn)
+    {
+        // 联机时装备来源是**会话表**（每个连接各自的），不能读本机的 RunSession ——
+        // 那是 Host 玩家自己的大厅选择，套到远程玩家身上会让所有人带同一套武器
+        await EquipLoadoutAsync(player, ResolveNetworkLoadout(conn));
+    }
+
+    /// <summary>
+    /// 按给定的武器 id 列表装配。
+    ///
+    /// <para>
+    /// <b>服务端与客户端共用</b>：服务端用它给每个连接生成的角色装配；
+    /// 客户端用它给**本地副本**装配（见 <c>NetworkPlayerState</c> 的装备同步 hook）——
+    /// 联机下客户端的每个玩家副本都得自己装一遍，否则所有人都是空手的。
+    /// </para>
+    ///
+    /// <para>
+    /// 客户端装上之后**只有自己的那把会真的开火**：远程副本的武器在
+    /// <c>GunWeapon.Start</c> 里就被 <see cref="LocalPlayerGuard"/> 挡掉了（不 tick），
+    /// 服务端那份同理 —— 所以不存在"两端各打一次"。
+    /// </para>
+    /// </summary>
+    public async Task EquipLoadoutAsync(PlayerController player, IReadOnlyList<string> loadout)
     {
         if (player == null) return;
 
@@ -364,23 +407,7 @@ public class PlayerSpawner : MonoBehaviour
             return;
         }
 
-        // 联机时装备来源是**会话表**（每个连接各自的），不能读本机的 RunSession ——
-        // 那是 Host 玩家自己的大厅选择，套到远程玩家身上会让所有人带同一套武器
-        IReadOnlyList<string> loadout = conn != null
-            ? ResolveNetworkLoadout(conn)
-            : RunSessionService.Service?.Current.WeaponLoadoutIds;
-
-        if (loadout == null || loadout.Count == 0)
-        {
-            // 大厅里玩家在选装备**之前**就已生成，空装备是正常状态，不是告警；
-            // 只有"出行已锁定"（= 正在进关卡）还空着手才是配置错误
-            if (conn == null && RunSessionService.Service?.IsLocked == true)
-            {
-                Debug.LogWarning("[PlayerSpawner] 出行已锁定但没有装备列表，玩家将空手出场。");
-            }
-
-            return;
-        }
+        if (loadout == null || loadout.Count == 0) return;
 
         var equipped = new HashSet<string>();
 
@@ -414,7 +441,7 @@ public class PlayerSpawner : MonoBehaviour
             await weapons.EquipAsync(slot);
 
             // await 期间可能已切场景
-            if (this == null) return;
+            if (this == null || player == null) return;
         }
     }
 

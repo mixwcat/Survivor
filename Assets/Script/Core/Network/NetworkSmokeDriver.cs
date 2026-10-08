@@ -72,6 +72,12 @@ public class NetworkSmokeDriver : MonoBehaviour
     /// </summary>
     private const int SentinelWave = 42;
 
+    /// <summary>
+    /// 测试用的武器 id。取自 <c>Assets/EntityIdCatalog.csv</c>（<c>WeaponEntitySO</c> 的稳定 id）。
+    /// 它必须同时存在于玩家 prefab 的武器候选列表里，否则装配会被拒并只留一条告警。
+    /// </summary>
+    private const string TestWeaponId = "weapon_gun";
+
     private string _role = "host";
     private bool _failed;
     private float _overCountSince = -1f;
@@ -166,6 +172,16 @@ public class NetworkSmokeDriver : MonoBehaviour
         if (_failed) yield break;
 
         Log("建房，等真客户端接入…");
+
+        // 给服务端玩家自己配一把武器：客户端要靠装备同步在**远端副本**上把它装出来。
+        // 不配的话两边都是空手，"装备同步"这条链路就无从验证
+        IRunSessionService run = RunSessionService.Service;
+        string reason = "(没有 RunSessionService)";
+        if (run != null && run.TrySetLoadout(new[] { TestWeaponId }, out reason))
+            Log($"服务端已装备 {TestWeaponId}");
+        else
+            Log($"服务端装备 {TestWeaponId} 失败（{reason}）—— 装备同步断言会失败");
+
         NetworkBootstrap.StartHost();
 
         yield return WaitHostConnected();
@@ -255,6 +271,13 @@ public class NetworkSmokeDriver : MonoBehaviour
 
         yield return AssertLocalPlayerIdentity();
         if (_failed) yield break;
+
+        // ⭐ 装备同步：服务端玩家配了武器，客户端应当能在**远端副本**上把它装出来。
+        // 不装的话联机下所有人都是空手的 —— 看得到人、看不到武器
+        yield return WaitUntil(RemotePlayerHasWeapon, "远端玩家副本上装出了武器", 60f);
+        if (_failed) yield break;
+
+        Log("装备同步已确认：服务端的装备列表同步到客户端，远端副本装配成功");
 
         // 服务端会切到关卡，客户端跟着切（客户端不自己切场景）
         yield return WaitUntil(() => SceneManager.GetActiveScene().path == StagePath, "跟着服务端切到关卡", 120f);
@@ -643,6 +666,32 @@ public class NetworkSmokeDriver : MonoBehaviour
     {
         PlayerController local = FindLocalPlayer();
         return local != null && local.TryGetComponent(out NetworkPlayerState state) ? state.SyncedExp : -1;
+    }
+
+    /// <summary>
+    /// 客户端侧：有没有一个**远程**玩家副本装上了武器。
+    ///
+    /// <para>
+    /// 查 <c>EquippedSlots</c> 而不是"场景里有没有武器物体" ——
+    /// 装配是异步的（Addressables），而且候选槽位与已装备槽位是两回事。
+    /// </para>
+    /// </summary>
+    private static bool RemotePlayerHasWeapon()
+    {
+        IPlayerManager players = PlayerManager.Service;
+        if (players == null) return false;
+
+        for (int i = 0; i < players.AllPlayers.Count; i++)
+        {
+            PlayerController player = players.AllPlayers[i];
+            if (player == null) continue;
+            if (player.TryGetComponent(out NetworkIdentity identity) && identity.isLocalPlayer) continue;
+
+            IWeaponManager weapons = player.Weapons;
+            if (weapons != null && weapons.EquippedSlots.Count > 0) return true;
+        }
+
+        return false;
     }
 
     /// <summary>

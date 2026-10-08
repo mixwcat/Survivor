@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 
@@ -86,6 +87,27 @@ public class NetworkPlayerState : NetworkBehaviour
     public int SyncedExp => _syncedExp;
 
     /// <summary>
+    /// 本玩家出场的武器 id 列表（逗号分隔）。
+    ///
+    /// <para>
+    /// <b>为什么必须同步：</b>武器是**装配**上去的，而装配逻辑跑在服务端那份副本上 ——
+    /// 客户端的每个玩家副本（**包括客户端自己的角色**）都不会自己装，
+    /// 于是联机下**所有人都是空手的**：看得到人、看不到武器，客户端也开不了火。
+    /// </para>
+    ///
+    /// <para>
+    /// 用逗号分隔的字符串而不是 <c>SyncList&lt;string&gt;</c>：列表很短、只在生成时写一次，
+    /// 而 <c>SyncList</c> 要处理初始化时序与增量同步两套语义。武器 id 里不含逗号
+    ///（它们是 <c>AssetKeys</c> 风格的短标识）。
+    /// </para>
+    /// </summary>
+    [SyncVar(hook = nameof(OnLoadoutChanged))]
+    [SerializeField] private string _loadoutCsv;
+
+    /// <summary>本玩家的武器 id 列表（逗号分隔；空串表示空手）。</summary>
+    public string LoadoutCsv => _loadoutCsv;
+
+    /// <summary>
     /// 本机的玩家对象（没有本地玩家时为 null）。
     ///
     /// <para>
@@ -129,6 +151,54 @@ public class NetworkPlayerState : NetworkBehaviour
         if (string.IsNullOrEmpty(characterId)) return;
 
         _characterId = characterId;
+    }
+
+    /// <summary>
+    /// 服务端写入本玩家的装备列表。与角色 id 一样**必须在生成之前调用**：
+    /// 客户端的 <c>Start</c> 早于"生成后的变更同步"到达，
+    /// 武器会在"已经 Start 过"之后才出现。
+    /// </summary>
+    public void ServerSetLoadout(IReadOnlyList<string> weaponIds)
+    {
+        if (weaponIds == null || weaponIds.Count == 0)
+        {
+            _loadoutCsv = string.Empty;
+            return;
+        }
+
+        var builder = new System.Text.StringBuilder();
+
+        for (int i = 0; i < weaponIds.Count; i++)
+        {
+            if (string.IsNullOrEmpty(weaponIds[i])) continue;
+            if (builder.Length > 0) builder.Append(',');
+            builder.Append(weaponIds[i]);
+        }
+
+        _loadoutCsv = builder.ToString();
+    }
+
+    /// <summary>
+    /// 装备列表的 hook：客户端按它给这个玩家副本装上武器。
+    ///
+    /// <para>
+    /// <b>两端都要装</b>：远程玩家要"看得见武器"，本地玩家要"真的能开火"。
+    /// 远程副本的武器不会 tick（<c>GunWeapon.Start</c> 里的 <see cref="LocalPlayerGuard"/>
+    /// 会挡掉），所以不存在"两端各打一次"。
+    /// </para>
+    /// </summary>
+    private void OnLoadoutChanged(string oldValue, string newValue)
+    {
+        if (isServer) return;                                  // 服务端那份已经装过了
+        if (string.IsNullOrEmpty(newValue)) return;
+
+        PlayerSpawner spawner = PlayerSpawner.Current;
+        if (spawner == null) return;
+
+        PlayerController player = Player;
+        if (player == null) return;
+
+        _ = spawner.EquipLoadoutAsync(player, newValue.Split(','));
     }
 
     /// <summary>
