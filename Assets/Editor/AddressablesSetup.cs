@@ -31,6 +31,9 @@ public static class AddressablesSetup
     private const string CartDir = "Assets/Game/Prefabs/Cart";
     private const string MusicDir = "Assets/Game/Prefabs/Music";
 
+    /// <summary>联机 prefab（NetworkManager）。地址 <c>Net/&lt;文件名&gt;</c> —— 见 <c>AssetKeys.NetworkManager</c>。</summary>
+    private const string NetDir = "Assets/Game/Prefabs/Net";
+
     private static readonly string[] AudioExtensions = { ".wav", ".mp3", ".ogg", ".aif", ".aiff" };
 
     [MenuItem("Tools/Setup Addressables")]
@@ -124,7 +127,7 @@ public static class AddressablesSetup
         // 先检查目录：缺失时 AddPrefabs/AddAudio 会静默返回 0，
         // 脚本照样打印「已配置 0 个地址」并成功退出 —— 这种「跑了但没做事」最难发现。
         bool allDirsExist = true;
-        foreach (string dir in new[] { UiDir, CommonDir, WeaponDir, TowerDir, CartDir, MusicDir })
+        foreach (string dir in new[] { UiDir, CommonDir, WeaponDir, TowerDir, CartDir, MusicDir, NetDir })
         {
             if (Directory.Exists(dir)) continue;
 
@@ -140,6 +143,7 @@ public static class AddressablesSetup
         AddressableAssetGroup tower = EnsureGroup(settings, "Tower");
         AddressableAssetGroup cart = EnsureGroup(settings, "Cart");
         AddressableAssetGroup music = EnsureGroup(settings, "Music");
+        AddressableAssetGroup net = EnsureGroup(settings, "Net");
 
         int count = 0;
         count += AddPrefabs(settings, ui, UiDir, "UI");
@@ -147,6 +151,7 @@ public static class AddressablesSetup
         count += AddPrefabs(settings, weapon, WeaponDir, "Weapon");
         count += AddPrefabs(settings, tower, TowerDir, "Tower");
         count += AddPrefabs(settings, cart, CartDir, "Cart");
+        count += AddPrefabs(settings, net, NetDir, "Net");
         count += AddAudio(settings, music, MusicDir, "Music");
 
         // 顺手清掉指向"已经不存在的资产"的条目。

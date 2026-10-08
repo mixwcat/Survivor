@@ -56,6 +56,9 @@ public class GameBootstrap : MonoBehaviour
         EnemyPool.Reset();
         ProjectilePool.Reset();
         UpgradeSelector.Reset();
+
+        // 联机组合根自己的静态引用（NetworkManager.singleton 清不掉，理由见那里）
+        NetworkBootstrap.ResetStatics();
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -132,6 +135,19 @@ public class GameBootstrap : MonoBehaviour
         RunSessionService sessionService = gameObject.AddComponent<RunSessionService>();
         ServiceLocator.Register<IRunSessionService>(sessionService);
         if (!await SafeInit("IRunSessionService", sessionService.InitializeAsync)) failed.Add("IRunSessionService");
+
+        // ── 可降级服务：联机会话表。纯内存字典，创建即可用，失败也不阻塞单机 ──
+        gameObject.AddComponent<NetworkSessionService>();
+
+        // ── 可降级服务：联机组合根（NetworkManager）。──
+        // 失败**不算关键失败**：它只意味着"不能联机"，单机流程照常跑 ——
+        // 与 IAudioService 同一档，但会留一条明确的降级日志。
+        var networkBootstrap = gameObject.AddComponent<NetworkBootstrap>();
+        if (!await SafeInit("NetworkBootstrap", networkBootstrap.InitializeAsync))
+        {
+            Debug.LogWarning("[GameBootstrap] NetworkBootstrap 初始化失败 —— 本局只能单机运行。" +
+                             $"原因：{networkBootstrap.FailureReason ?? "未知"}");
+        }
 
         // 面板不在此处预加载：由 ShowPanelAsync 按需加载，避免把当前场景用不到的面板也拉进内存。
 

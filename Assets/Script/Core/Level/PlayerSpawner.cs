@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Mirror;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
@@ -27,6 +28,26 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 /// </summary>
 public class PlayerSpawner : MonoBehaviour
 {
+    /// <summary>
+    /// 当前场景的生成器（场景级单例，由 <c>OnEnable</c>/<c>OnDisable</c> 维护）。
+    ///
+    /// <para>
+    /// <b>为什么需要一个进程可见的入口：</b>联机时"给某个连接生成玩家"的请求来自 Mirror 的回调
+    /// （<c>SurvivorNetworkManager.OnServerReady</c>），那个回调只知道连接、不知道场景 ——
+    /// 而出生点、角色候选表、玩家 prefab 都是**场景配置**。让回调去场景里找生成器，
+    /// 比反过来让每个场景的生成器都去订阅连接事件要少一半分支。
+    /// </para>
+    ///
+    /// <para>同一场景出现第二个生成器时以后注册的为准并告警 —— 与 <c>ManagerSingleton</c> 的重复实例同一类问题。</para>
+    /// </summary>
+    public static PlayerSpawner Current { get; private set; }
+
+    /// <summary>联机出生点的环形散布槽位数（多个玩家不能在同一个点上叠着）。</summary>
+    private const int SpawnRingSlots = 4;
+
+    /// <summary>环形散布半径（米）。出生点周围空间不大，1.2 米足够分开且不会撞墙。</summary>
+    private const float SpawnRingRadius = 1.2f;
+
     [Header("生成配置")]
     [Tooltip("出生点；留空则用本物体位置")]
     public Transform SpawnPoint;
@@ -45,6 +66,44 @@ public class PlayerSpawner : MonoBehaviour
     private AsyncOperationHandle<GameObject> _prefabHandle;
     private IRunSessionService _session;
 
+    /// <summary>单机路径生成出来的那个玩家实例；切到联机时要销毁它（生成权转交给服务端）。</summary>
+    private GameObject _offlineInstance;
+
+    private void OnEnable()
+    {
+        if (Current != null && Current != this)
+        {
+            Debug.LogWarning($"[{nameof(PlayerSpawner)}] 场景中存在多个生成器，以后注册的「{name}」为准：" +
+                             "另一个是「" + Current.name + "」。");
+        }
+
+        Current = this;
+    }
+
+    private void OnDisable()
+    {
+        if (Current == this) Current = null;
+    }
+
+    /// <summary>
+    /// 销毁单机路径生成出来的玩家（如果有）。
+    ///
+    /// <para>
+    /// 由 <see cref="NetworkBootstrap"/> 在建房/加入**之前**调用。理由是生成权会易主：
+    /// 离线时是 <c>PlayerSpawner</c> 自己生成，联机后必须由服务端生成（要经过
+    /// <c>AddPlayerForConnection</c> 才能成为"某个连接的玩家对象"）。
+    /// 同一个玩家对象没法两者兼任 —— 它是在网络启动之前实例化的，Mirror 当它是普通克隆。
+    /// </para>
+    /// </summary>
+    public void DiscardOfflinePlayer()
+    {
+        if (_offlineInstance == null) return;
+
+        Debug.Log("[PlayerSpawner] 进入联机模式，销毁离线玩家实例（改由服务端生成）。");
+        Destroy(_offlineInstance);
+        _offlineInstance = null;
+    }
+
     private async void Start()
     {
         // 等全局服务就绪：Addressables 与 PlayerProfile 都要能用。
@@ -56,6 +115,13 @@ public class PlayerSpawner : MonoBehaviour
         // 否则能力位停在生成时的回退角色（工程师被当成枪手，且不报错）
         _session = RunSessionService.Service;
         if (_session != null) _session.CharacterChanged += HandleCharacterChanged;
+
+        // ── 联机：生成权归服务端 ──
+        // 本组件退化为"出生点 + 角色候选表 + 装配序列"的提供者，由 SurvivorNetworkManager
+        // 在 OnServerReady 里回调 SpawnForConnectionAsync。
+        // 纯客户端在这里直接返回 —— 它的玩家副本由 Mirror 从 spawn 消息实例化，
+        // 角色由 NetworkPlayerState 的 SyncVar hook 注入。
+        if (NetworkBootstrap.IsActive) return;
 
         if (HasPlayerAlready())
         {
@@ -80,8 +146,127 @@ public class PlayerSpawner : MonoBehaviour
 
         ApplyRole(instance, definition);
 
+        _offlineInstance = instance;
+
         // 注册由 PlayerController 自己在生命周期里完成，这里不重复注册
         await EquipLoadoutAsync(instance.GetComponent<PlayerController>());
+    }
+
+    // ── 联机：服务端为一个连接生成玩家 ──
+
+    /// <summary>
+    /// 服务端为某个连接生成玩家对象并把它交给 Mirror。
+    /// 由 <see cref="SurvivorNetworkManager.OnServerReady"/> 调用（那里已判过 <c>conn.identity</c>）。
+    ///
+    /// <para>
+    /// <b>顺序不可颠倒：</b><c>Instantiate</c>（未激活）→ 注入数值与能力位 → 写角色 id
+    /// → **自己** <c>SetActive(true)</c> → <c>AddPlayerForConnection</c>。
+    /// <c>NetworkServer.Spawn</c> 内部也会 <c>SetActive(true)</c>（<c>NetworkServer.cs:1766</c>），
+    /// 依赖它就等于"先激活、后注入" —— 那时 <c>EntityBehaviour.Awake</c> 已经按"没有配置"
+    /// 失败过一次，数值会停在 1f 兜底值。
+    /// </para>
+    /// </summary>
+    /// <returns>是否成功生成了玩家。</returns>
+    public async Task<bool> SpawnForConnectionAsync(NetworkConnectionToClient conn)
+    {
+        if (!NetworkServer.active)
+        {
+            Debug.LogWarning($"[{nameof(PlayerSpawner)}] 非服务端不能生成玩家（conn={conn?.connectionId}）。");
+            return false;
+        }
+
+        if (conn == null) return false;
+
+        // 伪 null 判断：切场景后旧玩家对象已销毁，但 conn.identity 仍指向它
+        if (conn.identity != null) return false;
+
+        if (!await GameBootstrap.TryWaitReadyAsync()) return false;
+        if (this == null) return false;
+
+        CharacterDefinitionSO definition = ResolveNetworkDefinition(conn);
+
+        GameObject instance = await SpawnAsync(ResolveSpawnPosition(conn));
+        if (this == null || instance == null) return false;
+
+        InjectCharacterConfig(instance, definition);
+        ApplyRole(instance, definition);
+
+        NetworkPlayerState state = instance.GetComponent<NetworkPlayerState>();
+        if (state == null)
+        {
+            Debug.LogError($"[{nameof(PlayerSpawner)}] 玩家 prefab 上没有 {nameof(NetworkPlayerState)}，" +
+                           "角色无法同步到客户端，已放弃生成该玩家。");
+            Destroy(instance);
+            return false;
+        }
+
+        // 角色 id 必须在**生成之前**写入：它随初始 SpawnMessage 的载荷一起下发，
+        // 客户端在 ApplySpawnPayload 反序列化它时触发 hook —— 那正是注入 playerConfig 的窗口
+        if (definition != null) state.ServerSetCharacter(definition.id);
+
+        instance.SetActive(true);
+
+        // AddPlayerForConnection 内部会 Spawn，并自动把这个连接标记为 ready
+        if (!NetworkServer.AddPlayerForConnection(conn, instance))
+        {
+            Debug.LogError($"[{nameof(PlayerSpawner)}] AddPlayerForConnection 失败（conn={conn.connectionId}）。");
+            Destroy(instance);
+            return false;
+        }
+
+        await EquipLoadoutAsync(instance.GetComponent<PlayerController>(), conn);
+        return true;
+    }
+
+    /// <summary>联机路径的角色解析：优先读会话表（服务端权威），没有记录时用回退角色。</summary>
+    private CharacterDefinitionSO ResolveNetworkDefinition(NetworkConnectionToClient conn)
+    {
+        INetworkSessionService session = NetworkSessionService.Service;
+
+        if (session != null && session.TryGetCharacter(conn.connectionId, out string characterId))
+        {
+            CharacterDefinitionSO fromSession = FindRole(characterId);
+            if (fromSession != null) return fromSession;
+
+            Debug.LogWarning($"[{nameof(PlayerSpawner)}] 连接 {conn.connectionId} 的角色 id「{characterId}」" +
+                             "不在可选角色列表里，使用回退角色。");
+        }
+
+        return FallbackRole;
+    }
+
+    /// <summary>
+    /// 联机出生点：以配置的出生点为中心散在一个小圆周上。
+    /// 多个玩家生成在同一个点上会被物理互相顶开，看起来像"进场瞬移"。
+    /// </summary>
+    private Vector3 ResolveSpawnPosition(NetworkConnectionToClient conn)
+    {
+        Vector3 origin = SpawnPoint != null ? SpawnPoint.position : transform.position;
+
+        int slot = Mathf.Abs(conn.connectionId) % SpawnRingSlots;
+        float angle = slot * Mathf.PI * 2f / SpawnRingSlots;
+
+        return origin + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * SpawnRingRadius;
+    }
+
+    /// <summary>
+    /// 联机路径的装备列表来源：会话表优先；**只有 Host 自己的连接**才回退到本机的
+    /// <see cref="RunSessionService"/>（那是 Host 玩家在大厅里的选择）。
+    /// 远程玩家的连接没有记录就是空手 —— 不能让 Host 的装备被套到别人身上。
+    /// </summary>
+    private static IReadOnlyList<string> ResolveNetworkLoadout(NetworkConnectionToClient conn)
+    {
+        INetworkSessionService session = NetworkSessionService.Service;
+        IReadOnlyList<string> fromSession = session?.GetLoadout(conn.connectionId);
+
+        if (fromSession != null && fromSession.Count > 0) return fromSession;
+
+        bool isHostLocalConnection = NetworkServer.localConnection != null &&
+                                     conn.connectionId == NetworkServer.localConnection.connectionId;
+
+        if (isHostLocalConnection) return RunSessionService.Service?.Current.WeaponLoadoutIds;
+
+        return null;
     }
 
     /// <summary>
@@ -113,7 +298,7 @@ public class PlayerSpawner : MonoBehaviour
     /// 那时 StatModel 已经按"没有配置"失败过一次，血量上限/移速都已经拿过 1f 兜底值。
     /// </para>
     /// </summary>
-    private static void InjectCharacterConfig(GameObject instance, CharacterDefinitionSO definition)
+    internal static void InjectCharacterConfig(GameObject instance, CharacterDefinitionSO definition)
     {
         var entity = instance.GetComponent<EntityBehaviour>();
         if (entity == null)
@@ -151,7 +336,7 @@ public class PlayerSpawner : MonoBehaviour
     /// 静默跳过会让"大厅里配了两把、进关卡只有一把"变成无从定位的问题。
     /// </para>
     /// </summary>
-    private async Task EquipLoadoutAsync(PlayerController player)
+    private async Task EquipLoadoutAsync(PlayerController player, NetworkConnectionToClient conn = null)
     {
         if (player == null) return;
 
@@ -162,15 +347,21 @@ public class PlayerSpawner : MonoBehaviour
             return;
         }
 
-        IReadOnlyList<string> loadout = RunSessionService.Service?.Current.WeaponLoadoutIds;
+        // 联机时装备来源是**会话表**（每个连接各自的），不能读本机的 RunSession ——
+        // 那是 Host 玩家自己的大厅选择，套到远程玩家身上会让所有人带同一套武器
+        IReadOnlyList<string> loadout = conn != null
+            ? ResolveNetworkLoadout(conn)
+            : RunSessionService.Service?.Current.WeaponLoadoutIds;
+
         if (loadout == null || loadout.Count == 0)
         {
             // 大厅里玩家在选装备**之前**就已生成，空装备是正常状态，不是告警；
             // 只有"出行已锁定"（= 正在进关卡）还空着手才是配置错误
-            if (RunSessionService.Service?.IsLocked == true)
+            if (conn == null && RunSessionService.Service?.IsLocked == true)
             {
                 Debug.LogWarning("[PlayerSpawner] 出行已锁定但没有装备列表，玩家将空手出场。");
             }
+
             return;
         }
 
@@ -264,7 +455,7 @@ public class PlayerSpawner : MonoBehaviour
     }
 
     /// <summary>把已解析的角色写进玩家的 <see cref="PlayerRoleController"/>（能力位）。</summary>
-    private static void ApplyRole(GameObject instance, CharacterDefinitionSO definition)
+    internal static void ApplyRole(GameObject instance, CharacterDefinitionSO definition)
     {
         PlayerRoleController role = instance.GetComponent<PlayerRoleController>();
         if (role == null)
@@ -280,8 +471,14 @@ public class PlayerSpawner : MonoBehaviour
     /// 按稳定 id 在**场景配置的**角色列表里查定义。
     /// 刻意不做全局注册表：那会重新引入「id → 资产」的反查，
     /// 而本工程的做法是"谁需要就自己序列化引用"（与武器的 `_candidates` 一致）。
+    ///
+    /// <para>
+    /// <c>public</c> 是因为联机时客户端也要用同一套解析：它的玩家副本没有经过服务端的
+    /// 装配流程，只能靠 <see cref="NetworkPlayerState"/> 的 <c>SyncVar</c> hook 拿到角色 id 后
+    /// 回来查这张表（同一个 id 必须在两端解析成同一份定义）。
+    /// </para>
     /// </summary>
-    private CharacterDefinitionSO FindRole(string characterId)
+    public CharacterDefinitionSO FindRole(string characterId)
     {
         for (int i = 0; i < AvailableRoles.Count; i++)
         {

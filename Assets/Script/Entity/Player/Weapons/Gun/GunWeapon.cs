@@ -29,6 +29,9 @@ public class GunWeapon : BaseWeapon
     private string _inputHandleId = InputHandleFactory.LocalId;
     private IInputHandle _inputHandle;
 
+    /// <summary>本副本是不是本机玩家的枪（见 <see cref="LocalPlayerGuard"/>）。</summary>
+    private LocalPlayerGuard _guard;
+
     [Header("开火表现")]
     [Tooltip("勾选后开火时播放下面的音效")]
     [SerializeField] private bool _playSfx = true;
@@ -53,6 +56,12 @@ public class GunWeapon : BaseWeapon
             driver.OnPerformed += PlayShootSfx;
         }
 
+        // 联机时同一把枪在每个端都有副本（服务端上也有"远程玩家的枪"）。
+        // 只有本机拥有的那个副本才读本地设备输入 —— 判据见 LocalPlayerGuard
+        // （武器实例挂在玩家根节点下面，所以那个结构体用 GetComponentInParent 找 NetworkIdentity）。
+        _guard = new LocalPlayerGuard(gameObject);
+        if (!_guard.IsLocal) return;
+
         _inputHandle = InputHandleFactory.GetInput(_inputHandleId);
         if (_inputHandle == null)
         {
@@ -66,7 +75,10 @@ public class GunWeapon : BaseWeapon
         if (driver != null && _playSfx)
             driver.OnPerformed -= PlayShootSfx;
 
-        // 与 Start 的 GetInput 成对，避免共享句柄的引用计数只增不减
+        // 与 Start 的 GetInput 成对。没拿到过句柄就什么都不做，
+        // 否则会把本地玩家的引用计数减掉（远程副本的 OnDestroy 也会走到这里）
+        if (_inputHandle == null) return;
+
         InputHandleFactory.ReleaseInput(_inputHandleId);
         _inputHandle = null;
     }

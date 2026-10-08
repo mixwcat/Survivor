@@ -25,4 +25,14 @@ public static class AssetKeys
     // ---- Music / Sfx ----
     /// <summary>音频资源地址：Music/&lt;音频枚举名&gt;</summary>
     public static string Music(string clipName) => $"Music/{clipName}";
+
+    // ---- Net（联机）----
+    /// <summary>
+    /// 联机组合根 prefab：<c>NetworkManager</c> + <c>KcpTransport</c>，`offlineScene` / `spawnPrefabs`
+    /// 等都配在资产上（见 Docs/MirrorPlan.md §1.3）。
+    /// 由 <c>NetworkBootstrap</c> 在组合根里加载并实例化，句柄持有到进程结束 ——
+    /// **不能在实例化后立刻 Release**：`spawnPrefabs` 引用的那些 prefab 可能只被它引用，
+    /// 提前释放会让它们随 bundle 一起卸载，之后 `NetworkServer.Spawn` 直接失败。
+    /// </summary>
+    public const string NetworkManager = "Net/NetworkManager";
 }

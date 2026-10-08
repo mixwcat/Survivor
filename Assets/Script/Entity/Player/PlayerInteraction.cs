@@ -48,8 +48,17 @@ public class PlayerInteraction : MonoBehaviour, IInteractor
     /// <summary>
     /// 是否本地玩家。只有本地玩家订阅交互输入 —— 联机时所有玩家共用 <c>local</c> 句柄的话，
     /// 按一次 E 会让每个玩家实例都执行一遍交互。
+    ///
+    /// <para>
+    /// 判据是**两条**：输入 id 是 <c>local</c>（单机/本地玩家），且本实例确实由本机拥有
+    /// （<see cref="LocalPlayerGuard"/>）。只看前者的旧判据在联机下失效 ——
+    /// <c>_inputHandleId</c> 是序列化字段，每个副本都是 <c>"local"</c>。
+    /// </para>
     /// </summary>
-    public bool IsLocal => _inputHandleId == InputHandleFactory.LocalId;
+    public bool IsLocal => _guard.IsLocal && _inputHandleId == InputHandleFactory.LocalId;
+
+    /// <summary>本实例是不是本机玩家（见 <see cref="LocalPlayerGuard"/>）。</summary>
+    private LocalPlayerGuard _guard;
 
     /// <summary>已订阅的角色控制器（未订阅时为 null）。</summary>
     private PlayerRoleController _role;
@@ -58,9 +67,36 @@ public class PlayerInteraction : MonoBehaviour, IInteractor
     private void Awake()
     {
         _player = GetComponent<PlayerController>();
+        _guard = new LocalPlayerGuard(gameObject);
 
+        // 联机对象的 Awake 跑在 isLocalPlayer 赋值之前 —— 那时 IsLocal 还是 false，
+        // 接输入要等 NetworkPlayerState.OnStartLocalPlayer 回调 OnBecameLocalPlayer
         if (!IsLocal) return;
 
+        SubscribeInput();
+    }
+
+    /// <summary>
+    /// 由 <see cref="PlayerController.NotifyBecameLocalPlayer"/> 调用：网络对象确认"本机拥有"之后补接输入。
+    /// 单机路径永远走不到这里（Awake 里就已经接上了）。
+    /// </summary>
+    internal void OnBecameLocalPlayer()
+    {
+        if (_inputHandle != null) return;
+        if (_inputHandleId != InputHandleFactory.LocalId) return;
+
+        SubscribeInput();
+
+        // OnEnable 早于本回调（SetActive 先跑），那时 _inputHandle 还是 null、没订阅上
+        if (_inputHandle != null && isActiveAndEnabled)
+        {
+            _inputHandle.OnInteract -= HandleInteractInput;   // 幂等：先退再订，避免重复
+            _inputHandle.OnInteract += HandleInteractInput;
+        }
+    }
+
+    private void SubscribeInput()
+    {
         _inputHandle = InputHandleFactory.GetInput(_inputHandleId);
 
         if (_inputHandle == null)
@@ -91,7 +127,8 @@ public class PlayerInteraction : MonoBehaviour, IInteractor
 
     private void OnDestroy()
     {
-        // 与 Awake 的 GetInput 成对，避免共享句柄的引用计数只增不减
+        // 与 SubscribeInput 的 GetInput 成对。只有真的拿到过句柄才归还，
+        // 否则会减掉别人的引用计数
         if (_inputHandle == null) return;
 
         InputHandleFactory.ReleaseInput(_inputHandleId);

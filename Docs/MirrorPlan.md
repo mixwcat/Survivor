@@ -494,3 +494,61 @@ Console 无红错；远程玩家的移动不会被本地物理覆盖。
 | M-2 | 第二个客户端实例：ParrelSync 或打包一个 exe | 用户 |
 | M-3 | 每阶段的 Play 验证（批处理不能进 Play） | 用户 |
 | M-4 | Android 真机联机验证 | 用户 |
+
+---
+
+## 7. 进度日志（倒序，最新在上）
+
+### 2026-10-08 · P0 完成 + P1/P2 第一段垂直切片（**待 Play 验证**）
+
+**已完成并验证（批处理编译，无 `error CS`、Weaver 正常）**
+
+- **P0.1/P0.2 基线**：改动前先跑了一次批处理编译，确认工作区本身是干净的
+  （`Tundra build success`、无 `error CS`、`Mirror | mirror-networking.com` banner 出现 → Weaver 生效）。
+- **P0.3 本地补丁**：`NetworkConnection()` 的 `Time.time` 加了 `try/catch`，并连带把 `IsAlive`
+  改成"`lastMessageTime <= 0` 视为存活"（只加 try/catch 会让**新连接被立刻踢掉**）。
+  台账见 `Docs/Mirror/local-patches.md`，可用 `grep "本地补丁" Assets/Mirror/` 查全。
+- **P0.6 场景口径**：`offlineScene = Assets/Scenes/Lobby.unity`（路径口径），`onlineScene` 留空。
+- **P1.1/P1.2 联机组合根**：`NetworkBootstrap`（组合根持有，可降级）+ `SurvivorNetworkManager`；
+  `Net/NetworkManager` prefab 由 `Assets/Editor/NetworkSetup.cs` 生成，进了 Addressables 的 `Net` 组。
+- **P1.3 场景分派**：`SceneFlow` 现在按网络角色分派（服务端 `ServerChangeScene` / 客户端不动 / 离线照旧），
+  并统一了 `MenuPath` / `LobbyPath` / `StagePath` 常量。
+- **P1.5 会话表**：`INetworkSessionService` + `NetworkSessionService`（**纯 MonoBehaviour，不是 NetworkBehaviour**
+  —— DDOL 上的 `NetworkBehaviour` 永远拿不到 `netId`）。
+- **P1.4（临时）**：`DevNetworkPanel`（IMGUI，`UNITY_EDITOR || DEVELOPMENT_BUILD` 包住）承担建房/加入/切场景/选角。
+  **正式的房间面板落地后整个文件删掉**，自举也在文件内，不需要动 `GameBootstrap`。
+- **P2.1/P2.2 玩家网络化**：Player prefab 加了 `NetworkIdentity` + `NetworkRigidbodyReliable2D(ClientToServer)`
+  + `NetworkPlayerState`；`PlayerSpawner.SpawnForConnectionAsync` 走
+  「`Instantiate`（未激活）→ 注入 → 写角色 id → **自己** `SetActive` → `AddPlayerForConnection`」。
+- **P2.3/P2.4 本地守卫**：`PlayerController` 懒获取输入、只给本地玩家；`PlayerManager.LocalPlayer`
+  改按 `NetworkIdentity.isLocalPlayer` 判（不再是"第一个注册的"）。
+  新增 `LocalPlayerGuard` 统一"是不是本机玩家"的判据，`PlayerAnimationController` / `PlayerInteraction` /
+  `GunWeapon` 都改用它 —— **远程副本读本地输入**是这一轮最容易漏的一类 bug（不报错，只是所有人一起动）。
+
+**未完成 / 已知缺口**
+
+- ⚠️ **P0.4 spike 尚未在 Play 里跑过** —— 批处理不能进 Play，必须由人验证（见下方验证清单）。
+- P1.4 正式房间面板（`NetworkRoomPanel` + prefab + Addressables）未做。
+- P1.6 断线处理只有日志，没有 UI 反馈。
+- P2.5 只同步了 `characterId`；**装备（loadout）/ 等级 / 经验 / 升级点都还没同步** ——
+  所以联机时远程玩家目前是**空手**的。
+- P2.6 血量未同步（各自一份，敌我伤害还没联网）。
+- P2.8 相机绑定未在联机下实测。
+
+### Play 验证清单（P0.4 + P1 + P2 的验收）
+
+> 编辑器关掉批处理跑完之后，用**两个实例**验证（Editor + 打包 exe，或 ParrelSync）。
+> 只测 Host 会漏掉一大半问题。
+
+1. **Host 路径（不切场景建房）**：Menu → 开始游戏 → Lobby → 点「创建房间（Host）」。
+   预期：**不切场景**（画面不闪、不重新加载），玩家立刻出现，Console 有
+   `[NetworkBootstrap] 联机已就绪` + `[Net] 服务端已启动` + `[Net] 连接接入`。
+   若这里**看不到玩家**，或出现第二个玩家 → 是 `OnServerReady` 生成路径的问题。
+2. **Client 路径**：第二个实例走到 Lobby → 「加入房间」（地址 `127.0.0.1`）→ 两边各看到一个玩家。
+   预期：两边**各自**只控制自己的角色；相机各跟各的；走动时对方的角色**跟着动**（`NetworkTransform`）。
+3. **检查"远程副本不读本地输入"**：客户端按住方向键，只有自己的角色动（对方静止）；
+   按 E 只有自己的角色交互。
+4. **切场景**：Host 点「进入关卡」→ 两端都切到 Level0 → 两端各有自己的角色（**在新场景里重新生成**）。
+   这一步是 P0.4 spike 的核心问题：确认 `conn.identity` 在旧玩家对象被销毁后确实按"没有玩家"处理。
+5. **返回大厅** → 再点「进入关卡」一次，确认反复切换不会累积玩家（`AllPlayers` 数量稳定 = 连接数）。
+6. **离开房间** → 回到离线大厅，`Time.timeScale == 1`，能再次建房。
