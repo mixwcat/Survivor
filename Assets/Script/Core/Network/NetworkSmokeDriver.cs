@@ -197,6 +197,16 @@ public class NetworkSmokeDriver : MonoBehaviour
         if (GameLevelManager.Service != null) GameLevelManager.Service.CurrentWave = SentinelWave;
         Debug.Log("[Smoke] SENTINEL_SET");
 
+        // 客户端会挑 netId 最小的那只敌人打一发致命伤害（见 AssertClientAuthorityPaths）。
+        // 两端用同一个确定性规则选目标，所以不需要互相通信就能盯住同一只怪
+        uint victimNetId = LowestEnemyNetId();
+        Log($"盯着 netId={victimNetId} 的敌人，等客户端上报的伤害把它打死…");
+
+        yield return WaitUntil(() => !NetworkServer.spawned.ContainsKey(victimNetId),
+                               "客户端上报的伤害被服务端结算，敌人已销毁", 90f);
+        if (_failed) yield break;
+
+        Log("伤害链路已确认：客户端命中 → 上报 → 服务端结算 → Destroy");
         Log($"服务端侧就绪（玩家={CountPlayers()}，敌人={CountSpawnedEnemies()}，" +
             $"推车={CurrentCartDistance():F2}，时钟={CurrentLevelTime():F2}）");
         Debug.Log("[Smoke] SMOKE_OK");
@@ -274,6 +284,57 @@ public class NetworkSmokeDriver : MonoBehaviour
         }
 
         Log($"客户端权威路径已确认：哨兵波次={SentinelWave}，已应用 {applied} 条推车状态广播");
+
+        yield return AssertDamageRoundTrip();
+    }
+
+    /// <summary>
+    /// ⭐⭐ **伤害的完整往返**：客户端本地调用 <c>TakeDamage</c> → 路由上报 →
+    /// 服务端解析 netId 并结算 → <c>NetworkServer.Destroy</c> → 客户端看到销毁。
+    ///
+    /// <para>
+    /// 这条链路跨越了本项目里最容易出错的三样东西：<c>[Command]</c> 的发送方身份
+    /// （<c>LocalSender</c>）、netId 在两端的对应关系、以及"客户端不本地结算"这个约定。
+    /// 它在 Host 测试里**完全测不到** —— Host 下 <c>TakeDamage</c> 直接本地结算，走不到路由。
+    /// </para>
+    ///
+    /// <para>
+    /// 目标用"netId 最小的那只"这种**确定性规则**挑，两端各自算一次就能盯住同一只怪，
+    /// 不需要为了测试加任何跨进程通信。
+    /// </para>
+    /// </summary>
+    private IEnumerator AssertDamageRoundTrip()
+    {
+        uint victimNetId = LowestEnemyNetId();
+        if (victimNetId == 0u)
+        {
+            Fail("客户端上没有已 spawn 的敌人，无法验证伤害链路");
+            yield break;
+        }
+
+        if (!NetworkClient.spawned.TryGetValue(victimNetId, out NetworkIdentity victim) || victim == null)
+        {
+            Fail($"客户端解析不出 netId={victimNetId} 的敌人");
+            yield break;
+        }
+
+        if (!victim.TryGetComponent(out BaseHealthController health))
+        {
+            Fail($"netId={victimNetId} 上没有 BaseHealthController");
+            yield break;
+        }
+
+        PlayerController local = FindLocalPlayer();
+        EntityBehaviour attacker = local != null ? local.GetComponent<EntityBehaviour>() : null;
+
+        Log($"对 netId={victimNetId} 的敌人打一发致命伤害（本地 TakeDamage，应被路由到服务端）");
+        health.TakeDamage(new DamageInfo(99999f, 0f, attacker, DamageSource.Projectile));
+
+        yield return WaitUntil(() => !NetworkClient.spawned.ContainsKey(victimNetId),
+                               "敌人被服务端结算并销毁，客户端收到销毁", 90f);
+        if (_failed) yield break;
+
+        Log("伤害往返已确认：客户端命中 → [Command] 上报 → 服务端结算 → Destroy 广播回来");
     }
 
     /// <summary>客户端侧必须能认出"哪个是我的角色"——认错就等于相机跟错人、输入给错人。</summary>
@@ -460,6 +521,46 @@ public class NetworkSmokeDriver : MonoBehaviour
         }
 
         return count;
+    }
+
+    /// <summary>
+    /// 场上 netId 最小的那只敌人的 netId（没有则返回 0）。
+    ///
+    /// <para>
+    /// 用它当"共同目标"：服务端与客户端各自算一次就能盯住**同一只**怪，
+    /// 不需要为了测试加跨进程通信。用 netId 而不是"第一个找到的" ——
+    /// 后者在两端可能不是同一只。
+    /// </para>
+    /// </summary>
+    private static uint LowestEnemyNetId()
+    {
+        EnemyController[] all = FindObjectsByType<EnemyController>(FindObjectsSortMode.None);
+        uint lowest = 0u;
+
+        for (int i = 0; i < all.Length; i++)
+        {
+            if (!all[i].TryGetComponent(out NetworkIdentity identity)) continue;
+            if (identity.netId == 0u) continue;
+
+            if (lowest == 0u || identity.netId < lowest) lowest = identity.netId;
+        }
+
+        return lowest;
+    }
+
+    private static PlayerController FindLocalPlayer()
+    {
+        IPlayerManager players = PlayerManager.Service;
+        if (players == null) return null;
+
+        for (int i = 0; i < players.AllPlayers.Count; i++)
+        {
+            PlayerController player = players.AllPlayers[i];
+            if (player == null) continue;
+            if (player.TryGetComponent(out NetworkIdentity identity) && identity.isLocalPlayer) return player;
+        }
+
+        return null;
     }
 
     /// <summary>

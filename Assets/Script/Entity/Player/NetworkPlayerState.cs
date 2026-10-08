@@ -42,6 +42,17 @@ public class NetworkPlayerState : NetworkBehaviour
     /// <summary>本玩家的角色 id（服务端写入后同步；未设置时为空串）。</summary>
     public string CharacterId => _characterId;
 
+    /// <summary>
+    /// 本机的玩家对象（没有本地玩家时为 null）。
+    ///
+    /// <para>
+    /// <c>[Command]</c> 只能由**自己拥有的**对象发出，所以客户端要上报任何东西
+    /// （目前是伤害，见 <see cref="DamageRouter"/>）都得先找到自己的玩家。
+    /// 在 <see cref="OnStartLocalPlayer"/> 里登记 —— 那是 <c>isLocalPlayer</c> 唯一被赋值的时刻。
+    /// </para>
+    /// </summary>
+    public static NetworkPlayerState LocalSender { get; private set; }
+
     private PlayerController _player;
     private bool _warnedNoSpawner;
     private bool _warnedNoDefinition;
@@ -184,13 +195,50 @@ public class NetworkPlayerState : NetworkBehaviour
     /// </summary>
     public override void OnStartLocalPlayer()
     {
+        LocalSender = this;
         Player?.NotifyBecameLocalPlayer();
+    }
+
+    // ── 客户端上报的伤害 ──
+
+    /// <summary>
+    /// 客户端上报"我这一下打中了"。
+    ///
+    /// <para>
+    /// <b>这里做的校验是形状校验，不是命中校验：</b>目标必须存在、必须是伤害目标、
+    /// 不能是上报者自己、数值必须合理。它挡不住"这一枪其实没打中" ——
+    /// 完整的服务端权威命中判定是 <c>Docs/MirrorPlan.md</c> 的 4.4，
+    /// 本方法对应的是那条里的"上报"分支，取舍写在 <see cref="DamageRouter"/> 的类注释里。
+    /// </para>
+    /// </summary>
+    [Command]
+    public void CmdApplyDamage(uint targetNetId, float amount, float hitForce, byte source, uint attackerNetId)
+    {
+        if (!NetworkServer.active) return;
+        if (targetNetId == 0u) return;
+
+        // 不能打自己：否则"客户端上报"立刻变成自伤通道
+        if (targetNetId == netId) return;
+
+        if (!DamageRouter.TryResolveSpawned(targetNetId, out BaseHealthController health)) return;
+        if (!DamageRouter.IsPlausible(amount, hitForce, out float safeHitForce)) return;
+
+        // 玩家之间不互相伤害（合作模式）：目标是自己或别的玩家都丢掉。
+        // 放在这里而不是让 PlayerHealthController 自己拒绝，是因为"谁能打玩家"是**规则**，
+        // 规则应该只有一个地方说了算
+        if (health is PlayerHealthController) return;
+
+        DamageRouter.TryResolveSpawned(attackerNetId, out EntityBehaviour attacker);
+
+        health.TakeDamage(new DamageInfo(amount, safeHitForce, attacker, (DamageSource)source));
     }
 
     public override void OnStopServer() => Player?.UnregisterSelf();
 
     public override void OnStopClient()
     {
+        if (LocalSender == this) LocalSender = null;
+
         PlayerManager.Service?.Unregister(Player);
     }
 }

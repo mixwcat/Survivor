@@ -35,7 +35,7 @@ public class PlayerHealthController : BaseHealthController
     /// 血量属于"玩家一直要看的全局状态"，挂在角色头顶会随移动乱跑，也会被角色自己挡住。
     /// </para>
     /// </summary>
-    public override void TakeDamage(in DamageInfo info)
+    protected override void ApplyDamage(in DamageInfo info)
     {
         if (_isUnbeatable) return;
 

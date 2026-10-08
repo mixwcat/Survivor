@@ -95,7 +95,7 @@ public class BaseHealthController : MonoBehaviour
     }
 
     /// <summary>
-    /// 受到伤害。
+    /// 受到伤害。**伤害的唯一入口**（非虚 —— 子类请 override <see cref="ApplyDamage"/>）。
     ///
     /// <para>
     /// <see cref="DamageInfo.HitForce"/> 是**攻击方给出的击退力度**（武器数值，如
@@ -104,11 +104,41 @@ public class BaseHealthController : MonoBehaviour
     /// </para>
     /// <para>
     /// <b>为什么要带攻击者：</b>击杀归属（经验给谁）、伤害统计、仇恨，以及联机下的反作弊校验
-    /// 都需要它。旧签名只有 (伤害, 力度) 两个 float，攻击者在调用点就被丢掉了 ——
-    /// 等联机（MirrorPlan M3.4）再补，要改所有攻击方式与投射物。
+    /// 都需要它。
     /// </para>
     /// </summary>
-    public virtual void TakeDamage(in DamageInfo info)
+    /// <summary>
+    /// 伤害的**唯一入口**（非虚 —— 子类请 override <see cref="ApplyDamage"/>）。
+    ///
+    /// <para>
+    /// <b>它不是虚方法，是为了联机：</b>联机时客户端的副本**不结算**伤害，
+    /// 而是把这次命中上报给服务端（见 <see cref="DamageRouter"/>）。
+    /// 把这层路由放在唯一入口上，就不必去改每一个攻击方式与投射物的调用点 ——
+    /// 那些调用点（子弹、环绕物、范围伤害、光束、接触伤害）有六处，
+    /// 挨个改既容易漏，也会让"谁能造成伤害"散落在六个地方。
+    /// </para>
+    ///
+    /// <para>
+    /// <b>为什么"客户端就上报"是安全的判据：</b>服务端**永远不会**在客户端的副本上调用
+    /// <c>TakeDamage</c> —— 它只在自己的那份上结算，客户端的血量靠状态同步更新。
+    /// 所以客户端上出现的每一次 <c>TakeDamage</c> 都必然是本地产生的。
+    /// </para>
+    /// </summary>
+    public void TakeDamage(in DamageInfo info)
+    {
+        if (DamageRouter.ShouldForwardToServer(gameObject))
+        {
+            DamageRouter.ForwardToServer(gameObject, info);
+            return;
+        }
+
+        ApplyDamage(info);
+    }
+
+    /// <summary>
+    /// 在**本端**结算伤害。子类 override 这个方法（而不是 <see cref="TakeDamage"/>）。
+    /// </summary>
+    protected virtual void ApplyDamage(in DamageInfo info)
     {
         // 死亡是一次性事件：已经死过的实例必须拒绝后续伤害，
         // 否则同一帧的多次命中会重复走 Die()（重复发点、重复掉落、重复统计）

@@ -17,7 +17,7 @@ public class TowerHealthController : BaseHealthController
     }
 
     /// <summary>塔目前不吃击退，<see cref="DamageInfo.HitForce"/> 仅为保持重写签名一致。</summary>
-    public override void TakeDamage(in DamageInfo info)
+    protected override void ApplyDamage(in DamageInfo info)
     {
         base.TakeDamage(in info);
         _towerHealthPanel?.UpdateHealthUI();

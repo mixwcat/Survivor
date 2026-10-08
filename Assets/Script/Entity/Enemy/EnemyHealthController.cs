@@ -281,10 +281,14 @@ public class EnemyHealthController : BaseHealthController
     /// 攻击方只提供「伤害 + 力度」，方向/时长属于受击方的内部状态；顺带也让攻击方
     /// 不必知道 EnemyController 的存在（只需 <see cref="BaseHealthController"/> 契约）。
     /// </summary>
-    public override void TakeDamage(in DamageInfo info)
+    protected override void ApplyDamage(in DamageInfo info)
     {
         // 联机时伤害只在服务端结算：客户端副本也扣血的话，两端会各自演化出一套血量
-        // （不报错，只是"我这边打死了、队友那边还活着"）
+        // （不报错，只是"我这边打死了、队友那边还活着"）。
+        //
+        // 客户端的命中现在由基类的 TakeDamage 统一上报给服务端（见 DamageRouter），
+        // 正常走不到这里；这条守卫是**兜底** —— 覆盖"客户端的副本还没 spawn（netId == 0）
+        // 所以上报不出去"的情形
         if (!IsAuthority) return;
 
         // 已经死过的实例拒绝后续一切：重复 Die() 会让击杀点、经验、统计全部翻倍
