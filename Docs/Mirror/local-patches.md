@@ -26,7 +26,7 @@ Select-String -Path "Assets\Mirror" -Include *.cs -Recurse -Pattern "本地补�
 |---|---|
 | 文件 | `Assets/Mirror/Core/NetworkConnection.cs` |
 | 位置 | ① 无参构造函数 `internal NetworkConnection()` ② `IsAlive(float timeout)` |
-| 症状 | Unity 6（**关闭了 Domain Reload**）进入 Play 时，Unity 会序列化/反序列化带 `NetworkIdentity` 的资产，过程中构造 `NetworkConnection`，于是抛<br>`UnityException: get_time is not allowed to be called during serialization` |
+| 症状 | Unity 6 进入 Play 时（本项目**域重载是开启的**，见 CLAUDE.md 的项目事实），Unity 会序列化/反序列化带 `NetworkIdentity` 的资产，过程中构造 `NetworkConnection`，于是抛<br>`UnityException: get_time is not allowed to be called during serialization` |
 | 影响 | 编辑器里每次进 Play 都报一条红错；连接对象的时间戳拿不到 |
 | 状态 | ☑ 已打（2026-10） |
 

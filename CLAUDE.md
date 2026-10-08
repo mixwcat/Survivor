@@ -10,7 +10,14 @@
 - 场景：`Assets/Scenes/Menu.unity`（主菜单）、`Assets/Scenes/Lobby.unity`（大厅：选角/武器台/传送门）、`Assets/Scenes/Level0.unity`（战斗）
   —— 三个都在 Build Settings 里；场景名常量集中在 `Core/SceneFlow.cs`
 - **无自动化测试**；`*.sln`/`*.csproj` 由 Unity 生成，不要手改
-- 编辑器**关闭了 Domain Reload**（`EnterPlayModeOptionsEnabled`）——静态状态会跨 Play 会话存活
+- ⚠️ **Domain Reload 实际是开启的**（更正于 2026-10）：`ProjectSettings/EditorSettings.asset` 里是
+  `m_EnterPlayModeOptionsEnabled: 1` + `m_EnterPlayModeOptions: 0` —— 选项虽启用但**没有任何 flag**，
+  即域重载与场景重载都照常发生（日志里能看到 `Reloading assemblies for play mode` 与 `domain reloads=1`）。
+  本文件此前写的"关闭了 Domain Reload、静态状态跨 Play 存活"与事实不符。
+  影响：不要依赖"静态状态能跨 Play 会话存活"来省事；`GameBootstrap.ResetStatics()` 之类的防御
+  每次进 Play 都会跑（`RuntimeInitializeOnLoadMethod` 与域重载无关），保留即可。
+  **如果有脚本想在进入 Play 后继续持有状态（例如编辑器侧的状态机），它会被域重载清掉** ——
+  这类状态要放 `SessionState`（跨域重载存活）或放进运行时程序集里的 `MonoBehaviour`。
 
 ## 联机（Mirror）
 
@@ -23,14 +30,20 @@
   `NetworkServer.GetSpawnedObjects` 等**都不存在**）。该文件的「源码中不存在的 API 清单」是权威。
 - 本项目专属红线（未激活 prefab 与 `Spawn` 的强制激活、Addressables 与 `spawnPrefabs`、对象池冲突、
   Host 下静态状态共享、暂停与 `timeScale`……）见 `Docs/Mirror/03-项目落地注意.md`。
-- ⚠️ **待打的 vendored 本地补丁**（`Docs/MirrorPlan.md` P0.3）：`NetworkConnection()` 里的 `Time.time`
-  在 Unity 6 domain reload 序列化期间会抛异常，需 `try/catch` 回退 —— **当前源码尚未打**；升级 Mirror 后要重贴。
+- ⚠️ **vendored 本地补丁（已打，升级 Mirror 后要重贴）**：`Assets/Mirror/Core/NetworkConnection.cs` 里
+  `Time.time` 的 `try/catch` 与 `IsAlive` 的"时间戳为 0 视为存活"守卫。
+  台账见 `Docs/Mirror/local-patches.md`；`grep -rn "本地补丁" Assets/Mirror/` 可一次查全。
+  **除这条之外不要改 `Assets/Mirror/` 下的任何文件。**
 
 ## 开发工作流
 
 - 改完代码必须验证：批处理编译
   `Unity.exe -batchmode -nographics -quit -projectPath <proj> -logFile <log>`
   然后检查日志里的 `error CS` 与 `Tundra build success`。
+  项目里已有封装脚本：`& Tools\compile-check.ps1 -LogName compile.log`（见 `Tools/README.md`）。
+- 联机改动的**端到端冒烟**：`& Tools\run-network-smoke.ps1` —— 会真的进 Play 模式，验证
+  组合根装配 / 建房不切场景 / `OnServerReady` 生成玩家 / 跨场景重建 / 玩家数量稳定。
+  它**不能**替代人 Play（远程进程、输入、相机、画面仍需人工确认）。
 - ⚠️ **编辑器开着时批处理会因工程锁直接崩溃**（报 "another Unity instance is running"）——这是环境问题不是代码问题。跑之前先检查 Unity 进程。
 - 批处理只能验证编译与资源接线；**运行时表现必须由人 Play 确认**，不要声称"功能已验证"。
 - **脚本化接线场景对象时，用 public 字段直接赋值，不要走 `SerializedObject`**：实测在**场景里的组件**上，

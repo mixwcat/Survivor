@@ -218,8 +218,10 @@ Mirror 的场景对象判据是 `sceneId != 0`（`Core/Tools/Utils.cs:90-103`）
   - `autoCreatePlayer = false`（D4）；`playerPrefab = null`（玩家 prefab 走 Addressables，不走这个字段）。
   - `offlineScene = Assets/Scenes/Lobby.unity`；`onlineScene` **留空**（D3，见 §1.3）。
   - 不用 Mirror 自带的 `NetworkManagerHUD`（临时调试可以，别进正式流程）。
-- [ ] **1.2 `NetworkManager.singleton` 加进 `GameBootstrap.ResetStatics()`**
-  （`Core/GameBootstrap.cs:46-59`）—— 关掉 Domain Reload 后它是静态的，会跨 Play 存活。
+- [ ] **1.2 `NetworkManager.singleton` 的跨会话清理** —— **不需要我们做**：Mirror 自己有
+  `[RuntimeInitializeOnLoadMethod(BeforeSceneLoad)] ResetStatics()`（`Core/NetworkManager.cs:777-793`），
+  而且 `singleton` 是 `{ get; internal set; }`，外部也写不了。
+  （更正：本项目 **域重载是开启的**，所以原计划里"关掉 Domain Reload 后静态跨 Play 存活"的前提不成立。）
 - [ ] **1.3 场景策略落地（D3，见 §1.3）**
   - `offlineScene = Assets/Scenes/Lobby.unity`，`onlineScene` 留空（见 0.6 的路径口径）。
   - **`Menu` 保持纯离线**：`MenuPanel` 的「开始游戏」仍是普通的 `SceneFlow.LoadLobby()`（不联网、不建房）。
@@ -499,7 +501,46 @@ Console 无红错；远程玩家的移动不会被本地物理覆盖。
 
 ## 7. 进度日志（倒序，最新在上）
 
-### 2026-10-08 · P0 完成 + P1/P2 第一段垂直切片（**待 Play 验证**）
+### 2026-10-08 · P0.4 技术未知项**已用无头冒烟测试回答**（☑）
+
+**结论：跨场景重建玩家这条链路是通的。** 证据：`Logs/r1-smoke3.log` 里的 `SMOKE_OK` + 退出码 0。
+
+跑法（编辑器必须关着，**不要加 `-quit`**）：
+
+```powershell
+& Tools\compile-check.ps1 -LogName compile.log          # 编译校验
+& Tools\run-network-smoke.ps1 -LogName smoke.log        # 端到端冒烟（会真的进 Play）
+```
+
+三个脚本的用途与踩坑见 `Tools/README.md`。
+
+冒烟测试（`Assets/Editor/NetworkSmokeTest.cs` 入口 + `Assets/Script/Core/Network/NetworkSmokeDriver.cs` 运行时驱动）
+逐步验证并全部通过：
+
+1. 组合根装配 `NetworkManager`（Addressables 的 `Net/NetworkManager` → `transport=KcpTransport`、`spawnPrefabs=1`）；
+2. 大厅生成**离线**玩家；
+3. `StartHost()` —— **不切场景**（断言 `GetActiveScene().path == Lobby`）；
+4. 服务端生成**恰好一个**玩家（离线那个已让位）—— 即 `OnServerReady` 路径成立；
+5. `ServerChangeScene` → Level0 → **玩家在新场景重建，数量仍为 1** ⟵ **这就是 P0.4 要回答的问题**；
+6. `ServerChangeScene` → Lobby → 再次重建，数量仍为 1（不累积）；
+7. 回到大厅后 `Time.timeScale == 1`。
+
+**它验证不了的**（仍然必须由人 Play）：真正的远程客户端、输入、相机、UI、画面表现。
+**下一步的人工 Play 因此可以缩到**：两个实例互连、各控各的角色、互相看得见 ——
+连接/生成/切场景/重建已经由这台机器上的自动化覆盖了。
+
+**顺带记两个坑**
+
+- **写 SyncVar 不能早于激活**：`NetworkPlayerState.ServerSetCharacter` 一开始放在 `SetActive(true)` 之前，
+  直接抛 `NullReferenceException` —— Weaver 生成的是**属性** `Network_characterId`，
+  它要用 `NetworkBehaviour.netIdentity`，而未激活对象还没跑 `Awake`、`netIdentity` 是 null。
+  正确顺序：注入数值（激活前）→ `SetActive(true)` → 写 SyncVar（spawn 前）→ `AddPlayerForConnection`。
+  **这个 bug 是冒烟测试抓到的**，靠读代码不容易发现。
+- **域重载其实是开启的**（见 `CLAUDE.md` 项目事实的更正）。这决定了冒烟测试的驱动**必须**放在
+  运行时程序集里：挂在 `EditorApplication.update` 上的 Editor 状态机会在进入 Play 的瞬间被清掉，
+  表现是"进了 Play 之后再无任何输出"（第一次跑就是这么挂住的）。
+
+### 2026-10-08 · P0 完成 + P1/P2 第一段垂直切片（待 Play 验证）
 
 **已完成并验证（批处理编译，无 `error CS`、Weaver 正常）**
 
@@ -527,7 +568,6 @@ Console 无红错；远程玩家的移动不会被本地物理覆盖。
 
 **未完成 / 已知缺口**
 
-- ⚠️ **P0.4 spike 尚未在 Play 里跑过** —— 批处理不能进 Play，必须由人验证（见下方验证清单）。
 - P1.4 正式房间面板（`NetworkRoomPanel` + prefab + Addressables）未做。
 - P1.6 断线处理只有日志，没有 UI 反馈。
 - P2.5 只同步了 `characterId`；**装备（loadout）/ 等级 / 经验 / 升级点都还没同步** ——
@@ -535,20 +575,16 @@ Console 无红错；远程玩家的移动不会被本地物理覆盖。
 - P2.6 血量未同步（各自一份，敌我伤害还没联网）。
 - P2.8 相机绑定未在联机下实测。
 
-### Play 验证清单（P0.4 + P1 + P2 的验收）
+### Play 验证清单（人工部分）
 
-> 编辑器关掉批处理跑完之后，用**两个实例**验证（Editor + 打包 exe，或 ParrelSync）。
-> 只测 Host 会漏掉一大半问题。
+> **大部分已经被自动化覆盖了** —— 见上一节的冒烟测试：连接、`OnServerReady` 生成玩家、
+> 建房不切场景、跨场景重建、玩家数量稳定、`timeScale`。
+> 下面只列**自动化验证不了**的部分：真正的第二个进程、输入、相机、画面。
 
-1. **Host 路径（不切场景建房）**：Menu → 开始游戏 → Lobby → 点「创建房间（Host）」。
-   预期：**不切场景**（画面不闪、不重新加载），玩家立刻出现，Console 有
-   `[NetworkBootstrap] 联机已就绪` + `[Net] 服务端已启动` + `[Net] 连接接入`。
-   若这里**看不到玩家**，或出现第二个玩家 → 是 `OnServerReady` 生成路径的问题。
-2. **Client 路径**：第二个实例走到 Lobby → 「加入房间」（地址 `127.0.0.1`）→ 两边各看到一个玩家。
-   预期：两边**各自**只控制自己的角色；相机各跟各的；走动时对方的角色**跟着动**（`NetworkTransform`）。
-3. **检查"远程副本不读本地输入"**：客户端按住方向键，只有自己的角色动（对方静止）；
-   按 E 只有自己的角色交互。
-4. **切场景**：Host 点「进入关卡」→ 两端都切到 Level0 → 两端各有自己的角色（**在新场景里重新生成**）。
-   这一步是 P0.4 spike 的核心问题：确认 `conn.identity` 在旧玩家对象被销毁后确实按"没有玩家"处理。
-5. **返回大厅** → 再点「进入关卡」一次，确认反复切换不会累积玩家（`AllPlayers` 数量稳定 = 连接数）。
+1. **两个实例互连**：第二个实例（打包 exe 或 ParrelSync）走到 Lobby → 「加入房间」（`127.0.0.1`）→
+   两边各看到**两个**玩家。这是唯一能暴露"客户端侧 spawn 载荷/注册 prefab"问题的路径。
+2. **各控各的**：客户端按住方向键，只有自己的角色动（对方静止）；按 E 只有自己交互。
+3. **相机**：每个实例的相机只跟自己的角色（Host 下同时存在本地与远程玩家，取错就跟错人）。
+4. **画面表现**：走动时对方角色的动画方向对不对（远程副本的行走动画是按位移反推的）。
+5. **离开房间** → 回到离线大厅，能再次建房（重开一局的状态清理）。
 6. **离开房间** → 回到离线大厅，`Time.timeScale == 1`，能再次建房。
