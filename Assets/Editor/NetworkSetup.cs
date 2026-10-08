@@ -105,6 +105,7 @@ public static class NetworkSetup
 
         if (!SetupPlayerPrefab()) return false;
         if (!SetupSpawnablePrefabs()) return false;
+        if (!SetupTowerPrefabs()) return false;
         if (!SetupCartPrefab()) return false;
         if (!SetupNetworkManagerPrefab()) return false;
 
@@ -149,10 +150,12 @@ public static class NetworkSetup
             body.onlySyncOnChange = true;
 
             EnsureComponent<NetworkPlayerState>(root);
+            EnsureComponent<NetworkHealthSync>(root);
 
             PrefabUtility.SaveAsPrefabAsset(root, PlayerPrefabPath);
             Debug.Log("[NetworkSetup] 玩家 prefab 已接线：" +
-                      "NetworkIdentity + NetworkRigidbodyReliable2D(ClientToServer) + NetworkPlayerState。");
+                      "NetworkIdentity + NetworkRigidbodyReliable2D(ClientToServer) + " +
+                      "NetworkPlayerState + NetworkHealthSync。");
             return true;
         }
         finally
@@ -245,6 +248,59 @@ public static class NetworkSetup
     /// 场上可能有几十只敌人，这一项直接决定联机能不能跑。
     /// </summary>
     private const float EnemySyncInterval = 0.05f;
+
+    // ── 塔 prefab ──
+
+    /// <summary>
+    /// 给塔挂上血量同步。
+    ///
+    /// <para>
+    /// <b>为什么单独一步而不是并进 <see cref="SetupSpawnablePrefab"/>：</b>
+    /// 敌人也在那个目录扫描里，而敌人**不需要**血量同步 ——
+    /// 它们没有血条，死亡靠 <c>NetworkServer.Destroy</c> 广播，本身就是同步信号。
+    /// 给几十只敌人各挂一个 SyncVar 是纯粹的浪费。
+    /// </para>
+    /// </summary>
+    private static bool SetupTowerPrefabs()
+    {
+        const string dir = "Assets/Game/Prefabs/Tower";
+        if (!Directory.Exists(dir))
+        {
+            Debug.LogError($"[NetworkSetup] 找不到塔 prefab 目录：{dir}");
+            return false;
+        }
+
+        string[] files = Directory.GetFiles(dir, "*.prefab", SearchOption.AllDirectories);
+        for (int i = 0; i < files.Length; i++)
+        {
+            string path = files[i].Replace("\\", "/");
+            GameObject root = PrefabUtility.LoadPrefabContents(path);
+            if (root == null)
+            {
+                Debug.LogError($"[NetworkSetup] 无法加载 prefab 内容：{path}");
+                return false;
+            }
+
+            try
+            {
+                if (root.GetComponent<TowerHealthController>() == null)
+                {
+                    Debug.LogWarning($"[NetworkSetup] {Path.GetFileName(path)} 上没有 TowerHealthController，已跳过血量同步。");
+                    continue;
+                }
+
+                EnsureComponent<NetworkHealthSync>(root);
+                PrefabUtility.SaveAsPrefabAsset(root, path);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        Debug.Log($"[NetworkSetup] {dir}：已给 {files.Length} 座塔挂上血量同步。");
+        return true;
+    }
 
     // ── 推车 prefab ──
 

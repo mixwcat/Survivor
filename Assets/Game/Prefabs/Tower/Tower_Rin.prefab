@@ -19,6 +19,7 @@ GameObject:
   - component: {fileID: 7921974827905322090}
   - component: {fileID: 6446811079574111652}
   - component: {fileID: 6259432965362522470}
+  - component: {fileID: 7673701896410688989}
   m_Layer: 8
   m_Name: Tower_Rin
   m_TagString: Tower
@@ -303,6 +304,23 @@ MonoBehaviour:
   positionSensitivity: 0.01
   rotationSensitivity: 0.01
   scaleSensitivity: 0.01
+--- !u!114 &7673701896410688989
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 103225250565977969}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe7e4ca6a7e4ce14ca156d43107a5219, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMethod: 0
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _health: -1
 --- !u!1 &1206413824234566052
 GameObject:
   m_ObjectHideFlags: 0

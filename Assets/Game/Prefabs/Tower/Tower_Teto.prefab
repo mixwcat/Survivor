@@ -258,6 +258,7 @@ GameObject:
   - component: {fileID: 1960723441426324892}
   - component: {fileID: 7133434029642614510}
   - component: {fileID: 4393692838370460576}
+  - component: {fileID: 2299674300748665508}
   m_Layer: 8
   m_Name: Tower_Teto
   m_TagString: Tower
@@ -543,6 +544,23 @@ MonoBehaviour:
   positionSensitivity: 0.01
   rotationSensitivity: 0.01
   scaleSensitivity: 0.01
+--- !u!114 &2299674300748665508
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1864442758682449286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe7e4ca6a7e4ce14ca156d43107a5219, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMethod: 0
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _health: -1
 --- !u!1 &3040447304497352635
 GameObject:
   m_ObjectHideFlags: 0

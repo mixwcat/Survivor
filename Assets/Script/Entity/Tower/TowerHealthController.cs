@@ -16,6 +16,12 @@ public class TowerHealthController : BaseHealthController
         _towerHealthPanel?.UpdateHealthUI();
     }
 
+    /// <summary>
+    /// 塔的血量由服务端权威并同步给各端（见 <c>NetworkHealthSync</c>）。
+    /// 不打开这一条的话客户端看到的是"血条一直是满的" —— 塔被啃掉一半也看不出来。
+    /// </summary>
+    protected override bool IsHealthSynced => true;
+
     /// <summary>塔目前不吃击退，<see cref="DamageInfo.HitForce"/> 仅为保持重写签名一致。</summary>
     protected override void ApplyDamage(in DamageInfo info)
     {

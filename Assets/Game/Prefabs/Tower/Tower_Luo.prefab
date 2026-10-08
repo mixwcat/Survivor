@@ -381,6 +381,7 @@ GameObject:
   - component: {fileID: 2593379206273478002}
   - component: {fileID: 7266475872288684364}
   - component: {fileID: 6945206686308739989}
+  - component: {fileID: 7396330486149142429}
   m_Layer: 8
   m_Name: Tower_Luo
   m_TagString: Tower
@@ -666,6 +667,23 @@ MonoBehaviour:
   positionSensitivity: 0.01
   rotationSensitivity: 0.01
   scaleSensitivity: 0.01
+--- !u!114 &7396330486149142429
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6905693178617535602}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe7e4ca6a7e4ce14ca156d43107a5219, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMethod: 0
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _health: -1
 --- !u!1 &7071437248935691400
 GameObject:
   m_ObjectHideFlags: 0

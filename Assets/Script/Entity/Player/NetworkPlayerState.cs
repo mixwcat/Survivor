@@ -44,27 +44,7 @@ public class NetworkPlayerState : NetworkBehaviour
     public string CharacterId => _characterId;
 
     /// <summary>
-    /// 本玩家的**权威血量**（服务端写，其余端读）。
-    ///
-    /// <para>
-    /// <b>为什么血量必须同步：</b>敌人接触伤害从 P3 起就只在服务端结算，
-    /// 客户端副本的血量自己永远不会变 —— 不补这一条的话，
-    /// **客户端 HUD 血条一直是满的、角色也永远不会死**，而这一切完全静默。
-    /// </para>
-    ///
-    /// <para>
-    /// <c>-1</c> 是"还没写过"的哨兵值：它随初始 <c>SpawnMessage</c> 下发时，
-    /// 客户端的 hook 会忽略它，等 <c>Start</c> 里那次 <c>RaiseHealthChanged</c> 把真值推过来。
-    /// </para>
-    /// </summary>
-    [SyncVar(hook = nameof(OnSyncedHealthChanged))]
-    [SerializeField] private float _syncedHealth = -1f;
-
-    /// <summary>本玩家的权威血量（同步值；-1 表示尚未初始化）。</summary>
-    public float SyncedHealth => _syncedHealth;
-
-    /// <summary>
-    /// 本玩家的**权威等级与经验**（服务端写，其余端读）。
+    /// 本玩家的**权威等级**（服务端写，其余端读）。
     ///
     /// <para>
     /// <b>为什么必须同步：</b>联机时经验只在服务端累加（<c>EnemyHealthController.Die</c>
@@ -73,6 +53,11 @@ public class NetworkPlayerState : NetworkBehaviour
     /// </para>
     ///
     /// <para><c>-1</c> 是"还没写过"的哨兵值，客户端会忽略它。</para>
+    ///
+    /// <para>
+    /// 血量不在这里：它由通用组件 <see cref="NetworkHealthSync"/> 负责（与塔共用一套机制）——
+    /// 血量是"每种可受损实体都要的"，而本类是"玩家特有的网络状态"（角色 / 装备 / 等级）。
+    /// </para>
     /// </summary>
     [SyncVar(hook = nameof(OnSyncedProgressChanged))]
     [SerializeField] private int _syncedLevel = -1;
@@ -119,7 +104,6 @@ public class NetworkPlayerState : NetworkBehaviour
     public static NetworkPlayerState LocalSender { get; private set; }
 
     private PlayerController _player;
-    private BaseHealthController _health;
     private ExperienceLevController _experience;
     private bool _warnedNoSpawner;
     private bool _warnedNoDefinition;
@@ -297,13 +281,8 @@ public class NetworkPlayerState : NetworkBehaviour
 
         // 服务端：把权威血量推给各端。订阅 HealthChanged 而不是在每个扣血点写 SyncVar ——
         // 扣血路径有好几条（接触伤害、投射物、将来的毒圈），漏一条就是"某种伤害客户端看不见"
-        if (TryGetComponent(out BaseHealthController health))
-        {
-            _health = health;
-            health.HealthChanged += OnServerHealthChanged;
-        }
-
-        // 服务端：把等级/经验推给各端。同样订阅事件而不是在每个加经验点写 SyncVar
+        // 服务端：把等级/经验推给各端。同样订阅事件而不是在每个加经验点写 SyncVar。
+        // （血量不在这里 —— 它由通用的 NetworkHealthSync 组件负责）
         if (TryGetComponent(out ExperienceLevController experience))
         {
             _experience = experience;
@@ -314,8 +293,6 @@ public class NetworkPlayerState : NetworkBehaviour
             _syncedExp = experience.CurrentExp;
         }
     }
-
-    private void OnServerHealthChanged(float current, float max) => _syncedHealth = current;
 
     private void OnServerProgressChanged(int _) => SyncProgress();
 
@@ -337,17 +314,6 @@ public class NetworkPlayerState : NetworkBehaviour
         if (_experience == null) TryGetComponent(out _experience);
 
         _experience?.ApplyNetworkProgress(_syncedLevel, _syncedExp);
-    }
-
-    /// <summary>
-    /// 血量同步的 hook。服务端自己那份已经是权威值，跳过（否则会绕一圈回到 ApplyNetworkHealth）。
-    /// </summary>
-    private void OnSyncedHealthChanged(float oldValue, float newValue)
-    {
-        if (isServer) return;
-        if (_health == null) TryGetComponent(out _health);
-
-        _health?.ApplyNetworkHealth(newValue);
     }
 
     public override void OnStartClient()
@@ -404,8 +370,6 @@ public class NetworkPlayerState : NetworkBehaviour
 
     public override void OnStopServer()
     {
-        if (_health != null) _health.HealthChanged -= OnServerHealthChanged;
-
         if (_experience != null)
         {
             _experience.OnExpChanged -= OnServerProgressChanged;
