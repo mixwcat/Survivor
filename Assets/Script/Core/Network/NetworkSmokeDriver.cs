@@ -436,7 +436,25 @@ public class NetworkSmokeDriver : MonoBehaviour
             yield break;
         }
 
-        Log("客户端已认出唯一的本地角色");
+        // ⭐ 再钉一条：PlayerManager.LocalPlayer 必须**就是**那个 isLocalPlayer 的对象。
+        //
+        // 为什么单独查它：相机（CameraController / CinemachinePlayerFollow）、
+        // HUD（PlayerHudBinder）、以及所有面板（LevelUpPanel / ChooseTowerPanel /
+        // TowerLevelUpPanel / WeaponUpgradePanel）读的**都是它**，而不是直接读 isLocalPlayer。
+        // 它一旦解析错（例如回退到"第一个注册的"），表现是**相机跟错人、面板作用在队友身上** ——
+        // 而 isLocalPlayer 本身仍然是对的，所以上面那条断言抓不到
+        PlayerController resolved = PlayerManager.Service?.LocalPlayer;
+        PlayerController expected = FindLocalPlayer();
+
+        if (resolved == null || resolved != expected)
+        {
+            Fail($"PlayerManager.LocalPlayer 解析错了（拿到 {(resolved != null ? resolved.name : "null")}，" +
+                 $"应为 {(expected != null ? expected.name : "null")}）—— " +
+                 "相机与所有面板都读它，会跟错人/作用在队友身上");
+            yield break;
+        }
+
+        Log("客户端已认出唯一的本地角色，且 PlayerManager.LocalPlayer 解析正确");
     }
 
     // ── 关卡内的公共断言 ──
