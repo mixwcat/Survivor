@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Mirror;
 using UnityEngine;
@@ -29,9 +30,24 @@ using UnityEngine;
 /// </summary>
 public class SurvivorNetworkManager : NetworkManager
 {
+    /// <summary>
+    /// 正在生成玩家的连接（按 <c>connectionId</c>）。
+    ///
+    /// <para>
+    /// <b>为什么需要这道闸：</b><c>OnServerReady</c> 可能在一次生成完成之前再来一次
+    /// （客户端的 Ready 与场景加载后的 Ready 挨得很近），而生成要走 Addressables 加载、
+    /// 中间有 <c>await</c>。两道请求都会通过 <c>conn.identity == null</c> 的判据，
+    /// 于是同一个连接被生成**两个**玩家对象 —— 一个成为 <c>conn.identity</c>，
+    /// 另一个变成"没有主人的野玩家"（多出来的人影，且不会自己消失）。
+    /// </para>
+    /// </summary>
+    private readonly HashSet<int> _spawningConnections = new HashSet<int>();
+
     /// <summary>服务端在一个连接就绪后确保它有玩家对象（失败只记日志，不抛给 Mirror 的消息循环）。</summary>
     private async Task EnsurePlayerAsync(NetworkConnectionToClient conn)
     {
+        int connectionId = -1;
+
         try
         {
             if (conn == null) return;
@@ -39,11 +55,14 @@ public class SurvivorNetworkManager : NetworkManager
             // 已经有玩家对象（含"刚生成过、还没销毁"的情况）就不重复生成
             if (conn.identity != null) return;
 
+            connectionId = conn.connectionId;
+            if (!_spawningConnections.Add(connectionId)) return;   // 已经有一次生成在飞
+
             PlayerSpawner spawner = PlayerSpawner.Current;
             if (spawner == null)
             {
                 Debug.LogError($"[Net] 当前场景没有 {nameof(PlayerSpawner)}，" +
-                               $"无法为连接 {conn.connectionId} 生成玩家。");
+                               $"无法为连接 {connectionId} 生成玩家。");
                 return;
             }
 
@@ -54,6 +73,10 @@ public class SurvivorNetworkManager : NetworkManager
             // async void 之外的异步入口必须自己吞异常：漏出去会变成未观测异常，
             // 而 Mirror 的消息循环不该被一个玩家的生成失败打断
             Debug.LogError($"[Net] 为连接生成玩家时异常：{e}");
+        }
+        finally
+        {
+            if (connectionId >= 0) _spawningConnections.Remove(connectionId);
         }
     }
 

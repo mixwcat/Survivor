@@ -75,18 +75,6 @@ public class NetworkPlayerState : NetworkBehaviour
         _characterId = characterId;
     }
 
-    /// <summary>服务端读会话表并把角色写进来（生成玩家时用）。同样是"生成之前"的调用，不加 <c>[Server]</c>。</summary>
-    public void ServerApplySessionCharacter()
-    {
-        if (connectionToClient == null) return;
-
-        INetworkSessionService session = NetworkSessionService.Service;
-        if (session == null) return;
-
-        if (session.TryGetCharacter(connectionToClient.connectionId, out string characterId))
-            _characterId = characterId;
-    }
-
     /// <summary>
     /// 客户端上报"我选了这个角色"。
     ///

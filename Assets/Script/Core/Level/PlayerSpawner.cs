@@ -183,13 +183,17 @@ public class PlayerSpawner : MonoBehaviour
         if (!await GameBootstrap.TryWaitReadyAsync()) return false;
         if (this == null) return false;
 
+        // 兜底：确保离线路径生成的那个玩家已经让位。
+        // NetworkBootstrap 在建房/加入**之前**已经调过一次，但这里再调一次是幂等的，
+        // 而且能盖住"网络在别处被启动"（例如直接调 StartHost）的情形 ——
+        // 漏掉的后果是同一个大厅里同时存在一个离线玩家和一个网络玩家（两个人影，
+        // 其中之一永远不联网），排查起来非常费劲。
+        DiscardOfflinePlayer();
+
         CharacterDefinitionSO definition = ResolveNetworkDefinition(conn);
 
         GameObject instance = await SpawnAsync(ResolveSpawnPosition(conn));
         if (this == null || instance == null) return false;
-
-        InjectCharacterConfig(instance, definition);
-        ApplyRole(instance, definition);
 
         NetworkPlayerState state = instance.GetComponent<NetworkPlayerState>();
         if (state == null)
@@ -200,13 +204,26 @@ public class PlayerSpawner : MonoBehaviour
             return false;
         }
 
-        // 角色 id 必须在**生成之前**写入：它随初始 SpawnMessage 的载荷一起下发，
-        // 客户端在 ApplySpawnPayload 反序列化它时触发 hook —— 那正是注入 playerConfig 的窗口
-        if (definition != null) state.ServerSetCharacter(definition.id);
+        // 1) 数值必须在**激活之前**注入：Awake 会按 prefab 上的 entityConfig（空）建一次 StatModel，
+        //    先激活再注入就晚了（见 InjectCharacterConfig 的说明）
+        InjectCharacterConfig(instance, definition);
 
+        // 2) 自己激活：NetworkServer.Spawn 内部也会 SetActive（NetworkServer.cs:1766），
+        //    但那样激活发生在 spawn 过程中，注入就已经晚了
         instance.SetActive(true);
 
-        // AddPlayerForConnection 内部会 Spawn，并自动把这个连接标记为 ready
+        // 3) 能力位与激活顺序无关，放在激活之后与单机路径保持一致
+        ApplyRole(instance, definition);
+
+        // 4) 角色 id 必须在 **spawn 之前**写入 —— 它随初始 SpawnMessage 的载荷一起下发，
+        //    客户端在 ApplySpawnPayload 反序列化它时触发 hook，那正是注入 playerConfig 的窗口。
+        //
+        //    ⚠️ 但**不能**放在 SetActive 之前：SyncVar 的赋值走 Weaver 生成属性
+        //    （set_Network_characterId），它要用 NetworkBehaviour.netIdentity，
+        //    而未激活的对象 Awake 还没跑、netIdentity 还是 null —— 直接抛 NullReferenceException。
+        if (definition != null) state.ServerSetCharacter(definition.id);
+
+        // 5) AddPlayerForConnection 内部会 Spawn，并自动把这个连接标记为 ready
         if (!NetworkServer.AddPlayerForConnection(conn, instance))
         {
             Debug.LogError($"[{nameof(PlayerSpawner)}] AddPlayerForConnection 失败（conn={conn.connectionId}）。");
