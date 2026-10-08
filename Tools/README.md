@@ -63,3 +63,46 @@ Unity 路径写死在脚本里：`D:\unity\unitydownload\6000.0.44f1\Editor\Unit
 两者的交接只能靠 `SessionState`（跨域重载存活）。
 
 它**验证不了**的：真正的第二个进程、输入、相机、UI、画面 —— 那些必须由人 Play 确认。
+
+## run-network-2p.ps1 —— 双进程联机测试 ⭐
+
+```powershell
+& Tools\run-network-2p.ps1
+```
+
+**为什么必须有它**：Host 单进程测试里服务端与客户端是**同一个对象**，
+所有 `ApplyNetwork*` 都会因权威守卫提前返回 —— 「客户端真的按广播走」这条路径
+**在 Host 下原理上就测不到**。已经因此漏过一个真 bug：`NetworkAuthority` 对场景对象
+恒为 `true`，整批客户端守卫失效，而 Host 测试全绿。
+
+**怎么绕开"两个 Unity 不能开同一个工程"**：脚本维护一份**镜像工程**（默认
+`D:\unity\proj\SurvivorClient`），每次运行前把 `Assets` / `Packages` / `ProjectSettings`
+用 `robocopy /MIR` 同步过去（不动它的 `Library`，所以只有改动的资源需要重新导入）：
+
+| 角色 | 工程 | 入口 |
+|---|---|---|
+| 服务端 | 本仓库 | `NetworkSmokeTest.RunServerFromCommandLine` |
+| 客户端 | 镜像副本 | `NetworkSmokeTest.RunClientFromCommandLine` |
+
+镜像的**首次**创建不在脚本里（8.8 GB，一次性）：
+
+```powershell
+robocopy D:\unity\proj\Survivor D:\unity\proj\SurvivorClient /MIR /MT:16 /XD .git Logs Temp obj .vs
+```
+
+**客户端断言什么**（这些是 Host 测不到的）：
+
+1. 连接建立，房间里看到**两个**玩家；
+2. **恰好一个**角色的 `NetworkIdentity.isLocalPlayer` 为真（认错人 ⇒ 相机跟错、输入给错）；
+3. 跟着服务端切到关卡（客户端不自己切场景）；
+4. 关卡里也是两个玩家；
+5. **推车在客户端也在动** ⇒ `CartController.ApplyNetworkState` 真的在执行；
+6. **关卡时钟在客户端也在走** ⇒ `GameLevelManager.ApplyNetworkClock` 真的在执行；
+7. **敌人副本 `netId != 0`** ⇒ assetId 与 `spawnPrefabs` 都对
+   （漏一个的症状是客户端报 "Failed to spawn server object"，而 Host 端一切正常）。
+
+**服务端**跑完同样的关卡断言后**常驻不退出**（客户端要留在关卡里跑断言），
+由脚本在客户端退出后杀掉。所以服务端的判定看日志里的 `SMOKE_OK`，**不看退出码**。
+
+**编排靠 ASCII 标记**：脚本用 `SERVER_READY` / `SMOKE_OK` / `SMOKE_FAIL` 这三个
+纯 ASCII 记号来判进度 —— 它不能去 grep 中文日志行，理由见本文件开头。

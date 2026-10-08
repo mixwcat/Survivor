@@ -86,6 +86,20 @@ public class CartController : EntityBehaviour
     /// <summary>已沿路径推进的距离（弧长，不是 x 位移）。</summary>
     public float TravelledDistance => _distance;
 
+    /// <summary>
+    /// **诊断用**：本副本真正应用过多少条服务端广播的权威状态。
+    ///
+    /// <para>
+    /// 存在的理由：双进程测试里"客户端推车在动"**不足以**证明广播生效 ——
+    /// 权威判据写错时客户端会自己推进，看起来一样在动。
+    /// 而权威判据写错的症状是**完全静默**的（不报错、不掉帧、画面正常），
+    /// 所以需要一个只有"广播真的被应用"才会增长的计数。
+    /// </para>
+    ///
+    /// <para>服务端（以及单机）上它恒为 0 —— 那正是"只有客户端应用"的语义。</para>
+    /// </summary>
+    public int AppliedNetworkStateCount { get; private set; }
+
     /// <summary>路径总长（没有路径时为 0）。</summary>
     public float RouteLength => _path != null ? _path.Length : 0f;
 
@@ -219,6 +233,7 @@ public class CartController : EntityBehaviour
         IsDisabled = isDisabled;
 
         ApplyTransformAtDistance();
+        AppliedNetworkStateCount++;
 
         if (disabledChanged) DisabledChanged?.Invoke(IsDisabled);
     }

@@ -41,9 +41,16 @@
   `Unity.exe -batchmode -nographics -quit -projectPath <proj> -logFile <log>`
   然后检查日志里的 `error CS` 与 `Tundra build success`。
   项目里已有封装脚本：`& Tools\compile-check.ps1 -LogName compile.log`（见 `Tools/README.md`）。
-- 联机改动的**端到端冒烟**：`& Tools\run-network-smoke.ps1` —— 会真的进 Play 模式，验证
-  组合根装配 / 建房不切场景 / `OnServerReady` 生成玩家 / 跨场景重建 / 玩家数量稳定。
-  它**不能**替代人 Play（远程进程、输入、相机、画面仍需人工确认）。
+- 联机改动的**端到端冒烟**（两个层次，改完联机代码至少跑第一个）：
+  - `& Tools\run-network-smoke.ps1` —— Host 单进程，几十秒。覆盖**服务端**那一半。
+  - `& Tools\run-network-2p.ps1` —— **双进程**（本仓库当服务端 + 镜像副本当客户端），几分钟。
+    ⭐ **只有它能验证客户端侧路径**：Host 里服务端与客户端是同一个对象，
+    所有 `ApplyNetwork*` 都会因权威守卫提前返回 —— 已经因此漏过一个真 bug
+    （`NetworkAuthority` 对场景对象恒为 true，整批客户端守卫失效而 Host 测试全绿）。
+  两者都**不能**替代人 Play（输入、相机、画面仍需人工确认）。
+- ⚠️ **写"客户端侧"的断言时，要挑客户端不可能自己产生的判据**：
+  "推车在动 / 时钟在走"在权威判据写错时**照样会通过**（客户端自己推进）。
+  双进程测试用的是哨兵值 + 只在"广播真的被应用"时才增长的计数器，理由见 `Docs/MirrorPlan.md`。
 - ⚠️ **编辑器开着时批处理会因工程锁直接崩溃**（报 "another Unity instance is running"）——这是环境问题不是代码问题。跑之前先检查 Unity 进程。
 - 批处理只能验证编译与资源接线；**运行时表现必须由人 Play 确认**，不要声称"功能已验证"。
 - **脚本化接线场景对象时，用 public 字段直接赋值，不要走 `SerializedObject`**：实测在**场景里的组件**上，

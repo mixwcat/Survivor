@@ -15,18 +15,22 @@ using UnityEngine;
 /// </para>
 ///
 /// <para>
-/// 批处理运行（**编辑器必须关着**，且**不要加 <c>-quit</c>** —— 要在 Play 里活着才能跑断言）：
+/// <b>三种角色</b>，各自一个入口：
+/// </para>
+/// <list type="bullet">
+/// <item><see cref="RunFromCommandLine"/>（<c>host</c>）—— 单进程自测，覆盖服务端那一半。
+/// 命令：<c>Tools\run-network-smoke.ps1</c></item>
+/// <item><see cref="RunServerFromCommandLine"/> / <see cref="RunClientFromCommandLine"/> —— 双进程测试的两半，
+/// 命令：<c>Tools\run-network-2p.ps1</c>（它会同时拉起两个工程实例）。</item>
+/// </list>
+///
+/// <para>
+/// 批处理运行时（**编辑器必须关着**，且**不要加 <c>-quit</c>** —— 要在 Play 里活着才能跑断言）：
 /// <code>
 /// Unity.exe -batchmode -nographics -projectPath &lt;proj&gt; \
 ///           -executeMethod NetworkSmokeTest.RunFromCommandLine -logFile &lt;log&gt;
 /// </code>
 /// 成功时日志里有 <c>SMOKE_OK</c> 且退出码 0；失败是 <c>SMOKE_FAIL: &lt;原因&gt;</c> 且退出码 1。
-/// </para>
-///
-/// <para>
-/// ⚠️ 批处理下 <c>-nographics</c> 会让 DOTween 的升级窗口无法创建（"No graphic device is available"），
-/// 实测会把编辑器卡住。跑之前先确认 DOTween 已 Setup、且那个升级提示不会再弹
-/// （见 <c>CLAUDE.md</c> 的 DOTween 条目）。
 /// </para>
 /// </summary>
 public static class NetworkSmokeTest
@@ -34,26 +38,33 @@ public static class NetworkSmokeTest
     private const string LobbyPath = "Assets/Scenes/Lobby.unity";
 
     [MenuItem("Tools/Run Network Smoke Test (enters Play mode)")]
-    public static void RunFromMenu()
-    {
-        SessionState.SetBool(NetworkSmokeDriver.PendingKey, true);
+    public static void RunFromMenu() => Start("host", true);
 
-        if (!Application.isPlaying)
-        {
-            EditorSceneManager.OpenScene(LobbyPath, OpenSceneMode.Single);
-            EditorApplication.EnterPlaymode();
-        }
-    }
+    public static void RunFromCommandLine() => Start("host", false);
 
-    public static void RunFromCommandLine()
+    /// <summary>
+    /// 双进程测试的**服务端**：建房、等真客户端接入、切到关卡，然后常驻等被编排脚本杀掉。
+    /// 判定看日志里的 <c>SMOKE_OK</c>，不看退出码。
+    /// </summary>
+    public static void RunServerFromCommandLine() => Start("server", false);
+
+    /// <summary>
+    /// 双进程测试的**客户端**：连接 <c>127.0.0.1:7777</c>，断言客户端侧的一切
+    /// （看到两端玩家、认出自己的角色、跟着切场景、推车在动、时钟在走、敌人有 netId）。
+    /// </summary>
+    public static void RunClientFromCommandLine() => Start("client", false);
+
+    private static void Start(string role, bool unusedEnterPlaymode)
     {
         // 从大厅开始：网络流程的起点（Lobby 既是 offlineScene 也是房间）
         EditorSceneManager.OpenScene(LobbyPath, OpenSceneMode.Single);
 
+        SessionState.SetString(NetworkSmokeDriver.RoleKey, role);
         SessionState.SetBool(NetworkSmokeDriver.PendingKey, true);
 
-        Debug.Log("[Smoke] 进入 Play 模式…");
-        EditorApplication.EnterPlaymode();
+        Debug.Log($"[Smoke] 角色={role}，进入 Play 模式…");
+
+        if (!Application.isPlaying) EditorApplication.EnterPlaymode();
     }
 }
 #endif
