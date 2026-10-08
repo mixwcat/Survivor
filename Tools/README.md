@@ -1,6 +1,6 @@
 # Tools —— 批处理验证脚本
 
-> 全部是 **Windows PowerShell 5.1** 脚本，**只用 ASCII 字符**。
+> ⚠️ 全部是 **Windows PowerShell 5.1** 脚本，**只用 ASCII 字符**。
 > 这不是风格洁癖：PowerShell 5.1 会把**无 BOM 的 UTF-8** 当 ANSI 读，
 > 脚本里的中文注释与中文字符串会被解析成乱码并报 `Missing terminator` 之类的语法错
 > （踩过一次，见 `.claude/skills/unity-batch-autoconfig/SKILL.md`）。
@@ -16,8 +16,6 @@
 Get-Process Unity -ErrorAction SilentlyContinue   # 有输出就先关掉
 ```
 
-Unity 路径写死在脚本里：`D:\unity\unitydownload\6000.0.44f1\Editor\Unity.exe`（随版本升级要改）。
-
 ## compile-check.ps1 —— 编译校验
 
 ```powershell
@@ -29,16 +27,29 @@ Unity 路径写死在脚本里：`D:\unity\unitydownload\6000.0.44f1\Editor\Unit
 
 **改完任何 C# 都要跑一次。** 判据是日志里没有 `error CS` 且出现 `Tundra build success`。
 
+**Unity 路径与工程路径都不用配** —— 脚本自己往上找工程、自己从注册表/常见目录找 Unity。
+定位失败时可以用 `-ProjectPath` / `-UnityExe` 显式覆盖。
+
+> 📦 这两个通用脚本（本文件 + `run-unity-method.ps1`）在
+> `.claude\skills\unity-batch-autoconfig\references\` 里有**内容完全一致的副本**，
+> 是给新项目复制用的模板。改任一处记得同步另一处。
+
 ## run-unity-method.ps1 —— 跑一个 `-executeMethod`
 
 ```powershell
 & Tools\run-unity-method.ps1 -Method "AddressablesSetup.SetupFromCommandLine" -LogName addr.log
+& Tools\run-unity-method.ps1 -Method "NetworkSetup.SetupFromCommandLine" -AlsoMatch "\[NetworkSetup\]"
 ```
 
 用于跑项目里的幂等配置脚本（`Assets/Editor/` 下那些 `*FromCommandLine`）。
 成功判据是日志里有 `CLI_OK`。
+`-AlsoMatch` 用来额外抓你自己脚本的日志前缀（例如 `\[NetworkSetup\]`）。
 
-## run-network-smoke.ps1 —— 端到端联机冒烟测试
+> ⚠️ `Show "exceptions"` 会把日志里所有 `Exception|Error:` 打出来，其中可能包含
+> 与本次运行无关的噪声（例如 Unity 授权客户端的 `Licensing::Client` 报错）。
+> **判断成败看 `CLI_OK` / `RESULT:`，不要看这一段有没有内容。**
+
+## run-network-smoke.ps1 —— 端到端联机冒烟测试（本项目专用）
 
 ```powershell
 & Tools\run-network-smoke.ps1 -LogName smoke.log
