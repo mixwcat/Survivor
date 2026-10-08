@@ -1,3 +1,4 @@
+using Mirror;
 using UnityEngine;
 
 /// <summary>
@@ -17,10 +18,31 @@ using UnityEngine;
 /// </summary>
 public class EnemyBoundary : MonoBehaviour
 {
+    /// <summary>本端是否该执行越界回收。联机时只有服务端（见 <see cref="NetworkAuthority"/>）。</summary>
+    private NetworkAuthority _authority;
+    private bool _authorityReady;
+
     public void OnTriggerExit2D(Collider2D other)
     {
         if (other == null) return;
         if (other.GetComponentInParent<EnemyHealthController>() == null) return;
+
+        // 懒解析：越界回调可能在 Awake 之前就到（对象刚生成就被挤出去）
+        if (!_authorityReady)
+        {
+            _authority = new NetworkAuthority(gameObject);
+            _authorityReady = true;
+        }
+
+        // 联机时只有服务端能回收：客户端自己 Destroy 会绕过 Mirror ——
+        // 服务端那边这只怪还活着，而客户端已经看不见它了（且不会自己回来）
+        if (!_authority.IsAuthority) return;
+
+        if (NetworkBootstrap.IsActive)
+        {
+            NetworkServer.Destroy(other.gameObject);
+            return;
+        }
 
         Destroy(other.gameObject); // 销毁离开触发器的敌人
     }

@@ -31,6 +31,20 @@ public static class NetworkSetup
     private const string NetDir = "Assets/Game/Prefabs/Net";
     private const string NetworkManagerPrefabPath = NetDir + "/NetworkManager.prefab";
 
+    /// <summary>
+    /// 会被 <c>NetworkServer.Spawn</c> 的 prefab 所在目录（递归扫 <c>*.prefab</c>）。
+    ///
+    /// <para>
+    /// 用"扫目录"而不是硬编码文件名：新增一种敌人时只要把 prefab 放进这个目录，
+    /// 重跑一次本脚本就会被接上。硬编码清单最容易出的问题是**漏一个**，
+    /// 而漏掉的症状是运行时 "Failed to spawn server object"（只在客户端出现，Host 反而正常）。
+    /// </para>
+    /// </summary>
+    private static readonly string[] SpawnPrefabDirs =
+    {
+        "Assets/Game/Prefabs/EnemyPrefab",
+    };
+
     /// <summary>大厅既是房间也是 <c>offlineScene</c>；<c>onlineScene</c> 留空（见 Docs/MirrorPlan.md §1.3）。</summary>
     private const string OfflineScenePath = "Assets/Scenes/Lobby.unity";
 
@@ -77,6 +91,7 @@ public static class NetworkSetup
         }
 
         if (!SetupPlayerPrefab()) return false;
+        if (!SetupSpawnablePrefabs()) return false;
         if (!SetupNetworkManagerPrefab()) return false;
 
         // assetId 必须在 prefab 落盘之后、重新加载资产再触发（见类注释第 3 条）
@@ -132,6 +147,91 @@ public static class NetworkSetup
         }
     }
 
+    // ── 可生成的 prefab（敌人 / 塔 / 投射物…）──
+
+    /// <summary>
+    /// 给 <see cref="SpawnPrefabDirs"/> 下的每个 prefab 补上网络组件。
+    ///
+    /// <para>
+    /// 敌人是**服务端权威**：位置由服务端算、客户端只是重放，所以用
+    /// <c>NetworkRigidbodyUnreliable2D</c> + <c>ServerToClient</c>（默认方向）。
+    /// 选 Unreliable 而不是 Reliable：敌人数量多、位置每帧都在变，
+    /// 丢一帧位置无所谓（下一次同步会覆盖），但可靠通道的重传会在拥塞时雪上加霜。
+    /// </para>
+    /// </summary>
+    private static bool SetupSpawnablePrefabs()
+    {
+        for (int d = 0; d < SpawnPrefabDirs.Length; d++)
+        {
+            string dir = SpawnPrefabDirs[d];
+            if (!Directory.Exists(dir))
+            {
+                Debug.LogError($"[NetworkSetup] 可生成 prefab 目录不存在：{dir}");
+                return false;
+            }
+
+            string[] files = Directory.GetFiles(dir, "*.prefab", SearchOption.AllDirectories);
+            for (int i = 0; i < files.Length; i++)
+            {
+                string path = files[i].Replace("\\", "/");
+                if (!SetupSpawnablePrefab(path)) return false;
+            }
+
+            Debug.Log($"[NetworkSetup] {dir}：已接线 {files.Length} 个可生成 prefab。");
+        }
+
+        return true;
+    }
+
+    private static bool SetupSpawnablePrefab(string path)
+    {
+        GameObject root = PrefabUtility.LoadPrefabContents(path);
+        if (root == null)
+        {
+            Debug.LogError($"[NetworkSetup] 无法加载 prefab 内容：{path}");
+            return false;
+        }
+
+        try
+        {
+            EnsureComponent<NetworkIdentity>(root);
+
+            if (root.GetComponent<Rigidbody2D>() == null)
+            {
+                Debug.LogWarning($"[NetworkSetup] {Path.GetFileName(path)} 根节点没有 Rigidbody2D，" +
+                                 $"{nameof(NetworkRigidbodyUnreliable2D)} 会报错，已改为只挂 NetworkTransform。");
+                var fallback = EnsureComponent<NetworkTransformUnreliable>(root);
+                fallback.target = root.transform;
+                fallback.syncInterval = EnemySyncInterval;
+                fallback.onlySyncOnChange = true;
+            }
+            else
+            {
+                // AddComponent<NetworkTransform/NetworkRigidbody> 会触发 Reset()，此时 target 为空而抛 NRE ——
+                // 那是噪声（组件仍会加上），随后显式设置即可
+                var body = EnsureComponent<NetworkRigidbodyUnreliable2D>(root);
+                body.target = root.transform;
+                body.syncDirection = SyncDirection.ServerToClient;   // 敌人是服务端权威
+                body.syncInterval = EnemySyncInterval;
+                body.onlySyncOnChange = true;
+            }
+
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+            return true;
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(root);
+        }
+    }
+
+    /// <summary>
+    /// 敌人的位置同步间隔（秒）。
+    /// 20Hz 对这种俯视游戏足够（客户端会插值），比每帧同步省一个数量级的带宽 ——
+    /// 场上可能有几十只敌人，这一项直接决定联机能不能跑。
+    /// </summary>
+    private const float EnemySyncInterval = 0.05f;
+
     // ── NetworkManager prefab ──
 
     private static bool SetupNetworkManagerPrefab()
@@ -176,15 +276,42 @@ public static class NetworkSetup
             nm.autoCreatePlayer = false;
             nm.playerPrefab = null;
 
-            // spawnPrefabs 是 Mirror 解析 assetId → prefab 的**唯一**来源。
-            // 现在只登记玩家；敌人/塔/投射物在各自的阶段加进来。
+            // spawnPrefabs 是 Mirror 解析 assetId → prefab 的**唯一**来源：
+            // 不在这个列表里的 prefab，服务端 Spawn 之后客户端会报
+            // "Failed to spawn server object, did you forget to add it to the NetworkManager?"，
+            // 而 Host 端因为对象就在本地、看起来一切正常 —— 只在纯客户端暴露。
             var spawnables = new List<GameObject>();
             if (playerPrefab != null) spawnables.Add(playerPrefab);
+
+            int scanned = 0;
+            for (int d = 0; d < SpawnPrefabDirs.Length; d++)
+            {
+                string dir = SpawnPrefabDirs[d];
+                if (!Directory.Exists(dir)) continue;
+
+                string[] files = Directory.GetFiles(dir, "*.prefab", SearchOption.AllDirectories);
+                for (int i = 0; i < files.Length; i++)
+                {
+                    string path = files[i].Replace("\\", "/");
+                    GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                    if (prefab == null) continue;
+                    if (!prefab.TryGetComponent(out NetworkIdentity _))
+                    {
+                        Debug.LogWarning($"[NetworkSetup] {path} 没有 NetworkIdentity，已跳过（先跑 SetupSpawnablePrefabs）。");
+                        continue;
+                    }
+
+                    if (!spawnables.Contains(prefab)) spawnables.Add(prefab);
+                    scanned++;
+                }
+            }
+
             nm.spawnPrefabs = spawnables;
 
             PrefabUtility.SaveAsPrefabAsset(root, NetworkManagerPrefabPath);
             Debug.Log($"[NetworkSetup] 联机 prefab 已就绪：{NetworkManagerPrefabPath}" +
-                      $"（offlineScene={nm.offlineScene}，onlineScene=空，spawnPrefabs={spawnables.Count}）");
+                      $"（offlineScene={nm.offlineScene}，onlineScene=空，spawnPrefabs={spawnables.Count}" +
+                      $"，其中可生成 prefab {scanned} 个）");
             return true;
         }
         finally
@@ -209,9 +336,19 @@ public static class NetworkSetup
     /// </summary>
     private static void EnsureAssetIds()
     {
-        string[] paths = { PlayerPrefabPath, NetworkManagerPrefabPath };
+        var paths = new List<string> { PlayerPrefabPath, NetworkManagerPrefabPath };
 
-        for (int i = 0; i < paths.Length; i++)
+        for (int d = 0; d < SpawnPrefabDirs.Length; d++)
+        {
+            string dir = SpawnPrefabDirs[d];
+            if (!Directory.Exists(dir)) continue;
+
+            string[] files = Directory.GetFiles(dir, "*.prefab", SearchOption.AllDirectories);
+            for (int i = 0; i < files.Length; i++)
+                paths.Add(files[i].Replace("\\", "/"));
+        }
+
+        for (int i = 0; i < paths.Count; i++)
         {
             GameObject go = AssetDatabase.LoadAssetAtPath<GameObject>(paths[i]);
             NetworkIdentity identity = go != null ? go.GetComponent<NetworkIdentity>() : null;
@@ -228,9 +365,9 @@ public static class NetworkSetup
             }
 
             EditorUtility.SetDirty(identity);
-            Debug.Log($"[NetworkSetup] {Path.GetFileName(paths[i])} assetId = {assetId}");
         }
 
+        Debug.Log($"[NetworkSetup] 已确认 {paths.Count} 个 prefab 的 assetId。");
         AssetDatabase.SaveAssets();
     }
 

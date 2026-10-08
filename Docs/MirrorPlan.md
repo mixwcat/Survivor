@@ -501,6 +501,55 @@ Console 无红错；远程玩家的移动不会被本地物理覆盖。
 
 ## 7. 进度日志（倒序，最新在上）
 
+### 2026-10-08 · P3.1–P3.4 敌人服务端权威（☑ 已由冒烟测试覆盖）
+
+**做了什么**
+
+- 新增 `NetworkAuthority`（`Core/Network/NetworkAuthority.cs`）：与 `LocalPlayerGuard` 配对的另一半判据 ——
+  前者回答"是不是**我**的角色"（输入相关），后者回答"该不该由**这一端**结算"（权威相关）。
+  非网络对象（单机）恒为 `true`，所以单机流程一行分支都不用加。
+- **`EnemyController`**：`FixedUpdate`（寻敌/移动/击退）与 `HitImpact` 加权威守卫；
+  `OnEnable/OnDisable` 的注册只在服务端做（客户端注册会让本地计数与服务端分叉，
+  而 `EnemySpawner` 的上限判定正是读这个计数）。`EnhanceWithWave` 改名 `ApplyWaveEnhancement` 并公开 ——
+  联机路径不走池，也就不会经过 `OnGetFromPool`。
+- **`EnemyHealthController`**：`TakeDamage` / `HurtColliders` / 接触伤害的即时结算全部加权威守卫；
+  `Die()` 在联机下改走 `NetworkServer.Destroy`。
+  **敌人血量刻意不做 SyncVar** —— 死亡本身就是同步信号（`Destroy` 会广播），
+  血量只有"血条"这一个消费者，而敌人没有血条。
+- **`EnemyTargetFinder`**：`Start`/`Update` 加守卫（客户端不跑 AI，每 0.5s 一次的寻敌纯属白烧 CPU）。
+- **`EnemyBoundary`**：越界回收只在服务端，且联机下用 `NetworkServer.Destroy`
+  （客户端自己 `Destroy` 会绕过 Mirror：服务端那只还活着，而客户端已经看不见它了）。
+- **`EnemySpawner`**：`Update` 在"联机且非服务端"时直接返回（顺带跳过客户端的启动期体检，
+  避免同一份配置错误在每端各报一遍）；`Spawn` 分流到新增的 `SpawnNetworked`
+  （`Instantiate` → 注入 EntitySO → 波次/哨站难度 → `NetworkServer.Spawn`，**不走对象池**）。
+  单机路径原样保留。
+- **`NetworkSetup.cs`** 改为**扫目录**（`Assets/Game/Prefabs/EnemyPrefab`）而不是硬编码文件名：
+  给每个 prefab 补 `NetworkIdentity` + `NetworkRigidbodyUnreliable2D`（`ServerToClient`，
+  `syncInterval = 0.05` 即 20Hz），并把它们登记进 `spawnPrefabs`。
+  硬编码清单最容易出的问题是**漏一个**，而漏掉的症状是"只有纯客户端会报
+  Failed to spawn server object，Host 端一切正常"——最难查的那种。
+
+**证据**：`Tools/run-network-smoke.ps1` → `SMOKE_OK`，其中新增的断言通过：
+`关卡内敌人数量 = 1（均已 spawn，netId != 0）`，`NetworkBootstrap` 日志里 `spawnPrefabs=7`。
+
+断言刻意**不**用 `GameLevelManager.GetEnemyCount()` —— 那个计数由 `OnEnable` 维护，
+而 `OnEnable` 在 `Instantiate` 时就跑了，即使 `NetworkServer.Spawn` 失败计数照样是正的。
+只有查 `netId != 0` 才能证明"这只怪真的被 Mirror 接管了"。
+
+**仍未做（P3 剩余）**
+
+- **P3.6 推车 + P3.7 关卡阶段/胜负**：这两个必须一起做 —— 客户端目前仍会自己推进
+  `CartController._distance` 并自己判定胜负（点终点、全灭）。它们现在**碰巧**大致同步
+  （同一条路径、同一速度、同一时刻起步），但一旦发生停摆/修理就会分叉。
+  做法：推车加 `NetworkTransform`（服务端权威），`StageDirector` 只在服务端推进阶段。
+- **P3.5 `GameLevelManager`**：`LevelTime` / `CurrentWave` 仍是各端各算；
+  关卡种子（`RunSession.seed`）也还是本机的 `Environment.TickCount`，各端敌人生成序列不同 ——
+  但因为生成权已经在服务端，客户端那份种子已经不影响了。
+- **P3.8 `RunStatsTracker`**：击杀统计目前只在服务端累计（`EnemyHealthController.TakeDamage`
+  已被权威守卫挡住），但结算面板还没接网络。
+- **P4.7 经验球**：目前只在服务端生成本地实例，**客户端看不到也捡不到经验** ——
+  这是当前最明显的已知缺口。
+
 ### 2026-10-08 · P0.4 技术未知项**已用无头冒烟测试回答**（☑）
 
 **结论：跨场景重建玩家这条链路是通的。** 证据：`Logs/r1-smoke3.log` 里的 `SMOKE_OK` + 退出码 0。

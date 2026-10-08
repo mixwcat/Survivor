@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Mirror;
 using UnityEngine;
 
 /// <summary>
@@ -29,6 +30,29 @@ public class EnemyHealthController : BaseHealthController
     private readonly List<BaseHealthController> _contactTargets = new List<BaseHealthController>();
 
     private EnemyController _enemy;
+
+    /// <summary>本副本是否该结算伤害/死亡。联机时只有服务端那一份（见 <see cref="NetworkAuthority"/>）。</summary>
+    private NetworkAuthority _authority;
+    private bool _authorityReady;
+
+    /// <summary>
+    /// 懒解析的权威判据。
+    /// 不用「在 Start 里初始化」：<c>TakeDamage</c> 可能在 <c>Start</c> 之前就到
+    /// （生成当帧就被命中），那时读到默认值会把服务端自己挡掉。
+    /// </summary>
+    private bool IsAuthority
+    {
+        get
+        {
+            if (!_authorityReady)
+            {
+                _authority = new NetworkAuthority(gameObject);
+                _authorityReady = true;
+            }
+
+            return _authority.IsAuthority;
+        }
+    }
 
     /// <summary>
     /// 本实例死亡。**一次性订阅**：订阅方（如节点门槛的判定）收到后必须立即退订 ——
@@ -107,6 +131,17 @@ public class EnemyHealthController : BaseHealthController
         _contactColliders.Clear();
         _contactTargets.Clear();
 
+        // ── 联机：生命周期交给 Mirror ──
+        // NetworkServer.Destroy 会广播销毁，各端自己的副本随之消失 ——
+        // 这也是敌人血量**不需要** SyncVar 的原因：死亡本身就是同步信号。
+        // ⚠️ 经验球目前只在服务端生成本地实例（客户端看不到、捡不到），
+        //    经验归属与经验球网络化是 MirrorPlan 的 P4.7。
+        if (NetworkBootstrap.IsActive)
+        {
+            NetworkServer.Destroy(gameObject);
+            return;
+        }
+
         if (UsePool)
         {
             EnemyPool.Return(enemy);
@@ -153,6 +188,8 @@ public class EnemyHealthController : BaseHealthController
     /// </summary>
     private void HurtColliders()
     {
+        if (!IsAuthority) return;
+
         CollectContactTargets();
 
         for (int i = 0; i < _contactTargets.Count; i++)
@@ -211,7 +248,9 @@ public class EnemyHealthController : BaseHealthController
 
         _contactColliders.Add(other);
 
-        if (alreadyTouching) return;
+        // 立刻结算的那一份也要判权威：客户端副本在接触瞬间同样会收到 trigger，
+        // 不挡的话它会在本地扣一次血（两端血量各自演化，不报错）
+        if (alreadyTouching || !IsAuthority) return;
 
         target.TakeDamage(new DamageInfo(Damage, 0f, _entity, DamageSource.Contact));
     }
@@ -244,6 +283,10 @@ public class EnemyHealthController : BaseHealthController
     /// </summary>
     public override void TakeDamage(in DamageInfo info)
     {
+        // 联机时伤害只在服务端结算：客户端副本也扣血的话，两端会各自演化出一套血量
+        // （不报错，只是"我这边打死了、队友那边还活着"）
+        if (!IsAuthority) return;
+
         // 已经死过的实例拒绝后续一切：重复 Die() 会让击杀点、经验、统计全部翻倍
         if (IsDead) return;
 

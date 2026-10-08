@@ -12,6 +12,12 @@ public class EnemyController : EntityBehaviour, IPoolable
     private Rigidbody2D _rb;
     private EnemyTargetFinder _targetFinder;
 
+    /// <summary>
+    /// 本副本是否该跑寻敌/移动/击退。联机时只有**服务端**那一份跑，
+    /// 客户端的位置完全由 <c>NetworkTransform</c> 驱动（见 <see cref="NetworkAuthority"/>）。
+    /// </summary>
+    private NetworkAuthority _authority;
+
     /// <summary>本实例来源的 prefab；由 <see cref="EnemyPool"/> 在创建时写入，归还时据此定位所属池。</summary>
     public GameObject SourcePrefab { get; set; }
 
@@ -40,6 +46,7 @@ public class EnemyController : EntityBehaviour, IPoolable
 
         _rb = GetComponent<Rigidbody2D>();
         _targetFinder = GetComponent<EnemyTargetFinder>();
+        _authority = new NetworkAuthority(gameObject);
     }
 
     /// <summary>
@@ -60,7 +67,7 @@ public class EnemyController : EntityBehaviour, IPoolable
 
         // 清掉上一次的波次增强与哨站难度，否则同一实例被复用时数值会累加
         StatModel?.RemoveModifiersFromSource(GameLevelManager.Service);
-        EnhanceWithWave();
+        ApplyWaveEnhancement();
 
         // 哨站难度是**另一个来源**：Apply 内部会先按自己的来源清一次，所以这里是幂等的
         OutpostDifficulty.Apply(StatModel);
@@ -82,9 +89,14 @@ public class EnemyController : EntityBehaviour, IPoolable
     }
 
     /// <summary>
-    /// 根据当前波次增强属性
+    /// 按当前波次增强属性。
+    ///
+    /// <para>
+    /// <c>public</c> 是因为联机生成路径也要用它：那条路径不走对象池
+    /// （Mirror 管生命周期），于是不会经过 <see cref="OnGetFromPool"/>。
+    /// </para>
     /// </summary>
-    private void EnhanceWithWave()
+    public void ApplyWaveEnhancement()
     {
         if (StatModel == null) return;
 
@@ -98,6 +110,10 @@ public class EnemyController : EntityBehaviour, IPoolable
 
     void FixedUpdate()
     {
+        // 联机时只有服务端跑 AI：客户端副本的位置由 NetworkTransform 驱动，
+        // 本地再跑一次寻敌就会得到"各端各走各的"（不报错，只是两边不一样）
+        if (!_authority.IsAuthority) return;
+
         float now = Time.time;
 
         // 阶段1：纯击退阶段，保持击退速度，不执行寻敌移动
@@ -129,6 +145,7 @@ public class EnemyController : EntityBehaviour, IPoolable
     /// </summary>
     public void HitImpact(float hitForce)
     {
+        if (!_authority.IsAuthority) return;
         if (hitForce <= 0f || _hitStunDuration <= 0f) return; // 无力度或无击退时长则不执行击退
         float speed = GetStat(StatType.MoveSpeed);
 
@@ -211,6 +228,10 @@ public class EnemyController : EntityBehaviour, IPoolable
 
     void OnEnable()
     {
+        // 敌人注册表是**服务端**的东西：它回答"场上有多少怪"（生成上限）与"怪该打谁"。
+        // 客户端注册只会让本地计数与服务端分叉（EnemySpawner 在上限判定里读它）
+        if (!_authority.IsAuthority) return;
+
         GameLevelManager.Service?.RegisterEnemy(this);
     }
 
@@ -220,6 +241,8 @@ public class EnemyController : EntityBehaviour, IPoolable
 
         // 只做注销。经验掉落已移到 Die()：池化归还同样会触发 OnDisable，
         // 留在这里会让「回收一个没死的敌人」也掉经验。
+        if (!_authority.IsAuthority) return;
+
         GameLevelManager.Service?.UnregisterEnemy(this);
     }
 

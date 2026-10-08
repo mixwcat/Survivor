@@ -16,12 +16,25 @@ public class EnemyTargetFinder : MonoBehaviour
     private Transform _currentTarget;
 
     /// <summary>
+    /// 本副本是否该跑寻敌。联机时只有服务端 —— 客户端的 <c>EnemyController</c> 本来就不跑 AI，
+    /// 这里每 0.5 秒搜一次纯属白烧 CPU（敌人多时是每只一份）。
+    /// </summary>
+    private NetworkAuthority _authority;
+
+    /// <summary>
     /// 当前锁定的目标，可能为 null
     /// </summary>
     public Transform CurrentTarget => _currentTarget;
 
+    void Awake()
+    {
+        _authority = new NetworkAuthority(gameObject);
+    }
+
     void Start()
     {
+        if (!_authority.IsAuthority) return;
+
         // 立即执行一次寻敌，避免启动时的延迟
         _currentTarget = FindNearestTarget();
         _nextUpdateTime = Time.time + _updateInterval;
@@ -29,6 +42,8 @@ public class EnemyTargetFinder : MonoBehaviour
 
     void Update()
     {
+        if (!_authority.IsAuthority) return;
+
         if (Time.time >= _nextUpdateTime)
         {
             _currentTarget = FindNearestTarget();

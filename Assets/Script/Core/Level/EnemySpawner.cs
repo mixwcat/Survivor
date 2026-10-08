@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Mirror;
 using UnityEngine;
 
 /// <summary>
@@ -106,6 +107,12 @@ public class EnemySpawner : MonoBehaviour
 
     private void Update()
     {
+        // 联机时生成权只在**服务端**。
+        // 客户端也跑的话两边各刷各的怪（各端只看得见自己那份），
+        // 而且全局上限判定读的是"本端注册表里的敌人数量"——客户端那份根本没有意义。
+        // 这一条同时也跳过了客户端的启动期体检，避免同一份配置错误在每端各报一遍红错。
+        if (NetworkBootstrap.IsActive && !NetworkServer.active) return;
+
         EnsurePrepared();
 
         if (Table == null) return;
@@ -350,9 +357,58 @@ public class EnemySpawner : MonoBehaviour
             return null;
         }
 
+        // ── 联机：走 Mirror 的生命周期，**不用对象池** ──
+        // 池靠 SetActive(false) 复用、从不销毁；而网络对象的销毁要广播给所有客户端，
+        // 两套生命周期叠在一起会出现"池里留着已 spawn 的实例"或"客户端不重建"。
+        // ApplyWave 只在池化小怪上为 true —— 与单机路径的分支保持一致（Boss 不带波次增强）。
+        if (NetworkBootstrap.IsActive)
+        {
+            if (!NetworkServer.active) return null;   // 双保险：Update 已经挡过一层
+            return SpawnNetworked(so, position, prefabHealth.UsePool);
+        }
+
         if (prefabHealth.UsePool) return EnemyPool.Spawn(so.prefab, position, Quaternion.identity);
 
         return SpawnOutsidePool(so, position);
+    }
+
+    /// <summary>
+    /// 联机生成：<c>Instantiate</c> → 注入 EntitySO → 波次/哨站难度 → <c>NetworkServer.Spawn</c>。
+    ///
+    /// <para>
+    /// 顺序与玩家那条一样不能颠倒：数值必须在 <c>Spawn</c> 之前注入完 ——
+    /// <c>NetworkServer.Spawn</c> 内部会 <c>SetActive(true)</c>（<c>NetworkServer.cs:1766</c>），
+    /// 而 <c>EntityBehaviour.Awake</c> 一旦按"没有配置"跑过一次，
+    /// <c>SetEntityConfig</c> 之后就会被拒绝（数值停在 1f 兜底值）。
+    /// </para>
+    /// </summary>
+    private EnemyController SpawnNetworked(EnemyEntitySO so, Vector3 position, bool applyWave)
+    {
+        GameObject instance = Instantiate(so.prefab, position, Quaternion.identity);
+
+        EnemyController controller = instance.GetComponent<EnemyController>();
+        if (controller == null)
+        {
+            WarnOncePerEntity(so, $"prefab「{so.prefab.name}」上没有 EnemyController，无法注入数值，已销毁该实例。");
+            Destroy(instance);
+            return null;
+        }
+
+        controller.SetEntityConfig(so);
+
+        if (controller.StatModel == null)
+        {
+            WarnOncePerEntity(so, $"「{so.name}」的数值未能注入（EntitySO 的 dataRef 是否配置？），已销毁该实例。");
+            Destroy(instance);
+            return null;
+        }
+
+        // 池化那条路径在 OnGetFromPool 里做这两件事；网络路径不走池，所以在这里补
+        if (applyWave) controller.ApplyWaveEnhancement();
+        OutpostDifficulty.Apply(controller.StatModel);
+
+        NetworkServer.Spawn(instance);
+        return controller;
     }
 
     /// <summary>

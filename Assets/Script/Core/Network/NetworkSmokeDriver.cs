@@ -110,6 +110,13 @@ public class NetworkSmokeDriver : MonoBehaviour
         yield return WaitForPlayerCount(1, "关卡内的玩家数量");
         if (_failed) yield break;
 
+        // ── 4b. 敌人在服务端生成并拿到 netId（P3：敌人服务端权威）──
+        Log("等敌人生成…");
+        yield return WaitUntil(() => CountSpawnedEnemies() >= 1, "关卡内出现已 spawn 的敌人");
+        if (_failed) yield break;
+
+        Log($"关卡内敌人数量 = {CountSpawnedEnemies()}（均已 spawn，netId != 0）");
+
         // ── 5. 切回大厅：再来一次，验证不会累积 ──
         Log("切回大厅…");
         NetworkBootstrap.ServerChangeScene(LobbyPath);
@@ -201,6 +208,29 @@ public class NetworkSmokeDriver : MonoBehaviour
     {
         IPlayerManager players = PlayerManager.Service;
         return players != null ? players.AllPlayers.Count : 0;
+    }
+
+    /// <summary>
+    /// 场上**已经 spawn**（<c>netId != 0</c>）的敌人数量。
+    ///
+    /// <para>
+    /// 不用 <c>GameLevelManager.GetEnemyCount()</c>：那个计数由 <c>EnemyController.OnEnable</c> 维护，
+    /// 而 <c>OnEnable</c> 在 <c>Instantiate</c> 时就跑了 —— 即使 <c>NetworkServer.Spawn</c> 失败，
+    /// 计数照样是正的。查 <c>netId</c> 才能证明"这只怪真的被 Mirror 接管了"。
+    /// </para>
+    /// </summary>
+    private static int CountSpawnedEnemies()
+    {
+        EnemyController[] all = FindObjectsByType<EnemyController>(FindObjectsSortMode.None);
+        int count = 0;
+
+        for (int i = 0; i < all.Length; i++)
+        {
+            if (!all[i].TryGetComponent(out NetworkIdentity identity)) continue;
+            if (identity.netId != 0) count++;
+        }
+
+        return count;
     }
 
     private static void Log(string message) => Debug.Log($"[Smoke] {message}");
