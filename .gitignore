@@ -190,7 +190,15 @@ crashlytics-build.properties
 
 # Claude Code workspace
 # Claude Code 工作区文件
-.claude/
+#
+# ⚠️ 只忽略 `.claude/` 下的**本机配置**，**保留 `.claude/skills/`** ——
+# skill 是可复用的知识（含能直接拷到新项目的脚本模板），不是本机状态；
+# 整个目录一起忽略的话，换台机器 clone 下来技能就没了。
+#
+# 注意必须写成 `.claude/*` 而不是 `.claude/`：
+# 父目录一旦整体被排除，后面的 `!` 再包含也救不回来。
+.claude/*
+!.claude/skills/
 
 # OpenCode config (local-only, not tracked)
 opencode.json
