@@ -80,8 +80,20 @@ public class StageDirector : MonoBehaviour
     private bool _hadPlayers;
     private float _disabledTimer;
 
+    /// <summary>
+    /// 本副本是否推进阶段与判胜负。联机时**只有服务端**（见 <see cref="NetworkAuthority"/>）：
+    /// 客户端跟着推车的状态广播走，不自己判定。
+    /// </summary>
+    private NetworkAuthority _authority;
+
     private void Start()
     {
+        _authority = new NetworkAuthority(gameObject);
+
+        // 联机时阶段与胜负只在服务端推进。客户端也跑的话，它会自己判"抵达终点＝胜利"、
+        // 自己弹结算面板 —— 而服务端也会弹一次，且两边的结算数值来自各自的统计
+        if (!_authority.IsAuthority) return;
+
         if (Cart == null)
         {
             Debug.LogError("[StageDirector] 没有配置推车，关卡无法开始。");
@@ -123,6 +135,7 @@ public class StageDirector : MonoBehaviour
 
     private void Update()
     {
+        if (!_authority.IsAuthority) return;
         if (_finished) return;
 
         TickDisabledRecovery();
@@ -248,6 +261,7 @@ public class StageDirector : MonoBehaviour
     /// </summary>
     public void FinishRun(RunOutcome outcome)
     {
+        if (!_authority.IsAuthority) return;
         if (_finished) return;
         _finished = true;
 

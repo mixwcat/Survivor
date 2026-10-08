@@ -32,6 +32,18 @@ public static class NetworkSetup
     private const string NetworkManagerPrefabPath = NetDir + "/NetworkManager.prefab";
 
     /// <summary>
+    /// 推车 prefab。
+    ///
+    /// <para>
+    /// ⚠️ 它**刻意没有** <c>NetworkIdentity</c>：推车是摆在场景里的对象，挂上 NetworkIdentity
+    /// 就会变成 Mirror 的"场景对象"，进 Play 时被 <c>NetworkScenePostProcess</c> 强制禁用、
+    /// 只能靠 <c>NetworkServer.SpawnObjects()</c> 激活 —— 而**单机模式没有服务端**，推车永远不会被激活。
+    /// 它的状态走 <see cref="CartNetworkSync"/> 的显式消息（见 <c>CartStateMessage</c>）。
+    /// </para>
+    /// </summary>
+    private const string CartPrefabPath = "Assets/Game/Prefabs/Cart/Cart.prefab";
+
+    /// <summary>
     /// 会被 <c>NetworkServer.Spawn</c> 的 prefab 所在目录（递归扫 <c>*.prefab</c>）。
     ///
     /// <para>
@@ -92,6 +104,7 @@ public static class NetworkSetup
 
         if (!SetupPlayerPrefab()) return false;
         if (!SetupSpawnablePrefabs()) return false;
+        if (!SetupCartPrefab()) return false;
         if (!SetupNetworkManagerPrefab()) return false;
 
         // assetId 必须在 prefab 落盘之后、重新加载资产再触发（见类注释第 3 条）
@@ -231,6 +244,43 @@ public static class NetworkSetup
     /// 场上可能有几十只敌人，这一项直接决定联机能不能跑。
     /// </summary>
     private const float EnemySyncInterval = 0.05f;
+
+    // ── 推车 prefab ──
+
+    /// <summary>给推车挂上状态同步组件（**不加** NetworkIdentity，理由见 <see cref="CartPrefabPath"/> 的注释）。</summary>
+    private static bool SetupCartPrefab()
+    {
+        if (!File.Exists(CartPrefabPath))
+        {
+            Debug.LogError($"[NetworkSetup] 找不到推车 prefab：{CartPrefabPath}");
+            return false;
+        }
+
+        GameObject root = PrefabUtility.LoadPrefabContents(CartPrefabPath);
+        if (root == null)
+        {
+            Debug.LogError($"[NetworkSetup] 无法加载 prefab 内容：{CartPrefabPath}");
+            return false;
+        }
+
+        try
+        {
+            var sync = EnsureComponent<CartNetworkSync>(root);
+
+            // 直接赋值而不是 SerializedObject：prefab 上虽然两条路都行，
+            // 但项目里统一用直接赋值（见 CLAUDE.md 的批处理约定）
+            sync.Cart = root.GetComponent<CartController>();
+            sync.Health = root.GetComponent<CartHealthController>();
+
+            PrefabUtility.SaveAsPrefabAsset(root, CartPrefabPath);
+            Debug.Log("[NetworkSetup] 推车 prefab 已接线：CartNetworkSync（不加 NetworkIdentity）。");
+            return true;
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(root);
+        }
+    }
 
     // ── NetworkManager prefab ──
 

@@ -125,6 +125,12 @@ public class SurvivorNetworkManager : NetworkManager
     public override void OnStartClient()
     {
         base.OnStartClient();
+
+        // 推车状态的消息处理器在**连接建立时**注册，而不是等场景里的 CartNetworkSync.Start ——
+        // 服务端在关卡加载完就开始广播，客户端那时可能还没加载完场景，
+        // 晚注册会漏掉开头几条（表现是"进关卡后推车停着不动，过一会儿才追上"）
+        CartNetworkSync.RegisterClientHandler();
+
         Debug.Log($"[Net] 客户端已启动，连接到 {networkAddress}。");
     }
 

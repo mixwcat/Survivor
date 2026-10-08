@@ -73,4 +73,27 @@ public class CartHealthController : BaseHealthController
         CartController cart = _cart != null ? _cart : GetComponent<CartController>();
         cart?.EnterDisabled();
     }
+
+    /// <summary>
+    /// 客户端应用服务端广播的耐久比例（见 <see cref="CartNetworkSync"/>）。
+    ///
+    /// <para>
+    /// <b>只改数据 + 发事件，不走 <c>TakeDamage</c>/<c>Heal</c>：</b>那两个是"结算"，
+    /// 在客户端跑就等于两端各结算一次（还会连带触发伤害数字、击退之类的表现）。
+    /// </para>
+    /// </summary>
+    public void ApplyNetworkHealth(float normalized)
+    {
+        float target = Mathf.Clamp01(normalized) * MaxHealth;
+
+        // 容差：广播是 15Hz、两端浮点路径也不同，逐位相等是奢望。
+        // 不设容差会让 HealthChanged 每帧都发一次，而订阅方里有 TMP 百分比文本
+        //（每帧赋值会触发整套字形网格重建，见 CLAUDE.md 性能红线）
+        if (Mathf.Abs(target - CurrentHealth) < 0.01f) return;
+
+        CurrentHealth = Mathf.Max(target, 0f);
+        IsDead = false;          // 停摆不等于死亡，与 RecoverTo 的语义保持一致
+
+        RaiseHealthChanged();
+    }
 }

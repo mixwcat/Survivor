@@ -501,6 +501,50 @@ Console 无红错；远程玩家的移动不会被本地物理覆盖。
 
 ## 7. 进度日志（倒序，最新在上）
 
+### 2026-10-08 · P3.6 推车状态同步（☑ 服务端侧已由冒烟测试覆盖）
+
+**方案：推车刻意不做成网络对象。**
+
+给它挂 `NetworkIdentity` 会让它变成 Mirror 的**场景对象**，而
+`NetworkScenePostProcess` 会在进 Play 时**强制 `SetActive(false)`**
+（`Assets/Mirror/Editor/NetworkScenePostProcess.cs:103`），
+只有 `NetworkServer.SpawnObjects()` 才会把它激活 ——
+**本项目单机模式仍然要能玩，单机没有服务端 ⇒ 推车永远不会被激活 ⇒ 整个关卡瘫掉。**
+
+所以两端各留一份本地实例（场景里那份，**已有的接线一行没动** ——
+`StageDirector.Cart`、`CartRepairInteractable.Cart` 都还是场景引用），
+只把"权威进度"从服务端广播过来：
+
+| 文件 | 作用 |
+|---|---|
+| `Core/Network/Messages/CartStateMessage.cs` | 结构体：`Distance` / `HealthNormalized` / `IsMoving` / `IsDisabled`（< 20 字节） |
+| `Entity/Cart/CartNetworkSync.cs` | 服务端 15Hz `NetworkServer.SendToAll`；客户端处理器转发给本地推车 |
+| `CartController.ApplyNetworkState` | 客户端应用：设 `_distance` → 摆位 → 触发 `DisabledChanged`。**刻意不触发 `ReachedNode`**（到点该不该继续走是阶段决策，归服务端） |
+| `CartHealthController.ApplyNetworkHealth` | 只改数据 + 发事件，**不走 `TakeDamage`/`Heal`**（那些是结算，客户端跑就等于两端各结算一次）；带 0.01 容差，否则 15Hz 广播会让 `HealthChanged` 每帧都发（订阅方里有 TMP 文本） |
+| `StageDirector` | `Start`/`Update`/`FinishRun` 加权威守卫 —— 客户端不再自己推进阶段、不再自己判"抵达终点＝胜利" |
+
+**消息处理器的注册时机是个坑**：`CartNetworkSync.RegisterClientHandler()` 必须由
+`SurvivorNetworkManager.OnStartClient` 调用，**不能放在本组件的 `Start` 里** ——
+服务端在关卡加载完就开始广播，而客户端的场景对象要到场景加载完才出现，
+晚注册会漏掉开头几条（表现是"进关卡后推车停着不动，过一会儿才追上"）。
+
+**证据**：`Tools/run-network-smoke.ps1` → `SMOKE_OK`，新增断言
+`推车已行驶 0.61 弧长` —— 它验证的是**权威守卫没有把服务端自己挡住**
+（判据写反或 `NetworkIdentity` 缺失的表现是"车永远不动"，且没有任何报错）。
+
+⚠️ **冒烟测试覆盖不到的部分**：Host 模式下服务端与客户端是**同一个对象**，
+`ApplyNetworkState` 会因为 `IsAuthority` 为真而提前返回 —— 也就是说
+"客户端真的按广播摆位"这条路径只有**真正的第二个进程**能验证。这是人工 Play 的必查项。
+
+**P3 剩余**
+
+- **P3.7 阶段/胜负的网络化**：服务端现在是唯一权威了，但 `Phase` 还没同步给客户端，
+  结算面板也还没走 `[TargetRpc]` —— 客户端在胜负发生时**什么都看不到**。
+- **P3.5 `GameLevelManager`**：`LevelTime` / `CurrentWave` 仍是各端各算
+  （只影响 HUD 显示，因为生成权已经在服务端）。
+- **P3.8 `RunStatsTracker`**：击杀统计只在服务端累计，还没送给客户端。
+- **P4.7 经验球**：客户端看不到也捡不到经验 —— 当前最明显的已知缺口。
+
 ### 2026-10-08 · P3.1–P3.4 敌人服务端权威（☑ 已由冒烟测试覆盖）
 
 **做了什么**

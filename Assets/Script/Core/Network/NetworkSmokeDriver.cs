@@ -117,6 +117,13 @@ public class NetworkSmokeDriver : MonoBehaviour
 
         Log($"关卡内敌人数量 = {CountSpawnedEnemies()}（均已 spawn，netId != 0）");
 
+        // ── 4c. 推车仍在推进（P3.6：权威守卫没把服务端自己挡住）──
+        Log("等推车开始行驶…");
+        yield return WaitUntil(() => CurrentCartDistance() > 0.5f, "推车推进超过 0.5 弧长");
+        if (_failed) yield break;
+
+        Log($"推车已行驶 {CurrentCartDistance():F2} 弧长");
+
         // ── 5. 切回大厅：再来一次，验证不会累积 ──
         Log("切回大厅…");
         NetworkBootstrap.ServerChangeScene(LobbyPath);
@@ -202,6 +209,21 @@ public class NetworkSmokeDriver : MonoBehaviour
 
             yield return null;
         }
+    }
+
+    /// <summary>
+    /// 当前关卡的推车已行驶弧长（没有推车时返回 0）。
+    ///
+    /// <para>
+    /// 它验证的是"服务端权威守卫没有把服务端自己挡住"：<c>CartController.Update</c> 加了
+    /// <c>if (!_authority.IsAuthority) return;</c>，一旦判据写反或 <c>NetworkIdentity</c> 缺失，
+    /// 表现就是**车永远不动**（而且没有任何报错）。
+    /// </para>
+    /// </summary>
+    private static float CurrentCartDistance()
+    {
+        CartController cart = FindFirstObjectByType<CartController>();
+        return cart != null ? cart.TravelledDistance : 0f;
     }
 
     private static int CountPlayers()

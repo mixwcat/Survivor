@@ -58,6 +58,12 @@ public class CartController : EntityBehaviour
     private Rigidbody2D _rb;
     private CartHealthController _health;
 
+    /// <summary>
+    /// 本副本是否推进权威进度。联机时**只有服务端**跑 <see cref="Update"/>，
+    /// 客户端的位置来自 <see cref="CartNetworkSync"/> 广播的状态（见 <see cref="NetworkAuthority"/>）。
+    /// </summary>
+    private NetworkAuthority _authority;
+
     /// <summary>由 <see cref="Route"/> 构造的运行时几何（累计弧长在这里，不落盘）。</summary>
     private CartPath _path;
 
@@ -105,6 +111,7 @@ public class CartController : EntityBehaviour
         _rb.gravityScale = 0f;
 
         _health = GetComponent<CartHealthController>();
+        _authority = new NetworkAuthority(gameObject);
         // 路径不在这里读：它由 CartRouteSource 在 Start 注入（Awake 顺序不确定，见 SetRoute）
     }
 
@@ -174,12 +181,46 @@ public class CartController : EntityBehaviour
     private void Update()
     {
         if (!EnsurePath()) return;
+
+        // 联机时只有服务端推进进度。客户端也推进的话，两端会各自演化 ——
+        // 而它们**碰巧**在大部分时间里一致（同一条路径、同一速度、同一时刻起步），
+        // 所以这种错位往往要等到一次停摆/修理之后才暴露出来
+        if (!_authority.IsAuthority) return;
+
         if (IsDisabled) return;
 
         if (IsMoving) Move();
 
         // 停车期间也检查：车可能被阶段逻辑停在半路，恢复行驶时不该漏掉已经越过的节点
         CheckReachedNode();
+    }
+
+    /// <summary>
+    /// 客户端应用服务端广播的状态。
+    ///
+    /// <para>
+    /// <b>刻意不触发 <see cref="ReachedNode"/></b>：到点该不该继续走是阶段决策，
+    /// 归服务端的 <c>StageDirector</c>。客户端跟着广播走就行 —— 在客户端也发一遍事件，
+    /// 会让"这辆车为什么停了"变成两个来源。
+    /// </para>
+    /// </summary>
+    public void ApplyNetworkState(float distance, bool isMoving, bool isDisabled)
+    {
+        // 服务端不应用自己发出的状态（它是权威，只往前走，不回退）
+        if (_authority.IsAuthority) return;
+
+        // 路径还没注入（CartRouteSource 的 Start 还没跑）：这一帧丢掉，服务端 15Hz 一直在发
+        if (!EnsurePath()) return;
+
+        bool disabledChanged = IsDisabled != isDisabled;
+
+        _distance = Mathf.Clamp(distance, 0f, _path.Length);
+        IsMoving = isMoving;
+        IsDisabled = isDisabled;
+
+        ApplyTransformAtDistance();
+
+        if (disabledChanged) DisabledChanged?.Invoke(IsDisabled);
     }
 
     /// <summary>
@@ -215,7 +256,16 @@ public class CartController : EntityBehaviour
         float speed = GetStat(StatType.MoveSpeed);
 
         _distance = Mathf.Min(_distance + speed * Time.deltaTime, _path.Length);
+        ApplyTransformAtDistance();
+    }
 
+    /// <summary>
+    /// 把车摆到 <see cref="_distance"/> 对应的位置并对齐路径切线。
+    /// 服务端推进（<see cref="Move"/>）与客户端应用广播（<see cref="ApplyNetworkState"/>）共用，
+    /// 免得两条路径的摆位逻辑各写一份。
+    /// </summary>
+    private void ApplyTransformAtDistance()
+    {
         Vector2 next = _path.Evaluate(_distance);
         if (_rb != null) _rb.MovePosition(next);
         else transform.position = next;
