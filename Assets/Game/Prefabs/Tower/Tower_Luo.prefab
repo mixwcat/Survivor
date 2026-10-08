@@ -379,6 +379,8 @@ GameObject:
   - component: {fileID: 6412532310563192931}
   - component: {fileID: 4939531689567156637}
   - component: {fileID: 2593379206273478002}
+  - component: {fileID: 7266475872288684364}
+  - component: {fileID: 6945206686308739989}
   m_Layer: 8
   m_Name: Tower_Luo
   m_TagString: Tower
@@ -612,6 +614,58 @@ MonoBehaviour:
   _mount: {fileID: 0}
   _weapons:
   - {fileID: 11400000, guid: 8fd1dca29ce82424695abd5587a78c33, type: 2}
+--- !u!114 &7266475872288684364
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6905693178617535602}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sceneId: 0
+  _assetId: 2666666562
+  serverOnly: 0
+  visibility: 0
+  hasSpawned: 0
+--- !u!114 &6945206686308739989
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6905693178617535602}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c7e12ad9b9ae443c9fdf37e9f5ecd36, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMethod: 0
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0.05
+  target: {fileID: 257470324154503855}
+  updateMethod: 0
+  syncPosition: 1
+  syncRotation: 1
+  syncScale: 0
+  onlySyncOnChange: 1
+  compressRotation: 1
+  interpolatePosition: 1
+  interpolateRotation: 1
+  interpolateScale: 1
+  coordinateSpace: 0
+  timelineOffset: 1
+  showGizmos: 0
+  showOverlay: 0
+  overlayColor: {r: 0, g: 0, b: 0, a: 0.5}
+  bufferResetMultiplier: 3
+  positionSensitivity: 0.01
+  rotationSensitivity: 0.01
+  scaleSensitivity: 0.01
 --- !u!1 &7071437248935691400
 GameObject:
   m_ObjectHideFlags: 0

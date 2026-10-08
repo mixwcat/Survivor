@@ -256,6 +256,8 @@ GameObject:
   - component: {fileID: 5844581796349985506}
   - component: {fileID: 808738149931939690}
   - component: {fileID: 1960723441426324892}
+  - component: {fileID: 7133434029642614510}
+  - component: {fileID: 4393692838370460576}
   m_Layer: 8
   m_Name: Tower_Teto
   m_TagString: Tower
@@ -489,6 +491,58 @@ MonoBehaviour:
   _weapons:
   - {fileID: 11400000, guid: 7975c7bc6de4c924a9c58219d5ba03ac, type: 2}
   - {fileID: 11400000, guid: fb847390d17304e44af0839cd767b0b4, type: 2}
+--- !u!114 &7133434029642614510
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1864442758682449286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sceneId: 0
+  _assetId: 2489576518
+  serverOnly: 0
+  visibility: 0
+  hasSpawned: 0
+--- !u!114 &4393692838370460576
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1864442758682449286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c7e12ad9b9ae443c9fdf37e9f5ecd36, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMethod: 0
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0.05
+  target: {fileID: 782296691992734498}
+  updateMethod: 0
+  syncPosition: 1
+  syncRotation: 1
+  syncScale: 0
+  onlySyncOnChange: 1
+  compressRotation: 1
+  interpolatePosition: 1
+  interpolateRotation: 1
+  interpolateScale: 1
+  coordinateSpace: 0
+  timelineOffset: 1
+  showGizmos: 0
+  showOverlay: 0
+  overlayColor: {r: 0, g: 0, b: 0, a: 0.5}
+  bufferResetMultiplier: 3
+  positionSensitivity: 0.01
+  rotationSensitivity: 0.01
+  scaleSensitivity: 0.01
 --- !u!1 &3040447304497352635
 GameObject:
   m_ObjectHideFlags: 0

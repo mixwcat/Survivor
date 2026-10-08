@@ -55,6 +55,7 @@ public static class NetworkSetup
     private static readonly string[] SpawnPrefabDirs =
     {
         "Assets/Game/Prefabs/EnemyPrefab",
+        "Assets/Game/Prefabs/Tower",
     };
 
     /// <summary>大厅既是房间也是 <c>offlineScene</c>；<c>onlineScene</c> 留空（见 Docs/MirrorPlan.md §1.3）。</summary>

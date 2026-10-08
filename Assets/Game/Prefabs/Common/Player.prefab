@@ -542,6 +542,10 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   _characterId: 
+  _syncedHealth: -1
+  _syncedLevel: -1
+  _syncedExp: -1
+  _loadoutCsv: 
 --- !u!1 &6877933132112725771
 GameObject:
   m_ObjectHideFlags: 0
