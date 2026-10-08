@@ -501,6 +501,47 @@ Console 无红错；远程玩家的移动不会被本地物理覆盖。
 
 ## 7. 进度日志（倒序，最新在上）
 
+### 2026-10-08 · 回归验证 + 剩余工作交接（本轮不加新功能）
+
+**为什么这轮不启新子系统**：下一个大件是 P4.5 塔网络化，它牵动
+`TowerLedger.Owner`（`Entity/Tower/TowerLedger.cs:37`，现在是 `PlayerController` 本地引用）、
+放置事务的付款人、`TowerLevelUpPanel` 的归属校验、三个塔 prefab 的接线与 `spawnPrefabs`。
+这是一个**跨 5 个文件 + 资源接线 + 需要双进程验证**的改动 ——
+半途而废的代码库比没开工更糟，所以这一轮改为把状态固定住并把交接写清楚。
+
+#### 一处状态更正：**P3.8（击杀统计）其实已经完成**
+
+`StageDirector.FinishRun`（`Core/Stage/StageDirector.cs:326`）读的是
+`RunStatsTracker.Service.TotalKills`，而 `FinishRun` 本身有权威守卫（只在服务端跑）——
+它算出的 `kills` 进了 `RunResult`，再经 `RunResultMessage` 广播给客户端（P3.7）。
+所以**客户端的结算面板拿到的是服务端的击杀数**，不需要单独再做一条统计同步。
+
+#### 剩余工作（按建议顺序，每条都标了接缝）
+
+| # | 事项 | 接缝 / 关键约束 |
+|---|---|---|
+| 1 | **P4.5 塔网络化** | 三个塔 prefab 加 `NetworkIdentity` + 注册 `spawnPrefabs`（`NetworkSetup.SpawnPrefabDirs` 加一行 `Assets/Game/Prefabs/Tower` 即可，**扫目录**已经写好）。`TowerPlacementController.ConfirmPlacement`（`:382`）在客户端改为 `[Command]` 上报 → 服务端 `Instantiate` + `NetworkServer.Spawn`；**放置幽灵保持纯本地**。`TowerLedger.Owner`（`:37`）与 `TowerLevelUpPanel` 的归属校验改成 `connectionId`。⚠️ `ConfirmPlacement` 里 `_transaction.TryCommit()` 在**实例化之前**（`:403`）—— 那条"同帧双击只生成一座塔"的保证在网络路径下要重新成立（客户端提交 + 服务端去重）。 |
+| 2 | **P4.6 升级三选一** | `UpgradeSelector` 的静态 `_rng` 是**所有玩家共用**的。正解：服务端抽签 → `[TargetRpc]` 下发选项 → 客户端选 → `[Command] CmdPickUpgrade(index)` → 服务端应用到**服务端那份** StatModel（血量/移速归它）→ 广播 → 客户端**重放同一个升级**（武器伤害归客户端那份）。⚠️ 玩家武器由客户端 tick，所以升级必须**两端都生效**，否则"伤害涨了但血没涨"。 |
+| 3 | **P5.1 大厅选角/装备上报** | 现在只有**服务端 → 客户端**的同步（`NetworkPlayerState._characterId` / `_loadoutCsv`）。客户端在大厅里的选择还没送回服务端 —— 需要 `[Command] CmdSetCharacter` / `CmdSetLoadout`（`CmdSetCharacter` 已存在）。⚠️ 装备在**生成之后**才改的话，服务端要能**重新装配**（现在只有生成时装配一次）。 |
+| 4 | **P5.2 / P5.3 面板只作用于本地玩家** | `UI/PlayerHudBinder.cs` 与各面板（升级三选一 / 选塔 / 武器升级 / 暂停）。判据用 `NetworkIdentity.isLocalPlayer`，**不要**用 `PlayerManager.LocalPlayer` 的"第一个注册的"回退。 |
+| 5 | **P5.4 暂停不写 `Time.timeScale`** | 联机下暂停是**每个客户端自己的事**，改 `timeScale` 会连带暂停网络层与所有人的世界。 |
+| 6 | **P6 打磨** | ① 敌人的 `syncInterval = 0.05`（20Hz）在几十只敌人时的带宽要实测；② `DevNetworkPanel` 换成正式的 `NetworkRoomPanel`（P1.4）；③ 断线 UI 反馈（P1.6）；④ 单机回归 —— **每次改完都跑一遍 Host 冒烟**。 |
+
+#### 每次改动的最低验证要求（不要省）
+
+```powershell
+& Tools\compile-check.ps1 -LogName compile.log       # 必须：无 error CS + Tundra build success
+& Tools\run-network-smoke.ps1                        # 动了联机代码就跑（Host，几十秒）
+& Tools\run-network-2p.ps1                           # 动了**客户端侧**路径就必须跑（双进程，几分钟）
+```
+
+⚠️ **两条已经踩过的坑，写在这里免得重蹈**：
+- **别用"看起来在动"当客户端断言** —— 权威判据写错时客户端会自己推进，照样通过。
+  用**哨兵值**或**只在"广播真的被应用"时才增长的计数**（见 `NetworkSmokeDriver` 里的
+  `SentinelWave` 与 `CartController.AppliedNetworkStateCount`）。
+- **把"入口方法"和"可重写实现"拆开时，子类里的 `base.Xxx` 要逐个检查** ——
+  编译器不会提醒，两种写法都合法（踩过一次：`base.TakeDamage` 无限递归）。
+
 ### 2026-10-08 · P2.5 装备同步（☑ 双进程已验证）
 
 **之前的状态**：联机下**所有人都是空手的**。武器是**装配**上去的，而装配逻辑
