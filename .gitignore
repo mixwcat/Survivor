@@ -200,3 +200,27 @@ opencode.json
 
 # Local opencode workspace
 .opencode/
+
+# ========== Vendored Mirror：只保留运行必需的部分 ==========
+# Mirror 96.11.3 以源码形式 vendored 在 Assets/Mirror/（不是 UPM 包，见 CLAUDE.md「联机（Mirror）」）。
+# 下面这些子目录与项目无关，不入库；将来若要用，从 Mirror 官方仓库或原始 unitypackage 补回即可。
+# ⚠️ Core / Components / Editor / Authenticators / CompilerSymbols / Presets / Plugins 以及
+#    Transports 下的 KCP / Latency / Middleware / Multiplex / SimpleWeb / Telepathy / Threaded
+#    都是运行必需的，不要加进忽略清单。
+
+# 官方示例场景与脚本（约 1280 个文件 / 13.5 MB，纯演示，与项目无关）
+/Assets/Mirror/Examples/
+/Assets/Mirror/Examples.meta
+
+# Edgegap 云托管与中继（需要 Edgegap 账号；本项目走局域网直连，不用云托管）
+/Assets/Mirror/Hosting/
+/Assets/Mirror/Hosting.meta
+/Assets/Mirror/Transports/Edgegap/
+/Assets/Mirror/Transports/Edgegap.meta
+
+# 加密传输（体积几乎全在 BouncyCastle 预编译库；局域网 PvE 不启用）
+/Assets/Mirror/Transports/Encryption/
+/Assets/Mirror/Transports/Encryption.meta
+
+# 其他残留产物
+/MirrorExamplesPipelineConverted.txt
