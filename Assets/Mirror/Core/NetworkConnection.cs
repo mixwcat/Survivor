@@ -62,7 +62,22 @@ namespace Mirror
         {
             // set lastTime to current time when creating connection to make
             // sure it isn't instantly kicked for inactivity
-            lastMessageTime = Time.time;
+            //
+            // ══ [本地补丁 / LOCAL PATCH — Survivor] ═══════════════════════════════
+            // Unity 6 在 Domain Reload 关闭时进入 Play，会序列化/反序列化带 NetworkIdentity
+            // 的资产，过程中会构造本对象；而**序列化期间访问 Time.time 会抛**
+            //   UnityException: get_time is not allowed to be called during serialization
+            // 这里退化为 0，并由 IsAlive 把 0 当作"时钟尚未取到"（见下面的守卫）。
+            // ⚠️ 升级 Mirror 后必须重新贴这个补丁 —— 见 Docs/MirrorPlan.md P0.3。
+            // ═══════════════════════════════════════════════════════════════════════
+            try
+            {
+                lastMessageTime = Time.time;
+            }
+            catch (System.Exception)
+            {
+                lastMessageTime = 0f;
+            }
         }
 
         // TODO if we only have Reliable/Unreliable, then we could initialize
@@ -172,7 +187,10 @@ namespace Mirror
         }
 
         /// <summary>Check if we received a message within the last 'timeout' seconds.</summary>
-        internal virtual bool IsAlive(float timeout) => Time.time - lastMessageTime < timeout;
+        // [本地补丁 — Survivor] lastMessageTime <= 0 表示"连接刚建好、时钟还没取到"
+        // （构造函数在序列化期间会走 catch 分支），此时绝不能判死，否则新连接会被立刻踢掉。
+        internal virtual bool IsAlive(float timeout) =>
+            lastMessageTime <= 0f || Time.time - lastMessageTime < timeout;
 
         /// <summary>Disconnects this connection.</summary>
         // for future reference, here is how Disconnects work in Mirror.
