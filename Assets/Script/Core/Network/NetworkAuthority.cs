@@ -39,9 +39,37 @@ public readonly struct NetworkAuthority
 
     /// <summary>
     /// 本实例是否由**本端**权威驱动。
-    /// 没有 <c>NetworkIdentity</c>（单机对象）时恒为 true。
+    ///
+    /// <para>
+    /// 判据分两种，取决于对象有没有 <c>NetworkIdentity</c>：
+    /// </para>
+    /// <list type="bullet">
+    /// <item><b>网络对象</b>（敌人 prefab 实例、玩家）→ 看 <c>identity.isServer</c>。
+    /// 每个端各有一份副本，只有服务端那份跑权威逻辑。</item>
+    /// <item><b>场景对象</b>（推车、<c>StageDirector</c>、<c>EnemyBoundary</c> —— 它们刻意没挂
+    /// <c>NetworkIdentity</c>，理由见 <c>NetworkSetup.CartPrefabPath</c> 的注释）→
+    /// 两端各有一份**互相独立的**本地实例，没有 <c>identity</c> 可用，
+    /// 只能问"**本进程**是不是服务端"。</item>
+    /// </list>
+    ///
+    /// <para>
+    /// ⚠️ <b>这里踩过一个坑，值得写下来：</b>最初的实现是
+    /// <c>_identity == null || _identity.isServer</c> —— 对场景对象来说它**恒为 true**，
+    /// 等于没判。表现是"客户端仍然自己推进推车、自己推进关卡阶段、自己判胜负"，
+    /// 而且**在 Host 单进程的自动化测试里完全看不出来**（Host 本来就是服务端）。
+    /// 只有真正的第二个进程才会暴露。
+    /// </para>
     /// </summary>
-    public bool IsAuthority => _identity == null || _identity.isServer;
+    public bool IsAuthority
+    {
+        get
+        {
+            if (_identity != null) return _identity.isServer;
+
+            // 场景对象：单机（没有网络会话）恒为权威，联机时只有服务端进程是
+            return !NetworkBootstrap.IsActive || NetworkServer.active;
+        }
+    }
 
     /// <summary>本实例是不是网络对象（用于区分"单机"与"联机但还没 spawn 完"）。</summary>
     public bool IsNetworked => _identity != null;

@@ -124,6 +124,12 @@ public class NetworkSmokeDriver : MonoBehaviour
 
         Log($"推车已行驶 {CurrentCartDistance():F2} 弧长");
 
+        // ── 4d. 关卡时钟仍在走 + 阶段已推进（P3.7：时钟守卫没把服务端自己挡住）──
+        yield return WaitUntil(() => CurrentLevelTime() > 1.0f, "服务端关卡时钟走过 1 秒");
+        if (_failed) yield break;
+
+        Log($"关卡时钟 = {CurrentLevelTime():F2} 秒，阶段 = {CurrentPhase()}");
+
         // ── 5. 切回大厅：再来一次，验证不会累积 ──
         Log("切回大厅…");
         NetworkBootstrap.ServerChangeScene(LobbyPath);
@@ -224,6 +230,23 @@ public class NetworkSmokeDriver : MonoBehaviour
     {
         CartController cart = FindFirstObjectByType<CartController>();
         return cart != null ? cart.TravelledDistance : 0f;
+    }
+
+    /// <summary>
+    /// 关卡时钟（<c>GameLevelManager.LevelTime</c>）。
+    /// 验证的是 <c>GameLevelManager.Update</c> 里那条"联机且非服务端就不走时钟"的守卫
+    /// 没有把服务端自己挡住 —— 判据写反的表现是**时钟永远停在 0**（HUD 与结算都会跟着错）。
+    /// </summary>
+    private static float CurrentLevelTime()
+    {
+        IGameLevelManager level = GameLevelManager.Service;
+        return level != null ? level.LevelTime : 0f;
+    }
+
+    private static string CurrentPhase()
+    {
+        StageDirector director = FindFirstObjectByType<StageDirector>();
+        return director != null ? director.Phase.ToString() : "(无 StageDirector)";
     }
 
     private static int CountPlayers()

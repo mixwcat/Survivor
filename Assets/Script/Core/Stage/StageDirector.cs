@@ -90,6 +90,10 @@ public class StageDirector : MonoBehaviour
     {
         _authority = new NetworkAuthority(gameObject);
 
+        // 两端都要装：服务端用它广播状态与结算，客户端用它接收。
+        // 运行时 AddComponent 而不是场景接线 —— 见 StageNetworkSync 的类注释
+        EnsureNetworkSync();
+
         // 联机时阶段与胜负只在服务端推进。客户端也跑的话，它会自己判"抵达终点＝胜利"、
         // 自己弹结算面板 —— 而服务端也会弹一次，且两边的结算数值来自各自的统计
         if (!_authority.IsAuthority) return;
@@ -193,6 +197,56 @@ public class StageDirector : MonoBehaviour
         PhaseChanged?.Invoke(phase);
     }
 
+    // ── 联机：状态同步（见 StageNetworkSync）──
+
+    /// <summary>本 GameObject 上的同步器（由 <see cref="Start"/> 运行时装上，两端都有）。</summary>
+    private StageNetworkSync _networkSync;
+
+    private void EnsureNetworkSync()
+    {
+        if (_networkSync != null) return;
+
+        _networkSync = gameObject.AddComponent<StageNetworkSync>();
+        _networkSync.Director = this;
+    }
+
+    /// <summary>
+    /// 客户端应用服务端广播的阶段。
+    ///
+    /// <para>
+    /// <b>只改状态 + 发事件</b>：阶段的**推进条件**（节点清完、全员阵亡、抵达终点）
+    /// 全部留在服务端的 <see cref="Update"/> 里 —— 客户端不做决策，
+    /// 否则"这一局为什么结束了"就有了两个来源。
+    /// </para>
+    /// </summary>
+    public void ApplyNetworkPhase(StagePhase phase)
+    {
+        // 服务端不回放自己发出去的状态
+        if (_authority.IsAuthority) return;
+
+        EnterPhase(phase);
+    }
+
+    /// <summary>
+    /// 客户端应用服务端下发的结算结果。
+    ///
+    /// <para>
+    /// 它走的是本机的 <see cref="RunFinished"/>，于是场景里的 <c>RunSettlement</c> 会照常
+    /// 写**本机**档案并弹面板 —— 金币与哨站进度本来就是每台机器一份的。
+    /// 奖励数值以服务端下发的为准，客户端**不重算**（各自的击杀统计并不一样）。
+    /// </para>
+    /// </summary>
+    public void ApplyNetworkResult(RunResult result)
+    {
+        if (_authority.IsAuthority) return;
+        if (_finished) return;
+
+        _finished = true;
+
+        EnterPhase(result.IsVictory ? StagePhase.Victory : StagePhase.Defeat);
+        RunFinished?.Invoke(result);
+    }
+
     // ── 停摆与恢复 ──
 
     private void OnCartDisabledChanged(bool disabled)
@@ -282,5 +336,10 @@ public class StageDirector : MonoBehaviour
             reward);
 
         RunFinished?.Invoke(result);
+
+        // 广播给客户端：它们各自写自己的档案 + 弹面板（奖励用服务端算好的这一份）。
+        // Host 模式下这条消息也会回到自己，但 ApplyNetworkResult 会被权威守卫挡掉 ——
+        // 否则本机会结算两次（发两次金币）
+        _networkSync?.BroadcastResult(result);
     }
 }

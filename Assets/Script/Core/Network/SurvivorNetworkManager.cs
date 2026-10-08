@@ -130,6 +130,7 @@ public class SurvivorNetworkManager : NetworkManager
         // 服务端在关卡加载完就开始广播，客户端那时可能还没加载完场景，
         // 晚注册会漏掉开头几条（表现是"进关卡后推车停着不动，过一会儿才追上"）
         CartNetworkSync.RegisterClientHandler();
+        StageNetworkSync.RegisterClientHandlers();
 
         Debug.Log($"[Net] 客户端已启动，连接到 {networkAddress}。");
     }

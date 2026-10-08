@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Mirror;
 using UnityEngine;
 
 /// <summary>
@@ -82,6 +83,11 @@ public class GameLevelManager : ManagerSingleton<GameLevelManager>, IGameLevelMa
     void Update()
     {
         if (!_isGameActive) return;
+
+        // 联机时时钟只在服务端走，客户端的值来自 StageStateMessage（见 ApplyNetworkClock）。
+        // 两端各走各的话，时间会以微小但持续的速度漂移 ——
+        // 而它同时喂给 HUD 与结算面板，漂移最终会变成"结算时间对不上"
+        if (NetworkBootstrap.IsActive && !NetworkServer.active) return;
 
         _levelTime += Time.deltaTime;
 
@@ -177,6 +183,31 @@ public class GameLevelManager : ManagerSingleton<GameLevelManager>, IGameLevelMa
     {
         UIService.Service?.GetPanel<GamePanel>()?.UpdateTime(_levelTime);
         OnGameTimeUpdate?.Invoke(_levelTime);
+    }
+
+    /// <summary>
+    /// 客户端应用服务端广播的时钟与波次（见 <see cref="StageNetworkSync"/>）。
+    ///
+    /// <para>
+    /// <b>判据是 <c>NetworkServer.active</c> 而不是 <c>NetworkAuthority</c>：</b>
+    /// <see cref="GameLevelManager"/> 是**场景对象**、没有 <c>NetworkIdentity</c>，
+    /// 两端各有一份互相独立的本地实例 —— 只能问"本进程是不是服务端"。
+    /// </para>
+    ///
+    /// <para>
+    /// <b>不做预测</b>：客户端不自己累加时间，只在收到广播时对齐。
+    /// 2Hz 的台阶对 HUD 时钟（只显示到秒）完全够用，
+    /// 而本地累加会与权威值漂移 —— 那就变成"各端时间不一样"，
+    /// 偏偏还都看起来很正常。
+    /// </para>
+    /// </summary>
+    public void ApplyNetworkClock(float levelTime, int currentWave)
+    {
+        if (NetworkServer.active) return;   // 服务端不回放自己发出去的状态
+
+        _levelTime = levelTime;
+        _currentWave = currentWave;
+        UpdateGameTimeUI();
     }
 
     private async void ShowSettingPanel()

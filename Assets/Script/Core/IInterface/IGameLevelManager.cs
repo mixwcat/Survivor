@@ -35,6 +35,12 @@ public interface IGameLevelManager
     int GetEnemyCount();
 
     /// <summary>
+    /// 客户端应用服务端广播的时钟与波次（见 <c>StageNetworkSync</c>）。
+    /// 服务端调用它是空操作 —— 判据是"本进程是不是服务端"，实现里会挡掉。
+    /// </summary>
+    void ApplyNetworkClock(float levelTime, int currentWave);
+
+    /// <summary>
     /// 申请暂停。<paramref name="token"/> 是**持有者身份**（面板 / 协调者自己造的令牌对象）。
     ///
     /// <para>

@@ -501,6 +501,64 @@ Console 无红错；远程玩家的移动不会被本地物理覆盖。
 
 ## 7. 进度日志（倒序，最新在上）
 
+### 2026-10-08 · ⚠️ 修正 P3.6 的一个**失效的权威判据** + P3.7 阶段/胜负同步（☑ 服务端侧已验证）
+
+#### 先说 bug：上一轮的权威判据对**场景对象**完全无效
+
+`NetworkAuthority` 最初的实现是：
+
+```csharp
+public bool IsAuthority => _identity == null || _identity.isServer;   // ← 错
+```
+
+对**网络对象**（敌人 prefab 实例）它是对的。但对**没有 `NetworkIdentity` 的场景对象**
+（推车、`StageDirector`、`EnemyBoundary`）`_identity` 恒为 `null` ⇒ **恒为 `true`** ⇒ 等于没判。
+后果是**客户端仍然自己推进推车、自己推进阶段、自己判胜负**，而 P3.6 花了一整轮加的那些守卫
+一个都没生效。**Host 单进程的自动化测试完全看不出来**（Host 本来就是服务端）。
+
+改成按对象形态分两种判据：
+
+```csharp
+if (_identity != null) return _identity.isServer;              // 网络对象：看副本归属
+return !NetworkBootstrap.IsActive || NetworkServer.active;      // 场景对象：看本进程是不是服务端
+```
+
+（场景对象两端各有一份**互相独立的本地实例**，只能问"本进程是不是服务端"；
+单机没有会话 ⇒ 恒为权威，单机行为不变。）
+
+**教训**：`IsAuthority` 这种东西必须按"对象是怎么存在的"分情况，
+而不是一句 `identity == null || isServer` 就完事 —— 后者在单机下永远为真，
+于是**联机时才失效，而单机测试全绿**。同一个坑还差点让 `GameLevelManager` 的时钟守卫重演一遍
+（它不是网络对象，用 `NetworkServer.active` 才对）。
+
+#### P3.7 阶段 / 胜负 / 结算同步
+
+| 文件 | 作用 |
+|---|---|
+| `Messages/StageStateMessage.cs` | `StageStateMessage`（Phase / LevelTime / CurrentWave，2Hz）+ `RunResultMessage`（结算，一次性）。字段**摊平成基元类型**，不塞 `RunResult`，避免依赖 Weaver 对自定义类型的自动读写器 |
+| `Core/Network/StageNetworkSync.cs` | 服务端 2Hz 广播；客户端处理器转发。由 `StageDirector.Start` **运行时 `AddComponent`** —— 不走场景接线（场景对象引用在批处理脚本下最容易出问题） |
+| `StageDirector.ApplyNetworkPhase` | 只改状态 + 发事件。推进条件（节点清完 / 全员阵亡 / 抵达终点）**全部留在服务端** |
+| `StageDirector.ApplyNetworkResult` | 客户端走一遍**本机**的 `RunFinished` ⇒ 场景里的 `RunSettlement` 照常写**本机**档案 + 弹面板。奖励用服务端下发的数值，客户端**不重算**（各人的击杀统计本来就不一样） |
+| `GameLevelManager.ApplyNetworkClock` | 客户端应用时钟与波次。**不做本地预测**（2Hz 对只显示到秒的 HUD 足够；本地累加会与权威值漂移，变成"各端时间不一样"却都看着正常） |
+| `GameLevelManager.Update` | 联机时客户端不再本地累加 `_levelTime` |
+| `IGameLevelManager` | 接口加了 `ApplyNetworkClock`（`GameLevelManager` 是唯一实现者，已确认） |
+
+结算的**双份风险**已经在两处挡住：`StageDirector.FinishRun` 只发一次 `RunFinished`，
+Host 下广播回来的 `RunResultMessage` 又会被 `ApplyNetworkResult` 的权威守卫挡掉 ——
+否则本机会发两次金币。
+
+#### 证据
+
+`Tools/run-network-smoke.ps1` → `SMOKE_OK`，新增断言：
+`关卡时钟 = 2.04 秒，阶段 = Travelling` ——
+验证的是两处新守卫（`CartController` / `GameLevelManager` / `StageDirector`）
+**没有把服务端自己挡住**（判据写反的症状是"车不动、时钟停在 0"，且没有任何报错）。
+
+⚠️ **仍然是 Host 单进程的测试**：`ApplyNetworkPhase` / `ApplyNetworkResult` / `ApplyNetworkClock` /
+`ApplyNetworkState` 在 Host 下都会因权威守卫提前返回，也就是说
+「**客户端真的按广播走**」这条路径只有**真正的第二个进程**能验证。
+这一条现在是最重要的待人工确认项 —— 我已经把它列进下面的 Play 清单。
+
 ### 2026-10-08 · P3.6 推车状态同步（☑ 服务端侧已由冒烟测试覆盖）
 
 **方案：推车刻意不做成网络对象。**
@@ -679,5 +737,13 @@ Console 无红错；远程玩家的移动不会被本地物理覆盖。
 2. **各控各的**：客户端按住方向键，只有自己的角色动（对方静止）；按 E 只有自己交互。
 3. **相机**：每个实例的相机只跟自己的角色（Host 下同时存在本地与远程玩家，取错就跟错人）。
 4. **画面表现**：走动时对方角色的动画方向对不对（远程副本的行走动画是按位移反推的）。
-5. **离开房间** → 回到离线大厅，能再次建房（重开一局的状态清理）。
-6. **离开房间** → 回到离线大厅，`Time.timeScale == 1`，能再次建房。
+5. **离开房间** → 回到离线大厅，`Time.timeScale == 1`，能再次建房（重开一局的状态清理）。
+6. ⭐ **客户端侧权威路径** —— **Host 测试永远覆盖不到的那一类，现在是最高优先级的待确认项**：
+   进关卡后，客户端应当看到
+   - **推车按服务端的位置移动**（`CartController.ApplyNetworkState`）
+   - **关卡时钟在走**（`GameLevelManager.ApplyNetworkClock`）
+   - **胜负发生时客户端也弹结算面板**，且数值与 Host 一致（`StageDirector.ApplyNetworkResult`）
+
+   这些都是 `ApplyNetwork*`，在 Host 下**全部会被权威守卫提前返回**。
+   如果判据写反，症状是"客户端的车不动 / 时钟停在 0 / 打完了不弹结算"，**且没有任何报错**。
+   （写这份清单时已经因为同类问题踩过一次，见进度日志里 `NetworkAuthority` 的那条修正。）
